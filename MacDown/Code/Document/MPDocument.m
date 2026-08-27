@@ -1493,14 +1493,19 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
 }
 
 
-- (NSArray<NSString *> *)renderedMermaidDiagrams
+/** The diagrams as the preview drew them, in document order.
+ *
+ * Both kinds: mermaid and Graphviz share one container class, and both are
+ * wanted in an export for the same reason.
+ */
+- (NSArray<NSString *> *)renderedDiagrams
 {
     // Normalised for a document that is not MacDown's preview: the fixed
     // pixel size the zoom viewport needs gives way to a responsive one. The
     // element ids stay, because the <style> mermaid inlines is scoped to them.
     static NSString * const script =
         @"(function(){var out=[];"
-        @"var nodes=document.querySelectorAll('.mermaid-diagram svg');"
+        @"var nodes=document.querySelectorAll('.macdown-diagram svg');"
         @"for(var i=0;i<nodes.length;i++){"
         @"var c=nodes[i].cloneNode(true);"
         @"c.removeAttribute('width');c.removeAttribute('height');"
@@ -1531,15 +1536,19 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
  * means something did not draw. Rather than risk pairing a diagram with the
  * wrong fence, that leaves every fence alone as a code block.
  */
-- (NSString *)htmlByInliningMermaidIn:(NSString *)html asImages:(BOOL)asImages
+- (NSString *)htmlByInliningDiagramsIn:(NSString *)html asImages:(BOOL)asImages
 {
-    NSArray<NSString *> *diagrams = self.renderedMermaidDiagrams;
+    NSArray<NSString *> *diagrams = self.renderedDiagrams;
     if (!diagrams.count)
         return html;
 
-    // Matches what hoedown_patch_render_blockcode emits for a fence.
+    // Matches what hoedown_patch_render_blockcode emits for a fence, for
+    // every language that becomes a drawing: mermaid, and the six Graphviz
+    // layout engines. Both lists are in document order, so the nth fence is
+    // the nth diagram.
     static NSString * const pattern =
-        @"<div><pre[^>]*><code class=\"language-mermaid\">[\\s\\S]*?"
+        @"<div><pre[^>]*><code class=\"language-"
+        @"(?:mermaid|dot|neato|fdp|circo|twopi|osage)\">[\\s\\S]*?"
         @"</code></pre></div>";
     NSRegularExpression *regex =
         [NSRegularExpression regularExpressionWithPattern:pattern options:0
@@ -1589,7 +1598,7 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
         NSString *html = [self.renderer HTMLForExportWithStyles:styles
                                                    highlighting:highlighting];
         html = [self htmlByResolvingWikiLinksIn:html];
-        html = [self htmlByInliningMermaidIn:html asImages:NO];
+        html = [self htmlByInliningDiagramsIn:html asImages:NO];
         [html writeToURL:panel.URL atomically:NO encoding:NSUTF8StringEncoding
                    error:NULL];
     }];
@@ -1618,7 +1627,7 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
     NSString *html = [self.renderer HTMLForExportWithStyles:NO
                                                highlighting:NO];
     html = [self htmlByResolvingWikiLinksIn:html];
-    html = [self htmlByInliningMermaidIn:html asImages:YES];
+    html = [self htmlByInliningDiagramsIn:html asImages:YES];
 
     NSURL *cssURL = [[NSBundle mainBundle] URLForResource:@"epub-export"
                                             withExtension:@"css"
@@ -2004,7 +2013,7 @@ NS_INLINE MPDocxTable *MPDocxTableFromHTML(NSString *html,
     // Rasterised rather than left as SVG, because AppKit's HTML reader has no
     // SVG support at all and would drop the diagrams without a word. They
     // then travel the same road as any other image below.
-    html = [self htmlByInliningMermaidIn:html asImages:YES];
+    html = [self htmlByInliningDiagramsIn:html asImages:YES];
 
     NSMutableArray<MPDocxImage *> *images = [NSMutableArray array];
     NSUInteger skipped = 0;

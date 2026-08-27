@@ -126,8 +126,32 @@ NS_INLINE NSArray<MPEpubHeading *> *MPHeadingsByAnchoring(NSMutableString *html)
         if (!text.length)
             continue;
 
-        NSString *anchor =
-            [NSString stringWithFormat:@"heading-%ld", (long)i];
+        // hoedown gives headings an id of its own when the table of
+        // contents extension is on. Adding a second one makes the element
+        // ill-formed, the parser drops one of them, and the contents end up
+        // pointing at an anchor that is not there.
+        NSRegularExpression *existing = [NSRegularExpression
+            regularExpressionWithPattern:@"\\bid=\"([^\"]+)\""
+                                 options:NSRegularExpressionCaseInsensitive
+                                   error:NULL];
+        NSTextCheckingResult *found =
+            [existing firstMatchInString:attributes options:0
+                                   range:NSMakeRange(0, attributes.length)];
+
+        NSString *anchor;
+        NSString *replacement;
+        if (found)
+        {
+            anchor = [attributes substringWithRange:[found rangeAtIndex:1]];
+            replacement = nil;      // nothing to rewrite
+        }
+        else
+        {
+            anchor = [NSString stringWithFormat:@"heading-%ld", (long)i];
+            replacement = [NSString stringWithFormat:
+                @"<h%@ id=\"%@\"%@>%@</h%@>",
+                level, anchor, attributes, inner, level];
+        }
 
         MPEpubHeading *heading = [[MPEpubHeading alloc] init];
         heading.title = text;
@@ -135,10 +159,8 @@ NS_INLINE NSArray<MPEpubHeading *> *MPHeadingsByAnchoring(NSMutableString *html)
         heading.level = level.integerValue;
         [headings insertObject:heading atIndex:0];
 
-        NSString *replacement = [NSString stringWithFormat:
-            @"<h%@ id=\"%@\"%@>%@</h%@>",
-            level, anchor, attributes, inner, level];
-        [html replaceCharactersInRange:match.range withString:replacement];
+        if (replacement)
+            [html replaceCharactersInRange:match.range withString:replacement];
     }
     return headings;
 }
@@ -367,6 +389,18 @@ NSData *MPEpubDataFromHTML(NSString *html, NSString *css, NSURL *baseURL,
         ? [html substringWithRange:[bodyMatch rangeAtIndex:1]] : html;
 
     NSMutableString *body = [inner mutableCopy];
+
+    // Out with the scripts. A reading system is not obliged to run them and
+    // most will not, and the bundled MathJax alone is two megabytes — in
+    // every exported file, to no purpose.
+    NSRegularExpression *scripts = [NSRegularExpression
+        regularExpressionWithPattern:@"<script\\b[^>]*>[\\s\\S]*?</script>"
+                             options:NSRegularExpressionCaseInsensitive
+                               error:NULL];
+    [scripts replaceMatchesInString:body options:0
+                              range:NSMakeRange(0, body.length)
+                       withTemplate:@""];
+
     NSArray<MPEpubImage *> *images = MPImagesByRewriting(body, baseURL);
     NSArray<MPEpubHeading *> *headings = MPHeadingsByAnchoring(body);
 
