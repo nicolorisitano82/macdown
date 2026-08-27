@@ -32,6 +32,7 @@
 #import "MPToolbarController.h"
 #import "MPProseChecker.h"
 #import "MPMathEditorController.h"
+#import "MPSidebarController.h"
 #import "MPDocxPostProcessing.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
@@ -175,6 +176,7 @@ NS_INLINE NSColor *MPGetWebViewBackgroundColor(WebView *webview)
 
 @interface MPDocument ()
     <NSSplitViewDelegate, NSTextViewDelegate, NSWindowDelegate,
+     MPSidebarControllerDelegate,
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 101100
      WebEditingDelegate, WebFrameLoadDelegate, WebPolicyDelegate,
 #endif
@@ -196,6 +198,8 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (strong) IBOutlet MPToolbarController *toolbarController;
 @property (copy, nonatomic) NSString *autosaveName;
 @property (copy, nonatomic) NSString *currentHeadHTML;
+@property (strong, nonatomic) MPSidebarController *sidebar;
+@property (strong, nonatomic) NSSplitView *outerSplitView;
 @property (strong) HGMarkdownHighlighter *highlighter;
 @property (strong) MPRenderer *renderer;
 @property CGFloat previousSplitRatio;
@@ -384,6 +388,8 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     // up as a bright band across the top of the preview, whatever colour the
     // page itself uses. Let the page do all the painting.
     [self.preview setDrawsBackground:NO];
+
+    [self installSidebarInWindow:window];
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
@@ -1314,6 +1320,8 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
 {
     if (self.editor.proseHighlightsEnabled)
         [self updateProseSummary];
+
+    [self.sidebar updateOutlineWithMarkdown:self.editor.string ?: @""];
 
     if (self.needsHtml)
         [self.renderer parseAndRenderLater];
@@ -2397,6 +2405,108 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
  * Per window rather than a stored preference: it is a thing you switch on to
  * go over a draft, not a way you leave the editor set up.
  */
+/** Wraps the editor/preview split in a second one, with the sidebar first.
+ *
+ * Done here rather than in the nib because the nib pins the existing split
+ * view to the window, and moving it means taking those constraints with it.
+ */
+- (void)installSidebarInWindow:(NSWindow *)window
+{
+    NSView *content = window.contentView;
+    NSView *panes = self.splitView;
+    if (!content || !panes || self.outerSplitView)
+        return;
+
+    self.sidebar = [[MPSidebarController alloc] init];
+    self.sidebar.delegate = self;
+
+    NSMutableArray<NSLayoutConstraint *> *stale = [NSMutableArray array];
+    for (NSLayoutConstraint *constraint in content.constraints)
+    {
+        if (constraint.firstItem == panes || constraint.secondItem == panes)
+            [stale addObject:constraint];
+    }
+    [content removeConstraints:stale];
+    [panes removeFromSuperview];
+
+    NSSplitView *outer = [[NSSplitView alloc] initWithFrame:content.bounds];
+    outer.vertical = YES;
+    outer.dividerStyle = NSSplitViewDividerStyleThin;
+    // The sidebar is delegate of its own split view: it owns the width
+    // rules, and this document is already delegate of the inner one.
+    outer.delegate = (id<NSSplitViewDelegate>)self.sidebar;
+    // No autosave name. NSSplitView restores a saved position after the
+    // subviews are in place, which lands on top of the position set below
+    // and leaves the sidebar as an unusable sliver.
+    outer.translatesAutoresizingMaskIntoConstraints = NO;
+
+    [outer addSubview:self.sidebar.view];
+    [outer addSubview:panes];
+    [content addSubview:outer];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [outer.topAnchor constraintEqualToAnchor:content.topAnchor],
+        [outer.bottomAnchor constraintEqualToAnchor:content.bottomAnchor],
+        [outer.leadingAnchor constraintEqualToAnchor:content.leadingAnchor],
+        [outer.trailingAnchor constraintEqualToAnchor:content.trailingAnchor],
+    ]];
+
+    // The panes take the space; the sidebar keeps the width it was given.
+    [outer setHoldingPriority:NSLayoutPriorityDefaultHigh
+           forSubviewAtIndex:0];
+    self.outerSplitView = outer;
+
+    // Closed to begin with: a sidebar nobody asked for is in the way.
+    [outer setPosition:0.0 ofDividerAtIndex:0];
+
+    [self.sidebar setRootURL:self.fileURL.URLByDeletingLastPathComponent];
+    [self.sidebar updateOutlineWithMarkdown:self.editor.string ?: @""];
+}
+
+- (IBAction)toggleSidebar:(id)sender
+{
+    NSSplitView *outer = self.outerSplitView;
+    if (!outer)
+        return;
+
+    NSView *sidebar = outer.subviews.firstObject;
+    BOOL visible = ![outer isSubviewCollapsed:sidebar]
+        && sidebar.frame.size.width > 1.0;
+    [outer setPosition:(visible ? 0.0 : 240.0) ofDividerAtIndex:0];
+    [outer adjustSubviews];
+
+    if (!visible)
+    {
+        [self.sidebar setRootURL:self.fileURL.URLByDeletingLastPathComponent];
+        [self.sidebar updateOutlineWithMarkdown:self.editor.string ?: @""];
+    }
+}
+
+#pragma mark - MPSidebarControllerDelegate
+
+- (void)sidebarDidSelectHeadingRange:(NSRange)range
+{
+    if (NSMaxRange(range) > self.editor.string.length)
+        return;
+
+    // Selecting the heading line, rather than only scrolling to it, makes it
+    // obvious where you have landed.
+    [self.editor setSelectedRange:range];
+    [self.editor scrollRangeToVisible:range];
+    [self.windowForSheet makeFirstResponder:self.editor];
+}
+
+- (void)sidebarDidSelectFileURL:(NSURL *)url
+{
+    [[NSDocumentController sharedDocumentController]
+        openDocumentWithContentsOfURL:url display:YES
+                    completionHandler:^(NSDocument *document,
+                                        BOOL alreadyOpen, NSError *error) {
+        (void)document; (void)alreadyOpen; (void)error;
+    }];
+}
+
+
 /** Opens the maths sheet and inserts what comes back.
  *
  * The delimiters are chosen here rather than in the sheet, because which

@@ -413,6 +413,13 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="QMZ-Ld-Nza"/>
+                            <menuItem title="Show Sidebar" keyEquivalent="s" id="sbr-01-itm">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleSidebar:" target="-1" id="sbr-01-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="sbr-01-sep"/>
                             <menuItem title="Insert Math…" keyEquivalent="m" id="mth-01-itm">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                 <connections>
