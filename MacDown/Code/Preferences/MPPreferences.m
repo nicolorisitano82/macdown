@@ -283,6 +283,15 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
         self.editorInsertPrefixInBlock = YES;
     if (![defaults objectForKey:@"htmlTemplateName"])
         self.htmlTemplateName = @"Default";
+
+    // Diagrams are on unless the user has said otherwise. They used to be
+    // off, which meant a mermaid fence quietly stayed a code block and
+    // nothing said why. Costs nothing for a document without diagrams: the
+    // renderer only loads the libraries when a fence asks for one.
+    if (![defaults objectForKey:@"htmlMermaid"])
+        self.htmlMermaid = YES;
+    if (![defaults objectForKey:@"htmlGraphviz"])
+        self.htmlGraphviz = YES;
 }
 
 @end

@@ -486,6 +486,26 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
     return @[[MPStyleSheet CSSWithURL:url]];
 }
 
+/** Whether this document has a fence in any of `languages`.
+ *
+ * currentLanguages is filled while the Markdown is rendered, and the scripts
+ * are gathered afterwards, so by now it says what the document actually
+ * contains. Mermaid alone is nearly three megabytes: worth reading off disk
+ * for a document with a diagram in it, worth skipping for one without.
+ */
+- (BOOL)documentUsesAnyLanguage:(NSArray<NSString *> *)languages
+{
+    for (NSString *used in self.currentLanguages)
+    {
+        for (NSString *wanted in languages)
+        {
+            if ([used caseInsensitiveCompare:wanted] == NSOrderedSame)
+                return YES;
+        }
+    }
+    return NO;
+}
+
 - (NSArray *)mermaidScripts
 {
     // TODO
@@ -568,8 +588,11 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
     // Diagrams are their own feature: they were nested inside the syntax
     // highlighting branch, which meant turning highlighting off silently
     // disabled them even with their own preference switched on.
-    BOOL mermaid = [d rendererHasMermaid:self];
-    BOOL graphviz = [d rendererHasGraphviz:self];
+    BOOL mermaid = [d rendererHasMermaid:self]
+        && [self documentUsesAnyLanguage:@[@"mermaid"]];
+    BOOL graphviz = [d rendererHasGraphviz:self]
+        && [self documentUsesAnyLanguage:@[@"dot", @"neato", @"fdp", @"circo",
+                                           @"twopi", @"osage"]];
     if (mermaid || graphviz)
     {
         // Before either bootstrap, which both call into it.
