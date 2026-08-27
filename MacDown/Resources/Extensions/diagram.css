@@ -1,44 +1,45 @@
-/* Layout and zoom chrome for rendered mermaid diagrams.
+/* Layout and zoom chrome for rendered diagrams, mermaid and Graphviz alike.
  *
  * Deliberately carries no diagram colours. Mermaid injects a full palette
  * into every diagram it renders, chosen from the system appearance by
- * mermaid.init.js; anything declared here at document level would outrank
- * that and pin diagrams to one scheme. The zoom controls below are drawn
+ * mermaid.init.js, and a Graphviz graph carries whatever colours its DOT
+ * source asked for; anything declared here at document level would outrank
+ * both and pin diagrams to one scheme. The zoom controls below are drawn
  * from currentColor for the same reason: they inherit the page's text colour
  * and so need no dark counterpart.
  */
 
 /* The viewport. Its height is pinned by the script to the fitted height of
  * the diagram, so zooming in never reflows the surrounding text. */
-.mermaid-diagram {
+.macdown-diagram {
   position: relative;
   margin: 15px 0;
   overflow: hidden;
 }
 
-.mermaid-diagram.is-pannable {
+.macdown-diagram.is-pannable {
   cursor: grab;
 }
 
-.mermaid-diagram.is-panning {
+.macdown-diagram.is-panning {
   cursor: grabbing;
 }
 
 /* Panned and scaled as one layer. transform-origin has to stay at the
  * top-left corner: the script's arithmetic assumes it. */
-.mermaid-diagram-canvas {
+.macdown-diagram-canvas {
   transform-origin: 0 0;
   will-change: transform;
 }
 
 /* max-width: none matters. Left at 100% the SVG would be squeezed to the
  * pane width, which is the squashing that zooming exists to escape. */
-.mermaid-diagram-canvas > svg {
+.macdown-diagram-canvas > svg {
   display: block;
   max-width: none;
 }
 
-.mermaid-zoom-controls {
+.macdown-zoom-controls {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -49,12 +50,12 @@
 }
 
 /* Out of the way until wanted, but reachable by keyboard. */
-.mermaid-diagram:hover .mermaid-zoom-controls,
-.mermaid-zoom-controls:focus-within {
+.macdown-diagram:hover .macdown-zoom-controls,
+.macdown-zoom-controls:focus-within {
   opacity: 1;
 }
 
-.mermaid-zoom-controls button {
+.macdown-zoom-controls button {
   width: 22px;
   height: 22px;
   padding: 0;
@@ -71,18 +72,18 @@
   backdrop-filter: blur(6px);
 }
 
-.mermaid-zoom-controls button:hover {
+.macdown-zoom-controls button:hover {
   background-color: color-mix(in srgb, currentColor 18%, transparent);
 }
 
-.mermaid-zoom-controls button:active {
+.macdown-zoom-controls button:active {
   background-color: color-mix(in srgb, currentColor 28%, transparent);
 }
 
 /* Shown in place of a diagram whose source does not parse. Expected while
  * typing, so it stays quiet rather than shouting. Colours come from the
  * appearance so this needs no dark counterpart. */
-.mermaid-error {
+.macdown-diagram-error {
   text-align: left;
   padding: 8px 12px;
   border-radius: 3px;

@@ -482,7 +482,7 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
  */
 - (NSArray *)mermaidStylesheets
 {
-    NSURL *url = MPExtensionURL(@"mermaid", @"css");
+    NSURL *url = MPExtensionURL(@"diagram", @"css");
     return @[[MPStyleSheet CSSWithURL:url]];
 }
 
@@ -505,7 +505,6 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
 
 - (NSArray *)graphvizScripts
 {
-    // TODO
     NSMutableArray *scripts = [NSMutableArray array];
 
     {
@@ -527,7 +526,9 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
     NSMutableArray *stylesheets = [self.baseStylesheets mutableCopy];
     if ([delegate rendererHasSyntaxHighlighting:self])
         [stylesheets addObjectsFromArray:self.prismStylesheets];
-    if ([delegate rendererHasMermaid:self])
+    // One sheet for both kinds of diagram: it is layout and zoom chrome, and
+    // carries no colours of its own.
+    if ([delegate rendererHasMermaid:self] || [delegate rendererHasGraphviz:self])
         [stylesheets addObjectsFromArray:self.mermaidStylesheets];
 
     // WikiLink styling. Bundle-only, so it cannot be shadowed by a stale copy
@@ -567,9 +568,17 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
     // Diagrams are their own feature: they were nested inside the syntax
     // highlighting branch, which meant turning highlighting off silently
     // disabled them even with their own preference switched on.
-    if ([d rendererHasMermaid:self])
+    BOOL mermaid = [d rendererHasMermaid:self];
+    BOOL graphviz = [d rendererHasGraphviz:self];
+    if (mermaid || graphviz)
+    {
+        // Before either bootstrap, which both call into it.
+        [scripts addObject:[MPScript javaScriptWithURL:
+            MPExtensionURL(@"diagram-zoom", @"js")]];
+    }
+    if (mermaid)
         [scripts addObjectsFromArray:self.mermaidScripts];
-    if ([d rendererHasGraphviz:self])
+    if (graphviz)
         [scripts addObjectsFromArray:self.graphvizScripts];
     if ([d rendererHasMathJax:self])
         [scripts addObjectsFromArray:self.mathjaxScripts];

@@ -194,6 +194,7 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (weak) IBOutlet NSPopUpButton *wordCountWidget;
 @property (strong) IBOutlet MPToolbarController *toolbarController;
 @property (copy, nonatomic) NSString *autosaveName;
+@property (copy, nonatomic) NSString *currentHeadHTML;
 @property (strong) HGMarkdownHighlighter *highlighter;
 @property (strong) MPRenderer *renderer;
 @property CGFloat previousSplitRatio;
@@ -1047,6 +1048,43 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     return self.preferences.htmlHighlightingThemeName;
 }
 
+/// The contents of <head>, or nil if the document is not shaped as expected.
+NS_INLINE NSString *MPHeadOfHTML(NSString *html)
+{
+    static NSRegularExpression *regex = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        regex = [[NSRegularExpression alloc] initWithPattern:
+            @"<head[^>]*>([\\s\\S]*)</head>"
+                    options:NSRegularExpressionCaseInsensitive error:NULL];
+    });
+    NSTextCheckingResult *match =
+        [regex firstMatchInString:html options:0
+                            range:NSMakeRange(0, html.length)];
+    if (!match)
+        return nil;
+    return [html substringWithRange:[match rangeAtIndex:1]];
+}
+
+/// The contents of <body>, or nil if the document is not shaped as expected.
+NS_INLINE NSString *MPBodyOfHTML(NSString *html)
+{
+    static NSRegularExpression *regex = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        regex = [[NSRegularExpression alloc] initWithPattern:
+            @"<body[^>]*>([\\s\\S]*)</body>"
+                    options:NSRegularExpressionCaseInsensitive error:NULL];
+    });
+    NSTextCheckingResult *match =
+        [regex firstMatchInString:html options:0
+                            range:NSMakeRange(0, html.length)];
+    if (!match)
+        return nil;
+    return [html substringWithRange:[match rangeAtIndex:1]];
+}
+
+
 /** Whether a WikiLink target resolves to a file next to the document.
  *
  * Tries the name as written first, then the extensions a Markdown document is
@@ -1197,63 +1235,75 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
 
     self.manualRender = self.preferences.markdownManualRender;
 
-#if 0
-    // Unfortunately this DOM-replacing causes a lot of problems...
-    // 1. MathJax needs to be triggered.
-    // 2. Prism rendering is lost.
-    // 3. Potentially more.
-    // Essentially all JavaScript needs to be run again after we replace
-    // the DOM. I have no idea how many more problems there are, so we'll have
-    // to back off from the path for now... :(
+    // Typing reloads the whole page unless the head is unchanged.
+    //
+    // A full load tears the document down and builds it again, and that is
+    // what makes the preview blink on every keystroke: the window flush
+    // guards around it are no-ops on current AppKit. Replacing the body
+    // instead leaves the head — the stylesheets, and the scripts that have
+    // already run — exactly where it is, so there is nothing to flash and
+    // the reader keeps their scroll position.
+    //
+    // The head is compared rather than assumed: it changes when a preference
+    // adds or removes a stylesheet, and those renders still need a real load.
+    NSString *head = MPHeadOfHTML(html);
+    NSString *body = MPBodyOfHTML(html);
 
-    // If we're working on the same document, try not to reload.
-    if (self.isPreviewReady && [self.currentBaseUrl isEqualTo:baseUrl])
+    if (self.isPreviewReady && body && head
+            && [self.currentBaseUrl isEqualTo:baseUrl]
+            && [head isEqualToString:self.currentHeadHTML]
+            && [self replacePreviewBodyWith:body])
     {
-        // HACK: Ideally we should only inject the parts that changed, and only
-        // get the parts we need. For now we only get a complete HTML codument,
-        // and rely on regex to get the parts we want in the DOM.
-
-        // Use the existing tree if available, and replace the content.
-        DOMDocument *doc = self.preview.mainFrame.DOMDocument;
-        DOMNodeList *htmlNodes = [doc getElementsByTagName:@"html"];
-        if (htmlNodes.length >= 1)
-        {
-            static NSString *pattern = @"<html>(.*)</html>";
-            static int opts = NSRegularExpressionDotMatchesLineSeparators;
-
-            // Find things inside the <html> tag.
-            NSRegularExpression *regex =
-                [[NSRegularExpression alloc] initWithPattern:pattern
-                                                     options:opts error:NULL];
-            NSTextCheckingResult *result =
-                [regex firstMatchInString:html options:0
-                                    range:NSMakeRange(0, html.length)];
-            html = [html substringWithRange:[result rangeAtIndex:1]];
-
-            // Replace everything in the old <html> tag.
-            DOMElement *htmlNode = (DOMElement *)[htmlNodes item:0];
-            htmlNode.innerHTML = html;
-
-            // Assigning innerHTML does not re-execute the page's scripts, so
-            // the mermaid bootstrap that ran on the first load has to be
-            // invoked by hand for the fences in this revision. window keeps
-            // its properties across the swap, so the function is still there.
-            [self.preview stringByEvaluatingJavaScriptFromString:
-                @"if (window.MacDownRenderMermaid) MacDownRenderMermaid();"
-                // Same reason as mermaid: the swap leaves fresh TeX behind
-                // that MathJax has not seen. It typesets the whole document,
-                // so there is nothing to pass it.
-                @"if (window.MathJax && MathJax.typesetPromise)"
-                @" MathJax.typesetPromise();"];
-
-            return;
-        }
+        return;
     }
-#endif
 
-    // Reload the page if there's not valid tree to work with.
     [self.preview.mainFrame loadHTMLString:html baseURL:baseUrl];
     self.currentBaseUrl = baseUrl;
+    self.currentHeadHTML = head;
+}
+
+
+/** Swaps the preview's body, leaving the rest of the document alone.
+ *
+ * Returns NO if the document is not in a state to be updated this way, in
+ * which case the caller falls back to a full load.
+ */
+- (BOOL)replacePreviewBodyWith:(NSString *)body
+{
+    DOMDocument *document = self.preview.mainFrame.DOMDocument;
+    DOMHTMLElement *element = document.body;
+    if (!element)
+        return NO;
+
+    element.innerHTML = body;
+
+    // Assigning innerHTML does not re-run the page's scripts, so everything
+    // that decorates the document has to be invited back for this revision.
+    // window keeps its properties across the swap, so they are all still
+    // there. Mermaid goes first: it replaces whole code blocks, and there is
+    // no point highlighting the ones that are about to disappear.
+    [self.preview stringByEvaluatingJavaScriptFromString:
+        @"if (window.MacDownRenderMermaid) MacDownRenderMermaid();"
+        @"if (window.MacDownRenderGraphviz) MacDownRenderGraphviz();"
+        @"if (window.Prism && Prism.highlightAll) Prism.highlightAll();"
+        @"if (window.MathJax && MathJax.typesetPromise)"
+        @" MathJax.typesetPromise();"];
+
+    // No load means no load-finished delegate call, so the bookkeeping it
+    // does has to happen here: the same completion handler for scaling,
+    // insets and scroll syncing, and the flags that let the next render run.
+    id callback = MPGetPreviewLoadingCompletionHandler(self);
+    [[NSOperationQueue mainQueue] addOperationWithBlock:callback];
+
+    if (self.preferences.editorShowWordCount)
+        [self updateWordCount];
+
+    self.alreadyRenderingInWeb = NO;
+    if (self.renderToWebPending)
+        [self.renderer parseAndRenderNow];
+    self.renderToWebPending = NO;
+
+    return YES;
 }
 
 
