@@ -12,6 +12,8 @@
 		1F0D9D66194AC7CF008E1856 /* NSTextView+Autocomplete.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D61194AC7CF008E1856 /* NSTextView+Autocomplete.m */; };
 		1F0D9D67194AC7CF008E1856 /* MPUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D64194AC7CF008E1856 /* MPUtilities.m */; };
 		D0C1A1000000000000000003 /* MPDocxPostProcessing.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000002 /* MPDocxPostProcessing.m */; };
+		D0C1A1000000000000000046 /* MPEpubExport.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000045 /* MPEpubExport.m */; };
+		D0C1A1000000000000000043 /* MPZipArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000042 /* MPZipArchive.m */; };
 		D0C1A1000000000000000013 /* MPProseChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000012 /* MPProseChecker.m */; };
 		D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000022 /* MPMathEditorController.m */; };
 		D0C1A1000000000000000033 /* MPSidebarController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000032 /* MPSidebarController.m */; };
@@ -199,6 +201,10 @@
 		1F0D9D61194AC7CF008E1856 /* NSTextView+Autocomplete.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSTextView+Autocomplete.m"; sourceTree = "<group>"; };
 		D0C1A1000000000000000001 /* MPDocxPostProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPDocxPostProcessing.h; sourceTree = "<group>"; };
 		D0C1A1000000000000000002 /* MPDocxPostProcessing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocxPostProcessing.m; sourceTree = "<group>"; };
+		D0C1A1000000000000000044 /* MPEpubExport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPEpubExport.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000045 /* MPEpubExport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPEpubExport.m; sourceTree = "<group>"; };
+		D0C1A1000000000000000041 /* MPZipArchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPZipArchive.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000042 /* MPZipArchive.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPZipArchive.m; sourceTree = "<group>"; };
 		D0C1A1000000000000000011 /* MPProseChecker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPProseChecker.h; sourceTree = "<group>"; };
 		D0C1A1000000000000000012 /* MPProseChecker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPProseChecker.m; sourceTree = "<group>"; };
 		D0C1A1000000000000000021 /* MPMathEditorController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMathEditorController.h; sourceTree = "<group>"; };
@@ -615,6 +621,10 @@
 				1F5A370F1C868EC0006E63E7 /* MPPlugIn.m */,
 				D0C1A1000000000000000001 /* MPDocxPostProcessing.h */,
 				D0C1A1000000000000000002 /* MPDocxPostProcessing.m */,
+				D0C1A1000000000000000044 /* MPEpubExport.h */,
+				D0C1A1000000000000000045 /* MPEpubExport.m */,
+				D0C1A1000000000000000041 /* MPZipArchive.h */,
+				D0C1A1000000000000000042 /* MPZipArchive.m */,
 				D0C1A1000000000000000011 /* MPProseChecker.h */,
 				D0C1A1000000000000000012 /* MPProseChecker.m */,
 				1F0D9D63194AC7CF008E1856 /* MPUtilities.h */,
@@ -1255,6 +1265,8 @@
 				1F23A92119928E650052DB78 /* MPMathJaxListener.m in Sources */,
 				1F2649B01A7406DB00EF6AF3 /* NSDocumentController+Document.m in Sources */,
 				D0C1A1000000000000000003 /* MPDocxPostProcessing.m in Sources */,
+				D0C1A1000000000000000046 /* MPEpubExport.m in Sources */,
+				D0C1A1000000000000000043 /* MPZipArchive.m in Sources */,
 				D0C1A1000000000000000013 /* MPProseChecker.m in Sources */,
 				D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */,
 				D0C1A1000000000000000033 /* MPSidebarController.m in Sources */,

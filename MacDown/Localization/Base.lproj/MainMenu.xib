@@ -135,6 +135,12 @@
                                                 <action selector="exportPdf:" target="-1" id="Rhh-ni-CdX"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem title="EPUB…" id="epb-Ex-Itm">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="exportEpub:" target="-1" id="epb-Ex-Act"/>
+                                            </connections>
+                                        </menuItem>
                                         <menuItem title="Word Document…" id="mD1-Ex-Dcx">
                                             <modifierMask key="keyEquivalentModifierMask"/>
                                             <connections>

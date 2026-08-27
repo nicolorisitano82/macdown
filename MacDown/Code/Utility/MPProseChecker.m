@@ -27,6 +27,8 @@
 @interface MPProseChecker ()
 @property (copy, nonatomic) NSArray<MPProseCategory *> *categories;
 @property (strong, nonatomic) MPProseCategory *repeated;
+/// Doublings that are meant, lowercased, matched against the whole hit.
+@property (copy, nonatomic) NSSet<NSString *> *repeatedExceptions;
 @property (strong, nonatomic) NSRegularExpression *skipRegex;
 @end
 
@@ -180,6 +182,14 @@ NS_INLINE NSString *MPProsePattern(NSString *entry, BOOL isPhrase)
                                                              options:
             NSRegularExpressionCaseInsensitive error:NULL];
         self.repeated = repeated.regex ? repeated : nil;
+
+        NSMutableSet<NSString *> *allowed = [NSMutableSet set];
+        for (NSString *phrase in repeatedInfo[@"exceptions"])
+        {
+            if ([phrase isKindOfClass:[NSString class]] && phrase.length)
+                [allowed addObject:phrase.lowercaseString];
+        }
+        self.repeatedExceptions = allowed;
     }
 }
 
@@ -218,6 +228,27 @@ NS_INLINE NSString *MPProsePattern(NSString *entry, BOOL isPhrase)
             if (skip)
                 continue;
 
+            // Some doublings are meant. Italian is full of them — piano
+            // piano, via via, man mano — and flagging those would make the
+            // whole category untrustworthy.
+            if (category == self.repeated)
+            {
+                NSString *hit = [[text substringWithRange:match.range]
+                    lowercaseString];
+                // Whitespace inside the match may be a line break.
+                NSArray<NSString *> *words = [hit componentsSeparatedByCharactersInSet:
+                    [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+                NSMutableArray<NSString *> *kept = [NSMutableArray array];
+                for (NSString *word in words)
+                {
+                    if (word.length)
+                        [kept addObject:word];
+                }
+                hit = [kept componentsJoinedByString:@" "];
+                if ([self.repeatedExceptions containsObject:hit])
+                    continue;
+            }
+
             MPProseIssue *issue = [[MPProseIssue alloc] init];
             issue.range = match.range;
             issue.text = [text substringWithRange:match.range];
@@ -230,11 +261,34 @@ NS_INLINE NSString *MPProsePattern(NSString *entry, BOOL isPhrase)
 
     [issues sortUsingComparator:^NSComparisonResult(MPProseIssue *a,
                                                     MPProseIssue *b) {
-        if (a.range.location < b.range.location) return NSOrderedAscending;
-        if (a.range.location > b.range.location) return NSOrderedDescending;
+        if (a.range.location != b.range.location)
+        {
+            return a.range.location < b.range.location
+                ? NSOrderedAscending : NSOrderedDescending;
+        }
+        // Longer first, so the wider reading of an overlap survives.
+        if (a.range.length != b.range.length)
+        {
+            return a.range.length > b.range.length
+                ? NSOrderedAscending : NSOrderedDescending;
+        }
         return NSOrderedSame;
     }];
-    return issues;
+
+    // One underline per stretch of text. Lists overlap by nature — "potrebbe
+    // essere" is hedging and a passive tell at once — and reporting it twice
+    // would double the count and draw the underline twice. The first match
+    // wins, which is the earliest category in the resource.
+    NSMutableArray<MPProseIssue *> *distinct = [NSMutableArray array];
+    for (MPProseIssue *issue in issues)
+    {
+        MPProseIssue *previous = distinct.lastObject;
+        if (previous
+                && NSIntersectionRange(previous.range, issue.range).length)
+            continue;
+        [distinct addObject:issue];
+    }
+    return distinct;
 }
 
 - (NSString *)summaryForIssues:(NSArray<MPProseIssue *> *)issues

@@ -33,6 +33,7 @@
 #import "MPProseChecker.h"
 #import "MPMathEditorController.h"
 #import "MPSidebarController.h"
+#import "MPEpubExport.h"
 #import "MPDocxPostProcessing.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
@@ -1592,6 +1593,64 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
         [html writeToURL:panel.URL atomically:NO encoding:NSUTF8StringEncoding
                    error:NULL];
     }];
+}
+
+- (IBAction)exportEpub:(id)sender
+{
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.allowedFileTypes = @[@"epub"];
+    if (self.presumedFileName)
+        panel.nameFieldStringValue = self.presumedFileName;
+
+    NSWindow *window = self.windowForSheet;
+    [panel beginSheetModalForWindow:window completionHandler:^(NSInteger res) {
+        if (res != NSFileHandlingPanelOKButton)
+            return;
+        [self writeEpubToURL:panel.URL];
+    }];
+}
+
+- (void)writeEpubToURL:(NSURL *)url
+{
+    // Styles are not linked in: an EPUB carries its own, and a reader is
+    // entitled to override them. Diagrams are rasterised for the same reason
+    // the Word export does it — nothing here runs scripts.
+    NSString *html = [self.renderer HTMLForExportWithStyles:NO
+                                               highlighting:NO];
+    html = [self htmlByResolvingWikiLinksIn:html];
+    html = [self htmlByInliningMermaidIn:html asImages:YES];
+
+    NSURL *cssURL = [[NSBundle mainBundle] URLForResource:@"epub-export"
+                                            withExtension:@"css"
+                                             subdirectory:@"Extensions"];
+    NSString *css = cssURL
+        ? [NSString stringWithContentsOfURL:cssURL encoding:NSUTF8StringEncoding
+                                      error:NULL]
+        : @"";
+
+    MPEpubMetadata *metadata = [[MPEpubMetadata alloc] init];
+    metadata.title = self.presumedFileName.stringByDeletingPathExtension;
+    metadata.author = NSFullUserName();
+
+    NSData *epub = MPEpubDataFromHTML(html, css, self.fileURL, metadata);
+    if (!epub)
+    {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = NSLocalizedString(
+            @"The EPUB could not be built.",
+            @"EPUB export failure title");
+        alert.informativeText = NSLocalizedString(
+            @"The rendered document could not be turned into the XHTML an "
+            @"EPUB requires.",
+            @"EPUB export failure detail");
+        [alert beginSheetModalForWindow:self.windowForSheet
+                      completionHandler:nil];
+        return;
+    }
+
+    NSError *error = nil;
+    if (![epub writeToURL:url options:NSDataWritingAtomic error:&error])
+        [self presentError:error];
 }
 
 - (IBAction)exportDocx:(id)sender
