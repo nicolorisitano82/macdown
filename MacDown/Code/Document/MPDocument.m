@@ -30,6 +30,7 @@
 #import "MPMathJaxListener.h"
 #import "WebView+WebViewPrivateHeaders.h"
 #import "MPToolbarController.h"
+#import "MPDocxImageEmbedding.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -171,7 +172,7 @@ NS_INLINE NSColor *MPGetWebViewBackgroundColor(WebView *webview)
 
 
 @interface MPDocument ()
-    <NSSplitViewDelegate, NSTextViewDelegate,
+    <NSSplitViewDelegate, NSTextViewDelegate, NSWindowDelegate,
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 101100
      WebEditingDelegate, WebFrameLoadDelegate, WebPolicyDelegate, WebResourceLoadDelegate,
 #endif
@@ -219,6 +220,7 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 // Store file content in initializer until nib is loaded.
 @property (copy) NSString *loadedString;
 
+- (void)adjustPreviewContentInsets;
 - (void)scaleWebview;
 - (void)syncScrollers;
 -(void) updateHeaderLocations;
@@ -236,6 +238,7 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
                 [window enableFlushWindow];
         }
         [weakObj scaleWebview];
+        [weakObj adjustPreviewContentInsets];
         if (weakObj.preferences.editorSyncScrolling)
         {
             [weakObj updateHeaderLocations];
@@ -359,6 +362,25 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 - (void)windowControllerDidLoadNib:(NSWindowController *)controller
 {
     [super windowControllerDidLoadNib:controller];
+
+    // Unified toolbar, but the content deliberately does NOT run underneath
+    // it: no NSWindowStyleMaskFullSizeContentView here.
+    //
+    // This window shows two backdrops at once whose brightness is unrelated,
+    // because the editor theme is picked independently of the system
+    // appearance and is routinely dark while the preview is light. With the
+    // content extending under the toolbar, items drawn without a background
+    // of their own took a single glyph colour from the appearance and
+    // disappeared over whichever half happened to match it. Keeping the
+    // toolbar in its own titlebar area gives every item a predictable ground.
+    NSWindow *window = controller.window;
+    window.toolbarStyle = NSWindowToolbarStyleUnified;
+
+    // The web view paints an opaque white backdrop of its own, behind the
+    // page. With the content running under a translucent toolbar that shows
+    // up as a bright band across the top of the preview, whatever colour the
+    // page itself uses. Let the page do all the painting.
+    [self.preview setDrawsBackground:NO];
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
@@ -1106,6 +1128,13 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
             DOMElement *htmlNode = (DOMElement *)[htmlNodes item:0];
             htmlNode.innerHTML = html;
 
+            // Assigning innerHTML does not re-execute the page's scripts, so
+            // the mermaid bootstrap that ran on the first load has to be
+            // invoked by hand for the fences in this revision. window keeps
+            // its properties across the swap, so the function is still there.
+            [self.preview stringByEvaluatingJavaScriptFromString:
+                @"if (window.MacDownRenderMermaid) MacDownRenderMermaid();"];
+
             return;
         }
     }
@@ -1245,6 +1274,125 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     [pasteboard writeObjects:@[self.renderer.currentHtml]];
 }
 
+/** A PNG <img> tag for SVG markup, for consumers that cannot read SVG.
+ *
+ * Rasterised above 1:1 and then declared at its point size, so the picture
+ * carries enough detail to survive being printed rather than looking soft.
+ */
+NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
+{
+    NSData *svgData = [svg dataUsingEncoding:NSUTF8StringEncoding];
+    NSImage *image = svgData ? [[NSImage alloc] initWithData:svgData] : nil;
+    NSSize points = image ? image.size : NSZeroSize;
+    if (points.width <= 0.0 || points.height <= 0.0)
+        return nil;
+
+    NSInteger wide = (NSInteger)ceil(points.width * scale);
+    NSInteger high = (NSInteger)ceil(points.height * scale);
+    NSBitmapImageRep *rep = [[NSBitmapImageRep alloc]
+        initWithBitmapDataPlanes:NULL pixelsWide:wide pixelsHigh:high
+                   bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
+                        isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace
+                     bytesPerRow:0 bitsPerPixel:0];
+    rep.size = points;
+
+    NSGraphicsContext *context =
+        [NSGraphicsContext graphicsContextWithBitmapImageRep:rep];
+    if (!context)
+        return nil;
+
+    [NSGraphicsContext saveGraphicsState];
+    NSGraphicsContext.currentContext = context;
+    [image drawInRect:NSMakeRect(0.0, 0.0, points.width, points.height)];
+    [NSGraphicsContext restoreGraphicsState];
+
+    NSData *png = [rep representationUsingType:NSBitmapImageFileTypePNG
+                                    properties:@{}];
+    if (!png.length)
+        return nil;
+
+    return [NSString stringWithFormat:
+            @"<p><img alt=\"diagram\" width=\"%ld\" src=\"data:image/png;"
+            @"base64,%@\"></p>",
+            (long)lround(points.width),
+            [png base64EncodedStringWithOptions:0]];
+}
+
+
+- (NSArray<NSString *> *)renderedMermaidDiagrams
+{
+    // Normalised for a document that is not MacDown's preview: the fixed
+    // pixel size the zoom viewport needs gives way to a responsive one. The
+    // element ids stay, because the <style> mermaid inlines is scoped to them.
+    static NSString * const script =
+        @"(function(){var out=[];"
+        @"var nodes=document.querySelectorAll('.mermaid-diagram svg');"
+        @"for(var i=0;i<nodes.length;i++){"
+        @"var c=nodes[i].cloneNode(true);"
+        @"c.removeAttribute('width');c.removeAttribute('height');"
+        @"c.style.width='';c.style.height='';c.style.maxWidth='100%';"
+        @"out.push(c.outerHTML);}"
+        @"return JSON.stringify(out);})()";
+
+    NSString *json =
+        [self.preview stringByEvaluatingJavaScriptFromString:script];
+    if (!json.length)
+        return @[];
+
+    NSData *data = [json dataUsingEncoding:NSUTF8StringEncoding];
+    id parsed = [NSJSONSerialization JSONObjectWithData:data options:0
+                                                  error:NULL];
+    if (![parsed isKindOfClass:[NSArray class]])
+        return @[];
+    return parsed;
+}
+
+/** Puts the drawn diagrams into exported markup, in place of their sources.
+ *
+ * The alternative would be shipping the mermaid library with every export and
+ * re-rendering on open, which is 1.1 MB per file and needs JavaScript enabled
+ * wherever it lands.
+ *
+ * Diagrams are matched to fences by position, so a mismatch in the counts
+ * means something did not draw. Rather than risk pairing a diagram with the
+ * wrong fence, that leaves every fence alone as a code block.
+ */
+- (NSString *)htmlByInliningMermaidIn:(NSString *)html asImages:(BOOL)asImages
+{
+    NSArray<NSString *> *diagrams = self.renderedMermaidDiagrams;
+    if (!diagrams.count)
+        return html;
+
+    // Matches what hoedown_patch_render_blockcode emits for a fence.
+    static NSString * const pattern =
+        @"<div><pre[^>]*><code class=\"language-mermaid\">[\\s\\S]*?"
+        @"</code></pre></div>";
+    NSRegularExpression *regex =
+        [NSRegularExpression regularExpressionWithPattern:pattern options:0
+                                                    error:NULL];
+    NSArray<NSTextCheckingResult *> *matches =
+        [regex matchesInString:html options:0
+                         range:NSMakeRange(0, html.length)];
+    if (matches.count != diagrams.count)
+        return html;
+
+    // Back to front, so each replacement leaves the earlier ranges valid.
+    NSMutableString *result = [html mutableCopy];
+    for (NSInteger i = (NSInteger)matches.count - 1; i >= 0; i--)
+    {
+        NSString *svg = diagrams[(NSUInteger)i];
+        NSString *replacement = asImages
+            ? MPImageTagForSVG(svg, 2.0)
+            : [NSString stringWithFormat:@"<p>%@</p>", svg];
+        if (!replacement)
+            continue;
+        [result replaceCharactersInRange:matches[(NSUInteger)i].range
+                              withString:replacement];
+    }
+    return result;
+}
+
+
 - (IBAction)exportHtml:(id)sender
 {
     NSSavePanel *panel = [NSSavePanel savePanel];
@@ -1266,9 +1414,277 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
         BOOL highlighting = controller.highlightingIncluded;
         NSString *html = [self.renderer HTMLForExportWithStyles:styles
                                                    highlighting:highlighting];
+        html = [self htmlByInliningMermaidIn:html asImages:NO];
         [html writeToURL:panel.URL atomically:NO encoding:NSUTF8StringEncoding
                    error:NULL];
     }];
+}
+
+- (IBAction)exportDocx:(id)sender
+{
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.allowedFileTypes = @[@"docx"];
+    if (self.presumedFileName)
+        panel.nameFieldStringValue = self.presumedFileName;
+
+    NSWindow *window = self.windowForSheet;
+    [panel beginSheetModalForWindow:window completionHandler:^(NSInteger res) {
+        if (res != NSFileHandlingPanelOKButton)
+            return;
+        [self writeDocxToURL:panel.URL];
+    }];
+}
+
+/** PNG bytes and page size for one image reachable from exported markup.
+ *
+ * Everything is re-encoded to PNG so the archive only has to declare one
+ * image content type, and rendered at the source's own pixel size so nothing
+ * is upscaled or thrown away.
+ */
+NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
+{
+    NSImage *image = data.length ? [[NSImage alloc] initWithData:data] : nil;
+    NSSize points = image ? image.size : NSZeroSize;
+    if (points.width <= 0.0 || points.height <= 0.0)
+        return nil;
+
+    NSInteger wide = 0;
+    NSInteger high = 0;
+    for (NSImageRep *rep in image.representations)
+    {
+        wide = MAX(wide, rep.pixelsWide);
+        high = MAX(high, rep.pixelsHigh);
+    }
+    // Vector sources report no pixels; twice the point size prints cleanly.
+    if (wide <= 0 || high <= 0)
+    {
+        wide = (NSInteger)ceil(points.width * 2.0);
+        high = (NSInteger)ceil(points.height * 2.0);
+    }
+
+    NSBitmapImageRep *bitmap = [[NSBitmapImageRep alloc]
+        initWithBitmapDataPlanes:NULL pixelsWide:wide pixelsHigh:high
+                   bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES
+                        isPlanar:NO colorSpaceName:NSDeviceRGBColorSpace
+                     bytesPerRow:0 bitsPerPixel:0];
+    bitmap.size = points;
+
+    NSGraphicsContext *context =
+        [NSGraphicsContext graphicsContextWithBitmapImageRep:bitmap];
+    if (!context)
+        return nil;
+    [NSGraphicsContext saveGraphicsState];
+    NSGraphicsContext.currentContext = context;
+    [image drawInRect:NSMakeRect(0.0, 0.0, points.width, points.height)];
+    [NSGraphicsContext restoreGraphicsState];
+
+    NSData *png = [bitmap representationUsingType:NSBitmapImageFileTypePNG
+                                       properties:@{}];
+    if (!png.length)
+        return nil;
+
+    MPDocxImage *result = [[MPDocxImage alloc] init];
+    result.placeholder = placeholder;
+    result.pngData = png;
+    result.pointSize = points;
+    return result;
+}
+
+/** Loads what an <img src> points at, for the Word export.
+ *
+ * Only data: URIs and local files. A remote image is left alone rather than
+ * quietly turning an export into a network fetch.
+ */
+- (NSData *)imageDataForExportSource:(NSString *)source
+{
+    if ([source hasPrefix:@"data:"])
+    {
+        NSRange marker = [source rangeOfString:@";base64,"];
+        if (marker.location == NSNotFound)
+            return nil;
+        NSString *encoded = [source substringFromIndex:NSMaxRange(marker)];
+        return [[NSData alloc] initWithBase64EncodedString:encoded
+            options:NSDataBase64DecodingIgnoreUnknownCharacters];
+    }
+
+    NSURL *url = [NSURL URLWithString:source];
+    if (!url.scheme)
+    {
+        NSURL *base = self.fileURL.URLByDeletingLastPathComponent;
+        url = base ? [NSURL URLWithString:source relativeToURL:base] : nil;
+    }
+    if (!url.isFileURL)
+        return nil;
+    return [NSData dataWithContentsOfURL:url];
+}
+
+/** Swaps every <img> for a plain-text marker, collecting the pictures.
+ *
+ * The markers survive AppKit's Word writer as ordinary runs, which is what
+ * gives MPDocxImageEmbedding somewhere to put the pictures back.
+ */
+- (NSString *)html:(NSString *)html
+    withImagesReplacedByPlaceholders:(NSMutableArray<MPDocxImage *> *)images
+                             skipped:(NSUInteger *)skipped
+{
+    NSRegularExpression *imgRegex = [NSRegularExpression
+        regularExpressionWithPattern:@"<img[^>]*>"
+                             options:NSRegularExpressionCaseInsensitive
+                               error:NULL];
+    NSRegularExpression *srcRegex = [NSRegularExpression
+        regularExpressionWithPattern:@"src\\s*=\\s*\"([^\"]*)\""
+                             options:NSRegularExpressionCaseInsensitive
+                               error:NULL];
+
+    NSArray<NSTextCheckingResult *> *matches =
+        [imgRegex matchesInString:html options:0
+                            range:NSMakeRange(0, html.length)];
+
+    NSMutableString *result = [html mutableCopy];
+    NSUInteger lost = 0;
+
+    // Back to front, so each replacement leaves the earlier ranges valid.
+    for (NSInteger i = (NSInteger)matches.count - 1; i >= 0; i--)
+    {
+        NSRange tagRange = matches[(NSUInteger)i].range;
+        NSString *tag = [html substringWithRange:tagRange];
+
+        NSTextCheckingResult *src =
+            [srcRegex firstMatchInString:tag options:0
+                                   range:NSMakeRange(0, tag.length)];
+        MPDocxImage *image = nil;
+        if (src)
+        {
+            NSString *source = [tag substringWithRange:[src rangeAtIndex:1]];
+            NSString *placeholder = [NSString stringWithFormat:
+                @"MPIMGPLACEHOLDER%ld", (long)i];
+            image = MPDocxImageFromData(
+                [self imageDataForExportSource:source], placeholder);
+        }
+
+        if (image)
+        {
+            [images addObject:image];
+            [result replaceCharactersInRange:tagRange
+                                 withString:image.placeholder];
+        }
+        else
+        {
+            lost++;
+        }
+    }
+
+    if (skipped)
+        *skipped = lost;
+    return result;
+}
+
+/** The markup handed to the Word converter, on its own stylesheet.
+ *
+ * Not the preview style: that one is written for a screen, and the reader
+ * that builds the Word document honours only a narrow subset of it. The
+ * bundled word-export.css says the same things in the terms that reader
+ * understands. Syntax highlighting is left out too, since it only ever
+ * colours anything once Prism has run, and nothing runs in a .docx.
+ */
+- (NSString *)htmlForWordExport
+{
+    NSString *html = [self.renderer HTMLForExportWithStyles:NO
+                                               highlighting:NO];
+
+    NSURL *url = [[NSBundle mainBundle] URLForResource:@"word-export"
+                                        withExtension:@"css"
+                                         subdirectory:@"Extensions"];
+    NSString *css = url
+        ? [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding
+                                      error:NULL]
+        : nil;
+    if (!css.length)
+        return html;
+
+    NSString *tag = [NSString stringWithFormat:@"<style>\n%@\n</style>", css];
+    NSRange head = [html rangeOfString:@"</head>"];
+    if (head.location == NSNotFound)
+        return html;
+
+    return [html stringByReplacingCharactersInRange:head
+                                         withString:
+            [tag stringByAppendingString:@"</head>"]];
+}
+
+- (void)writeDocxToURL:(NSURL *)url
+{
+    NSString *html = [self htmlForWordExport];
+
+    // Rasterised rather than left as SVG, because AppKit's HTML reader has no
+    // SVG support at all and would drop the diagrams without a word. They
+    // then travel the same road as any other image below.
+    html = [self htmlByInliningMermaidIn:html asImages:YES];
+
+    NSMutableArray<MPDocxImage *> *images = [NSMutableArray array];
+    NSUInteger skipped = 0;
+    html = [self html:html withImagesReplacedByPlaceholders:images
+              skipped:&skipped];
+
+    NSData *htmlData = [html dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *readOptions = @{
+        NSDocumentTypeDocumentAttribute: NSHTMLTextDocumentType,
+        NSCharacterEncodingDocumentAttribute: @(NSUTF8StringEncoding),
+    };
+
+    NSError *error = nil;
+    NSAttributedString *rich =
+        [[NSAttributedString alloc] initWithData:htmlData options:readOptions
+                              documentAttributes:NULL error:&error];
+    if (!rich)
+    {
+        [self presentError:error];
+        return;
+    }
+
+    NSDictionary *writeOptions = @{
+        NSDocumentTypeDocumentAttribute: NSOfficeOpenXMLTextDocumentType,
+    };
+    NSData *docx = [rich dataFromRange:NSMakeRange(0, rich.length)
+                   documentAttributes:writeOptions error:&error];
+    if (!docx)
+    {
+        [self presentError:error];
+        return;
+    }
+
+    // Puts the pictures in, which AppKit's writer would otherwise have left
+    // out of the file entirely.
+    NSData *embedded = MPDocxDataByEmbeddingImages(docx, images);
+    if (embedded)
+        docx = embedded;
+
+    // Shading and list indents, which the writer does not carry over either.
+    // The family and colour have to match word-export.css, since the font is
+    // what identifies a code paragraph once the markup is gone.
+    NSData *repaired = MPDocxDataByRepairingLayout(docx, @"Menlo", @"F4F4F4");
+    if (repaired)
+        docx = repaired;
+
+    if (![docx writeToURL:url options:NSDataWritingAtomic error:&error])
+    {
+        [self presentError:error];
+        return;
+    }
+
+    if (skipped)
+    {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = NSLocalizedString(
+            @"Some images were not included",
+            @"Word export partial images");
+        alert.informativeText = [NSString stringWithFormat:NSLocalizedString(
+            @"Could not read %lu of the images in this document, so they are "
+            @"missing from the Word file. Images loaded over the network are "
+            @"not fetched during an export.",
+            @"Word export partial images"), (unsigned long)skipped];
+        [alert runModal];
+    }
 }
 
 - (IBAction)exportPdf:(id)sender
@@ -1386,24 +1802,194 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     self.editor.selectedRange = selectedRange;
 }
 
-- (IBAction)toggleImage:(id)sender
+/** Markdown link for an image being inserted into this document.
+ *
+ * Relative to the document's own folder when the image sits inside it, so
+ * that moving the pair together keeps the link alive; absolute otherwise.
+ * Percent-encoded either way, because an unescaped space ends the link
+ * target and the rest of the path leaks into the page as text.
+ */
+/** MIME type for a data: URI built from an image file.
+ *
+ * Derived from the extension rather than from UTType, which would pull the
+ * UniformTypeIdentifiers framework onto the target for one lookup.
+ */
+NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
 {
-    BOOL inserted = [self.editor toggleForMarkupPrefix:@"![" suffix:@"]()"];
-    if (!inserted)
+    static NSDictionary *types = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        types = @{
+            @"png": @"image/png",
+            @"jpg": @"image/jpeg",
+            @"jpeg": @"image/jpeg",
+            @"gif": @"image/gif",
+            @"svg": @"image/svg+xml",
+            @"webp": @"image/webp",
+            @"heic": @"image/heic",
+            @"heif": @"image/heif",
+            @"avif": @"image/avif",
+            @"tif": @"image/tiff",
+            @"tiff": @"image/tiff",
+            @"bmp": @"image/bmp",
+            @"ico": @"image/x-icon",
+        };
+    });
+    NSString *type = types[url.pathExtension.lowercaseString];
+    return type ? type : @"application/octet-stream";
+}
+
+
+NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
+{
+    NSString *path = imageURL.path;
+    NSString *directory = documentURL.URLByDeletingLastPathComponent.path;
+
+    if (directory.length)
+    {
+        NSString *prefix = [directory hasSuffix:@"/"]
+            ? directory : [directory stringByAppendingString:@"/"];
+        if ([path hasPrefix:prefix])
+            path = [path substringFromIndex:prefix.length];
+        else
+            path = nil;
+    }
+    else
+    {
+        path = nil;
+    }
+
+    if (!path)
+        return imageURL.absoluteString;
+
+    NSCharacterSet *allowed = [NSCharacterSet URLPathAllowedCharacterSet];
+    return [path stringByAddingPercentEncodingWithAllowedCharacters:allowed];
+}
+
+
+- (NSString *)dataURIForImageURL:(NSURL *)imageURL
+{
+    NSError *error = nil;
+    NSData *data = [NSData dataWithContentsOfURL:imageURL
+                                        options:NSDataReadingMappedIfSafe
+                                          error:&error];
+    if (!data)
+    {
+        [self presentError:error];
+        return nil;
+    }
+    return [NSString stringWithFormat:@"data:%@;base64,%@",
+            MPMIMETypeForImageURL(imageURL),
+            [data base64EncodedStringWithOptions:0]];
+}
+
+- (void)insertImageMarkupForURL:(NSURL *)imageURL embedded:(BOOL)embedded
+{
+    NSString *target = embedded
+        ? [self dataURIForImageURL:imageURL]
+        : MPImageLinkForURL(imageURL, self.fileURL);
+    if (!target)
         return;
 
-    NSRange selectedRange = self.editor.selectedRange;
-    NSUInteger location = selectedRange.location + selectedRange.length + 2;
-    selectedRange = NSMakeRange(location, 0);
+    NSRange selected = self.editor.selectedRange;
 
-    NSPasteboard *pb = [NSPasteboard generalPasteboard];
-    NSString *url = [pb URLForType:NSPasteboardTypeString].absoluteString;
-    if (url)
-    {
-        [self.editor insertText:url replacementRange:selectedRange];
-        selectedRange.length = url.length;
-    }
-    self.editor.selectedRange = selectedRange;
+    // A selection is taken as the caption; otherwise the file name stands in,
+    // which is at least a real alt text rather than an empty bracket.
+    NSString *alt = selected.length
+        ? [self.editor.string substringWithRange:selected]
+        : imageURL.lastPathComponent.stringByDeletingPathExtension;
+
+    NSString *markup =
+        [NSString stringWithFormat:@"![%@](%@)", alt, target];
+
+    [self.editor insertText:markup replacementRange:selected];
+    self.editor.selectedRange =
+        NSMakeRange(selected.location + markup.length, 0);
+}
+
+/** Base64 turns a binary file into document text, so a large image lands in
+ * the editor as megabytes of one unbreakable line. Worth a question first.
+ */
+- (BOOL)confirmEmbeddingImageURL:(NSURL *)imageURL
+{
+    static const unsigned long long kWarnAboveBytes = 1024 * 1024;
+
+    NSNumber *size = nil;
+    [imageURL getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
+    if (!size || size.unsignedLongLongValue <= kWarnAboveBytes)
+        return YES;
+
+    NSByteCountFormatter *formatter = [[NSByteCountFormatter alloc] init];
+    NSString *readable =
+        [formatter stringFromByteCount:(long long)size.unsignedLongLongValue];
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(
+        @"Embed this image in the document?",
+        @"Large inline image confirmation");
+    alert.informativeText = [NSString stringWithFormat:NSLocalizedString(
+        @"%@ of image data will be written into the text as Base64, which is "
+        @"roughly a third larger again. Linking the file instead keeps the "
+        @"document small.",
+        @"Large inline image confirmation"), readable];
+    [alert addButtonWithTitle:NSLocalizedString(
+        @"Embed", @"Large inline image confirmation")];
+    [alert addButtonWithTitle:NSLocalizedString(
+        @"Cancel", @"Large inline image confirmation")];
+
+    return [alert runModal] == NSAlertFirstButtonReturn;
+}
+
+- (IBAction)toggleImage:(id)sender
+{
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseFiles = YES;
+    panel.canChooseDirectories = NO;
+    panel.allowsMultipleSelection = NO;
+    panel.message = NSLocalizedString(
+        @"Choose an image to link in the document",
+        @"Image chooser prompt");
+
+    // Deprecated in favour of -allowedContentTypes, which needs UTType from
+    // UniformTypeIdentifiers and so a new framework on the target. Left as is
+    // rather than growing the project file for a filter.
+    panel.allowedFileTypes = [NSImage imageTypes];
+
+    NSButton *embedToggle = [NSButton checkboxWithTitle:NSLocalizedString(
+        @"Embed the image in the document (Base64)",
+        @"Image chooser option") target:nil action:NULL];
+    embedToggle.toolTip = NSLocalizedString(
+        @"Writes the image data inline instead of linking the file, so the "
+        @"document no longer depends on it. Note that some sites, GitHub "
+        @"among them, strip inline image data.",
+        @"Image chooser option help");
+    embedToggle.frame = NSMakeRect(18.0, 10.0, 384.0, 20.0);
+
+    NSView *accessory =
+        [[NSView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 420.0, 40.0)];
+    [accessory addSubview:embedToggle];
+    panel.accessoryView = accessory;
+    panel.accessoryViewDisclosed = YES;
+
+    NSWindow *window = self.windowForSheet;
+    void (^handler)(NSModalResponse) = ^(NSModalResponse result) {
+        if (result != NSModalResponseOK)
+            return;
+        NSURL *url = panel.URLs.firstObject;
+        if (!url)
+            return;
+
+        BOOL embedded = (embedToggle.state == NSControlStateValueOn);
+        if (embedded && ![self confirmEmbeddingImageURL:url])
+            return;
+
+        [self insertImageMarkupForURL:url embedded:embedded];
+    };
+
+    if (window)
+        [panel beginSheetModalForWindow:window completionHandler:handler];
+    else
+        handler([panel runModal]);
 }
 
 - (IBAction)toggleOrderedList:(id)sender
@@ -1471,6 +2057,7 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 - (IBAction)toggleToolbar:(id)sender
 {
     [self.windowForSheet toggleToolbarShown:sender];
+    [self adjustPreviewContentInsets];
 }
 
 - (IBAction)togglePreviewPane:(id)sender
@@ -1568,11 +2155,14 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
                 }];
         }
 
-        CALayer *layer = [CALayer layer];
+        // Configure the view's own backing layer instead of swapping in a
+        // bare CALayer: a replacement layer is not managed by AppKit, so it
+        // loses its contentsScale and renders at 1x on Retina displays.
+        NSView *container = self.editorContainer;
+        container.wantsLayer = YES;
         CGColorRef backgroundCGColor = self.editor.backgroundColor.CGColor;
         if (backgroundCGColor)
-            layer.backgroundColor = backgroundCGColor;
-        self.editorContainer.layer = layer;
+            container.layer.backgroundColor = backgroundCGColor;
     }
     
     if ([changedKey isEqualToString:@"editorBaseFontInfo"])
@@ -1661,6 +2251,40 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     }
     self.editor.textContainerInset = NSMakeSize(x, y);
 }
+
+- (void)adjustPreviewContentInsets
+{
+    // Pads the page by however much the titlebar and toolbar overlap the
+    // content view, which is zero as the window is currently configured, so
+    // this is a no-op that costs one JS call per load and starts working
+    // again on its own if the full-size content view is ever restored.
+    //
+    // It pads the document element rather than setting contentInsets on
+    // WebKit's scroll view: that leaves the exposed strip painted white, no
+    // matter what the scroll view's own background is set to. The body
+    // background propagates to the canvas, so the page's own colour fills
+    // the padded area.
+    NSWindow *window = self.windowForSheet;
+    NSView *contentView = window.contentView;
+    if (!contentView)
+        return;
+
+    CGFloat overlap = NSHeight(contentView.bounds)
+                      - NSHeight(window.contentLayoutRect);
+    NSString *js = [NSString stringWithFormat:
+        @"document.documentElement.style.paddingTop = '%.0fpx';", overlap];
+    [self.preview stringByEvaluatingJavaScriptFromString:js];
+}
+
+
+#pragma mark - NSWindowDelegate
+
+- (void)windowDidResize:(NSNotification *)notification
+{
+    // Entering or leaving full screen changes the overlap, not just the size.
+    [self adjustPreviewContentInsets];
+}
+
 
 - (void)redrawDivider
 {

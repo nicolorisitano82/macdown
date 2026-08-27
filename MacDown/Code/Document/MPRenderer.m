@@ -41,6 +41,38 @@ NS_INLINE NSURL *MPExtensionURL(NSString *name, NSString *extension)
     return url;
 }
 
+/** Whether a preview style takes care of the dark appearance on its own.
+ *
+ * Styles live in Application Support and are user-editable, so this is
+ * answered by looking at the file rather than by keeping a list of names.
+ * Results are cached per path: -stylesheets runs on every render, and the
+ * answer only changes when the user edits the style, which takes effect on
+ * the next launch anyway.
+ */
+NS_INLINE BOOL MPStyleHandlesDarkAppearance(NSString *path)
+{
+    static NSMutableDictionary *cache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cache = [NSMutableDictionary dictionary];
+    });
+
+    if (!path)
+        return NO;
+
+    @synchronized(cache) {
+        NSNumber *cached = cache[path];
+        if (cached)
+            return cached.boolValue;
+
+        NSString *content = MPReadFileOfPath(path);
+        BOOL handled = ([content rangeOfString:@"prefers-color-scheme"].location
+                        != NSNotFound);
+        cache[path] = @(handled);
+        return handled;
+    }
+}
+
 NS_INLINE NSURL *MPPrismPluginURL(NSString *name, NSString *extension)
 {
     NSBundle *bundle = [NSBundle mainBundle];
@@ -434,14 +466,17 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
     return scripts;
 }
 
+/** Layout only; mermaid themes the diagrams themselves.
+ *
+ * The bundled mermaid.forest.css is a light-only theme and outranks the
+ * styles mermaid injects into each diagram, so it would pin every diagram to
+ * the light palette whatever the appearance. mermaid.init.js picks the theme
+ * instead, and this sheet is limited to placement and the parse-error box.
+ */
 - (NSArray *)mermaidStylesheets
 {
-    NSMutableArray *stylesheets = [NSMutableArray array];
-    
-    NSURL *url = MPExtensionURL(@"mermaid.forest", @"css");
-    [stylesheets addObject:[MPStyleSheet CSSWithURL:url]];
-    
-    return stylesheets;
+    NSURL *url = MPExtensionURL(@"mermaid", @"css");
+    return @[[MPStyleSheet CSSWithURL:url]];
 }
 
 - (NSArray *)mermaidScripts
@@ -484,19 +519,22 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
 
     NSMutableArray *stylesheets = [self.baseStylesheets mutableCopy];
     if ([delegate rendererHasSyntaxHighlighting:self])
-    {
         [stylesheets addObjectsFromArray:self.prismStylesheets];
-        // mermaid
-        if ([delegate rendererHasMermaid:self])
-        {
-            [stylesheets addObjectsFromArray:self.mermaidStylesheets];
-        }
-        
-    }
+    if ([delegate rendererHasMermaid:self])
+        [stylesheets addObjectsFromArray:self.mermaidStylesheets];
 
     if ([delegate rendererCodeBlockAccesory:self] == MPCodeBlockAccessoryCustom)
     {
         NSURL *url = MPExtensionURL(@"show-information", @"css");
+        [stylesheets addObject:[MPStyleSheet CSSWithURL:url]];
+    }
+
+    // Last, so it overrides the selected style. Skipped for styles that
+    // declare their own dark rules.
+    NSString *stylePath = MPStylePathForName([delegate rendererStyleName:self]);
+    if (!MPStyleHandlesDarkAppearance(stylePath))
+    {
+        NSURL *url = MPExtensionURL(@"dark-mode", @"css");
         [stylesheets addObject:[MPStyleSheet CSSWithURL:url]];
     }
     return stylesheets;
@@ -512,19 +550,15 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
         [scripts addObject:[MPScript javaScriptWithURL:url]];
     }
     if ([d rendererHasSyntaxHighlighting:self])
-    {
         [scripts addObjectsFromArray:self.prismScripts];
-        // mermaid
-        if ([d rendererHasMermaid:self])
-        {
-            [scripts addObjectsFromArray:self.mermaidScripts];
-        }
-        // graphviz
-        if ([d rendererHasGraphviz:self])
-        {
-            [scripts addObjectsFromArray:self.graphvizScripts];
-        }
-    }
+
+    // Diagrams are their own feature: they were nested inside the syntax
+    // highlighting branch, which meant turning highlighting off silently
+    // disabled them even with their own preference switched on.
+    if ([d rendererHasMermaid:self])
+        [scripts addObjectsFromArray:self.mermaidScripts];
+    if ([d rendererHasGraphviz:self])
+        [scripts addObjectsFromArray:self.graphvizScripts];
     if ([d rendererHasMathJax:self])
         [scripts addObjectsFromArray:self.mathjaxScripts];
     return scripts;
@@ -676,17 +710,19 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
         scriptsOption = MPAssetEmbedded;
         [styles addObjectsFromArray:self.prismStylesheets];
         [scripts addObjectsFromArray:self.prismScripts];
-        if ([self.delegate rendererHasMermaid:self])
-        {
-            [styles addObjectsFromArray:self.mermaidStylesheets];
-            [scripts addObjectsFromArray:self.mermaidScripts];
-        }
         if ([self.delegate rendererHasGraphviz:self])
-        {
             [scripts addObjectsFromArray:self.graphvizScripts];
-        }
-
     }
+
+    // Mermaid is deliberately absent here, and not because it was forgotten.
+    //
+    // It used to sit inside the branch above, so a diagram only survived an
+    // export if you also asked for syntax highlighting. And when it did come
+    // along, MPAssetEmbedded inlined the whole 1.1 MB library into every
+    // exported file, which then had to re-render the diagrams on open.
+    //
+    // The diagrams are already drawn in the preview, so MPDocument swaps the
+    // finished SVG into this markup instead. Nothing to ship, nothing to run.
     if ([self.delegate rendererHasMathJax:self])
     {
         scriptsOption = MPAssetEmbedded;

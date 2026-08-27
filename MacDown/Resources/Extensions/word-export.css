@@ -1,0 +1,126 @@
+/* Stylesheet for the Word export, in place of the preview style.
+ *
+ * A preview style is written for a screen: it sizes for a window, indents
+ * with padding and separates with borders. AppKit's HTML reader, which is
+ * what turns this markup into a Word document, honours a narrow subset —
+ * font-family, font-size, font-weight, font-style, color, background-color,
+ * margin-bottom, margin-left, text-align — and silently drops the rest.
+ *
+ * Three of its behaviours are measured, not assumed, and the values below
+ * depend on them:
+ *
+ *  - Lengths are written in px and arrive as pt at the same number. A value
+ *    in pt is multiplied by 4/3 on the way through (11pt lands as 14.7pt),
+ *    so px is the unit that actually means what it says here.
+ *  - margin-left on a blockquote is ignored, but on the paragraph inside it
+ *    is honoured. Hence `blockquote p` rather than `blockquote`.
+ *  - margin-top and padding-top are never mapped, so no rule here can put
+ *    space above a heading. Separation comes from the space below the
+ *    preceding paragraph instead, which is why that is generous.
+ */
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 11px;      /* = 11pt */
+  color: #1a1a1a;
+}
+
+h1 {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+  color: #111111;
+  margin-bottom: 7px;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: bold;
+  color: #111111;
+  margin-bottom: 6px;
+}
+
+h3 {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+h4, h5, h6 {
+  font-size: 11px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+/* Doing the work of the missing space-above on headings, so sections do not
+ * run into each other. */
+p {
+  margin-bottom: 11px;
+}
+
+ul, ol {
+  margin-bottom: 11px;
+}
+
+li {
+  margin-bottom: 3px;
+}
+
+blockquote {
+  color: #4a4a4a;
+  font-style: italic;
+}
+
+/* The indent has to be asked for here: on the blockquote itself it is
+ * dropped, and the quote would read as an ordinary paragraph. */
+blockquote p {
+  margin-left: 24px;
+  margin-bottom: 6px;
+  color: #4a4a4a;
+  font-style: italic;
+}
+
+code, tt {
+  font-family: Menlo, Consolas, "Courier New", monospace;
+  font-size: 10px;
+  background-color: #f2f2f2;
+}
+
+pre {
+  font-family: Menlo, Consolas, "Courier New", monospace;
+  font-size: 10px;
+  background-color: #f4f4f4;
+  margin-left: 12px;
+  margin-bottom: 11px;
+}
+
+/* The block already carries the shading; a second layer on the inner run
+ * reads as a darker rectangle behind the text. */
+pre code, pre tt {
+  background-color: transparent;
+  font-size: 10px;
+}
+
+a {
+  color: #0645ad;
+}
+
+table {
+  margin-bottom: 11px;
+}
+
+/* Cell borders do not survive, so the header row is told apart by weight
+ * and shading instead. */
+th {
+  font-weight: bold;
+  background-color: #ececec;
+  font-size: 10px;
+}
+
+td {
+  font-size: 10px;
+}
+
+h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
+  font-size: inherit;
+}

@@ -135,6 +135,12 @@
                                                 <action selector="exportPdf:" target="-1" id="Rhh-ni-CdX"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem title="Word Document…" id="mD1-Ex-Dcx">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="exportDocx:" target="-1" id="mD2-Ex-Dcx"/>
+                                            </connections>
+                                        </menuItem>
                                     </items>
                                 </menu>
                             </menuItem>

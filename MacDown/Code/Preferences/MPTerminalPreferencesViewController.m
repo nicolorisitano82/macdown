@@ -15,19 +15,12 @@
 
 NS_INLINE NSColor *MPGetInstallationIndicatorColor(BOOL installed)
 {
-    static NSColor *installedColor = nil;
-    static NSColor *uninstalledColor = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        installedColor = [NSColor colorWithDeviceRed:0.357 green:0.659
-                                                blue:0.192 alpha:1.000];
-        uninstalledColor = [NSColor colorWithDeviceRed:0.897 green:0.231
-                                                  blue:0.21 alpha:1.000];
-    });
+    // System colors are dynamic: they track the appearance and stay legible
+    // over vibrant backdrops, which the old device-RGB pair did not.
     if (installed)
-        return installedColor;
+        return [NSColor systemGreenColor];
     else
-        return uninstalledColor;
+        return [NSColor systemRedColor];
 }
 
 

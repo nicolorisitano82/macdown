@@ -13,8 +13,6 @@
 #pragma clang diagnostic ignored "-Wundeclared-selector"
 
 
-static CGFloat itemWidth = 37;
-
 
 @implementation MPToolbarController
 {
@@ -24,7 +22,6 @@ static CGFloat itemWidth = 37;
     /**
      * Map toolbar item identifier to it's NSToolbarItem or NSToolbarItemGroup object
      */
-    NSMutableDictionary *toolbarItemIdentifierObjectDictionary;
 }
 
 - (id)init
@@ -36,7 +33,6 @@ static CGFloat itemWidth = 37;
         return nil;
     }
     
-    self->toolbarItemIdentifierObjectDictionary = [NSMutableDictionary new];
     [self setupToolbarItems];
     
     return self;
@@ -106,23 +102,6 @@ static CGFloat itemWidth = 37;
     return [orderedIdentifiers copy];
 }
 
-- (void)selectedToolbarItemGroupItem:(NSSegmentedControl *)sender
-{
-    NSInteger selectedIndex = sender.selectedSegment;
-    
-    NSToolbarItemGroup *selectedGroup = self->toolbarItemIdentifierObjectDictionary[sender.identifier];
-    NSToolbarItem *selectedItem = selectedGroup.subitems[selectedIndex];
-    
-    // Invoke the toolbar item's action
-    // Must convert to IMP to let the compiler know about the method definition
-    MPDocument *document = self.document;
-    IMP imp = [document methodForSelector:selectedItem.action];
-    void (*impFunc)(id) = (void *)imp;
-    impFunc(document);
-}
-
-
-#pragma mark - NSToolbarDelegate
 - (NSArray<NSString *> *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar
 {
     // From toolbar item dictionary(setupToolbarItems)
@@ -197,42 +176,21 @@ static CGFloat itemWidth = 37;
 
 /**
  * Factory method for creating and configuring a NSToolbarItemGroup object.
+ *
+ * The separated flag no longer drives anything. It used to pick a segment
+ * style on a hand-built NSSegmentedControl; AppKit now decides how the
+ * subitems are grouped and separated, which is what lets the group adopt the
+ * toolbar material.
  */
 - (NSToolbarItemGroup *)toolbarItemGroupWithIdentifier:(NSString *)itemIdentifier separated:(BOOL)separated label:(NSString *)label items:(NSArray <NSToolbarItem *>*)items {
-    NSToolbarItemGroup *itemGroup = [[NSToolbarItemGroup alloc] initWithItemIdentifier:itemIdentifier];
-    itemGroup.subitems = items;
+    NSToolbarItemGroup *itemGroup =
+        [[NSToolbarItemGroup alloc] initWithItemIdentifier:itemIdentifier];
     itemGroup.label = label;
     itemGroup.paletteLabel = label;
-    
-    CGFloat itemGroupWidth = itemWidth * items.count;
-    
-    NSSegmentedControl *segmentedControl = [[NSSegmentedControl alloc] init];
-    segmentedControl.identifier = itemIdentifier;
-    segmentedControl.segmentStyle = separated ? NSSegmentStyleSeparated : NSSegmentStyleTexturedRounded;
-    segmentedControl.trackingMode = NSSegmentSwitchTrackingMomentary;
-    segmentedControl.segmentCount = items.count;
-    segmentedControl.target = self;
-    segmentedControl.action = @selector(selectedToolbarItemGroupItem:);
-    
-    int segmentIndex = 0;
-    
-    for (NSToolbarItem *subItem in items)
-    {
-        [segmentedControl setImage:subItem.image forSegment:segmentIndex];
-        [segmentedControl setImageScaling:NSImageScaleProportionallyDown forSegment:segmentIndex];
-        [segmentedControl setWidth:itemWidth-4 forSegment:segmentIndex];
-        if (@available(macOS 10.13, *)) {
-            [segmentedControl setToolTip:subItem.label forSegment:segmentIndex];
-        }
-        
-        segmentIndex++;
-    }
-    
-    itemGroup.maxSize = NSMakeSize(itemGroupWidth, 25);
-    itemGroup.view = segmentedControl;
-    
-    [self->toolbarItemIdentifierObjectDictionary setObject:itemGroup forKey:itemIdentifier];
-    
+    itemGroup.controlRepresentation =
+        NSToolbarItemGroupControlRepresentationAutomatic;
+    itemGroup.subitems = items;
+
     return itemGroup;
 }
 
@@ -240,63 +198,60 @@ static CGFloat itemWidth = 37;
  * Factory method for creating and configuring a NSToolbarItem object.
  */
 - (NSToolbarItem *)toolbarItemWithIdentifier:(NSString *)itemIdentifier label:(NSString *)label icon:(NSString *)iconImageName action:(SEL)action {
-    NSToolbarItem *toolbarItem = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
+    NSToolbarItem *toolbarItem =
+        [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     toolbarItem.label = label;
     toolbarItem.paletteLabel = label;
     toolbarItem.toolTip = label;
-    
+
     NSImage *itemImage = [NSImage imageNamed:iconImageName];
-    [itemImage setTemplate:YES];
-    [itemImage setSize:CGSizeMake(19, 19)];
-    NSButton *itemButton = [[NSButton alloc] initWithFrame:NSMakeRect(0, 0, itemWidth, 27)];
-    itemButton.image = itemImage;
-    itemButton.imageScaling = NSImageScaleProportionallyDown;
-    itemButton.bezelStyle = NSBezelStyleTexturedRounded;
-    itemButton.focusRingType = NSFocusRingTypeDefault;
-    itemButton.target = self.document;
-    itemButton.action = action;
-    
-    toolbarItem.view = itemButton;
-    
-    [self->toolbarItemIdentifierObjectDictionary setObject:toolbarItem forKey:itemIdentifier];
-    
+    itemImage.template = YES;
+
+    // No custom view on purpose. An item that carries its own NSButton is
+    // drawn entirely by that button, so AppKit cannot place it on the
+    // toolbar's material or tint the glyph against what shows through the
+    // transparent titlebar: the glyph took one colour from the appearance and
+    // vanished wherever the content behind it happened to match. A bordered
+    // item gets both, and stays readable over a dark editor and a light
+    // preview alike.
+    toolbarItem.image = itemImage;
+    toolbarItem.bordered = YES;
+
+    // Target stays nil so the action travels the responder chain to whichever
+    // document is in front, which is also what gets -validateUserInterfaceItem:
+    // called on it. The old code assigned self.document here, which is still
+    // nil at this point because the outlet is connected after init.
+    toolbarItem.action = action;
+
     return toolbarItem;
 }
 
 /**
- * Factory method for creating and configuring a NSToolbarItem object with a NSPopupButton holding menu options as passed in the menuItems parameter.
+ * Factory method for creating and configuring a menu-backed NSToolbarItem
+ * holding the options passed in the menuItems parameter.
  */
 - (NSToolbarItem *)toolbarItemDropDownWithIdentifier:(NSString *)itemIdentifier label:(NSString *)label icon:(NSString *)iconImageName menuItems:(NSArray <NSMenuItem *>*)menuItems {
-    NSToolbarItem *toolbarItem = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
+    NSMenuToolbarItem *toolbarItem =
+        [[NSMenuToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     toolbarItem.label = label;
     toolbarItem.paletteLabel = label;
     toolbarItem.toolTip = label;
-    
+
     NSImage *itemImage = [NSImage imageNamed:iconImageName];
-    [itemImage setTemplate:YES];
-    [itemImage setSize:CGSizeMake(19, 19)];
-    
-    NSPopUpButton *popupButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, 42, 27) pullsDown:YES];
-    popupButton.bezelStyle = NSBezelStyleTexturedRounded;
-    popupButton.focusRingType = NSFocusRingTypeDefault;
-    //popupButton.imageScaling = NSImageScaleProportionallyDown;
-    
-    // First item's image is displayed as button image, therefor we need a dummy with the icon
-    [popupButton addItemWithTitle:@""];
-    [[popupButton lastItem] setImage:itemImage];
-    
-    for (NSMenuItem *menuItem in menuItems) {
-        [popupButton addItemWithTitle:menuItem.title];
-        [[popupButton lastItem] setTarget:self.document];
-        [[popupButton lastItem] setAction:menuItem.action];
-    }
-    
-    toolbarItem.view = popupButton;
-    
-    [self->toolbarItemIdentifierObjectDictionary setObject:toolbarItem forKey:itemIdentifier];
-    
+    itemImage.template = YES;
+    toolbarItem.image = itemImage;
+    toolbarItem.bordered = YES;
+    toolbarItem.showsIndicator = YES;
+
+    // These items are created with empty titles: MPDocument fills them in
+    // from -validateUserInterfaceItem: so each one can read Hide or Restore.
+    // Leaving the target nil is what routes validation there.
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:label];
+    for (NSMenuItem *menuItem in menuItems)
+        [menu addItem:menuItem];
+    toolbarItem.menu = menu;
+
     return toolbarItem;
 }
-
 
 @end
