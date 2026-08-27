@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<!--
+  The live preview inside the maths editor sheet.
+
+  Loaded from the bundle so it sits next to tex-svg.js and can ask for it by
+  a relative path. MPMathEditorController drives it through render(), rather
+  than the page watching anything itself.
+
+  MathJax needs no configuration here for the same reason it needs none in
+  the document preview: its defaults already look for \( \) and \[ \].
+-->
+<script src="tex-svg.js"></script>
+<style>
+  :root { color-scheme: light dark; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    /* Matches the sheet behind it in either appearance. */
+    background-color: transparent;
+    color: #000;
+    font: 13px -apple-system, "Helvetica Neue", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html, body { color: #fff; }
+  }
+
+  /* Centred in the space available, so a one-line formula sits in the
+     middle of the box rather than clinging to the top left. */
+  #out {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 8px 12px;
+    box-sizing: border-box;
+    overflow: auto;
+    text-align: center;
+  }
+
+  /* Shown before anything has been typed. */
+  #out.empty::after {
+    content: attr(data-placeholder);
+    opacity: 0.4;
+  }
+</style>
+</head>
+<body>
+<div id="out" class="empty"></div>
+
+<script>
+(function () {
+  var out = document.getElementById("out");
+
+  window.setPlaceholder = function (text) {
+    out.setAttribute("data-placeholder", text);
+  };
+
+  // Called from the sheet on every edit. `display` picks between the two
+  // forms so the preview matches what will be inserted.
+  window.render = function (tex, display) {
+    if (!tex || !tex.replace(/\s/g, "").length) {
+      out.className = "empty";
+      out.textContent = "";
+      return;
+    }
+
+    out.className = "";
+    // Delimiters rather than MathJax's convert API, so this goes through
+    // exactly the path the document preview uses.
+    out.textContent = display ? "\\[" + tex + "\\]" : "\\(" + tex + "\\)";
+
+    if (window.MathJax && MathJax.typesetPromise) {
+      MathJax.typesetClear && MathJax.typesetClear([out]);
+      MathJax.typesetPromise([out]);
+    }
+  };
+})();
+</script>
+</body>
+</html>

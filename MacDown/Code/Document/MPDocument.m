@@ -31,6 +31,7 @@
 #import "WebView+WebViewPrivateHeaders.h"
 #import "MPToolbarController.h"
 #import "MPProseChecker.h"
+#import "MPMathEditorController.h"
 #import "MPDocxPostProcessing.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
@@ -2396,6 +2397,53 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
  * Per window rather than a stored preference: it is a thing you switch on to
  * go over a draft, not a way you leave the editor set up.
  */
+/** Opens the maths sheet and inserts what comes back.
+ *
+ * The delimiters are chosen here rather than in the sheet, because which
+ * ones a document wants is a preference: inline maths is written with
+ * dollars only when the user has asked for that, and with \( \) otherwise.
+ */
+- (IBAction)showMathEditor:(id)sender
+{
+    NSWindow *window = self.windowForSheet;
+    if (!window)
+        return;
+
+    // A selection is treated as a formula to edit rather than replaced
+    // blindly, so the sheet can be used to fix an expression as well as
+    // write one.
+    NSRange selected = self.editor.selectedRange;
+    NSString *initial = selected.length
+        ? [self.editor.string substringWithRange:selected] : nil;
+
+    __weak MPDocument *weakSelf = self;
+    [MPMathEditorController presentForWindow:window initialTeX:initial
+                                  completion:^(NSString *tex, BOOL display) {
+        MPDocument *self = weakSelf;
+        if (!self || !tex.length)
+            return;
+
+        NSString *markup;
+        if (display)
+        {
+            markup = [NSString stringWithFormat:@"$$%@$$", tex];
+        }
+        else if (self.preferences.htmlMathJaxInlineDollar)
+        {
+            markup = [NSString stringWithFormat:@"$%@$", tex];
+        }
+        else
+        {
+            markup = [NSString stringWithFormat:@"\\(%@\\)", tex];
+        }
+
+        // Through the text view, so it lands in the undo stack like any
+        // other edit.
+        [self.editor insertText:markup
+               replacementRange:self.editor.selectedRange];
+    }];
+}
+
 - (IBAction)toggleProseHighlights:(id)sender
 {
     self.editor.proseHighlightsEnabled = !self.editor.proseHighlightsEnabled;
