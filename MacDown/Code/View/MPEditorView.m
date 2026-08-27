@@ -7,6 +7,7 @@
 //
 
 #import "MPEditorView.h"
+#import "MPProseChecker.h"
 
 
 NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
@@ -38,6 +39,54 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         return _scrollsPastEnd;
     }
 }
+
+#pragma mark - Prose highlights
+
+- (void)setProseHighlightsEnabled:(BOOL)enabled
+{
+    if (_proseHighlightsEnabled == enabled)
+        return;
+    _proseHighlightsEnabled = enabled;
+    [self updateProseHighlights];
+}
+
+/** Underlines flagged words.
+ *
+ * Temporary attributes rather than the text storage: they are display-only,
+ * so they leave the document unmodified, stay out of the undo stack, and
+ * cannot end up in a saved file or on the pasteboard.
+ */
+- (void)updateProseHighlights
+{
+    NSLayoutManager *manager = self.layoutManager;
+    if (!manager)
+        return;
+
+    NSRange whole = NSMakeRange(0, self.string.length);
+    [manager removeTemporaryAttribute:NSUnderlineStyleAttributeName
+                    forCharacterRange:whole];
+    [manager removeTemporaryAttribute:NSUnderlineColorAttributeName
+                    forCharacterRange:whole];
+
+    if (!self.proseHighlightsEnabled)
+        return;
+
+    MPProseChecker *checker = [MPProseChecker sharedChecker];
+    NSArray<MPProseIssue *> *issues = [checker issuesInString:self.string];
+    for (MPProseIssue *issue in issues)
+    {
+        if (NSMaxRange(issue.range) > whole.length)
+            continue;
+        // A dotted underline, to stay clear of the solid red the spell
+        // checker already draws.
+        [manager addTemporaryAttributes:@{
+            NSUnderlineStyleAttributeName:
+                @(NSUnderlineStyleThick | NSUnderlinePatternDot),
+            NSUnderlineColorAttributeName: issue.color,
+        } forCharacterRange:issue.range];
+    }
+}
+
 
 - (void)awakeFromNib {
     [self registerForDraggedTypes:[NSArray arrayWithObjects: NSDragPboard, nil]];
@@ -176,6 +225,8 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     [super didChangeText];
     if (self.scrollsPastEnd)
         [self updateContentGeometry];
+    if (self.proseHighlightsEnabled)
+        [self updateProseHighlights];
 }
 
 

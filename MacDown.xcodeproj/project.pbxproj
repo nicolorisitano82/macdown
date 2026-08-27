@@ -11,7 +11,8 @@
 		1F0D9D65194AC7CF008E1856 /* NSString+Lookup.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D5F194AC7CF008E1856 /* NSString+Lookup.m */; };
 		1F0D9D66194AC7CF008E1856 /* NSTextView+Autocomplete.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D61194AC7CF008E1856 /* NSTextView+Autocomplete.m */; };
 		1F0D9D67194AC7CF008E1856 /* MPUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D64194AC7CF008E1856 /* MPUtilities.m */; };
-		D0C1A1000000000000000003 /* MPDocxImageEmbedding.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000002 /* MPDocxImageEmbedding.m */; };
+		D0C1A1000000000000000003 /* MPDocxPostProcessing.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000002 /* MPDocxPostProcessing.m */; };
+		D0C1A1000000000000000013 /* MPProseChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000012 /* MPProseChecker.m */; };
 		1F0D9D76194AC7F7008E1856 /* MPEditorPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D6A194AC7F7008E1856 /* MPEditorPreferencesViewController.m */; };
 		1F0D9D78194AC7F7008E1856 /* MPHtmlPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D6D194AC7F7008E1856 /* MPHtmlPreferencesViewController.m */; };
 		1F0D9D7A194AC7F7008E1856 /* MPMarkdownPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D70194AC7F7008E1856 /* MPMarkdownPreferencesViewController.m */; };
@@ -194,8 +195,10 @@
 		1F0D9D5F194AC7CF008E1856 /* NSString+Lookup.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Lookup.m"; sourceTree = "<group>"; };
 		1F0D9D60194AC7CF008E1856 /* NSTextView+Autocomplete.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSTextView+Autocomplete.h"; sourceTree = "<group>"; };
 		1F0D9D61194AC7CF008E1856 /* NSTextView+Autocomplete.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSTextView+Autocomplete.m"; sourceTree = "<group>"; };
-		D0C1A1000000000000000001 /* MPDocxImageEmbedding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPDocxImageEmbedding.h; sourceTree = "<group>"; };
-		D0C1A1000000000000000002 /* MPDocxImageEmbedding.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocxImageEmbedding.m; sourceTree = "<group>"; };
+		D0C1A1000000000000000001 /* MPDocxPostProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPDocxPostProcessing.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000002 /* MPDocxPostProcessing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocxPostProcessing.m; sourceTree = "<group>"; };
+		D0C1A1000000000000000011 /* MPProseChecker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPProseChecker.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000012 /* MPProseChecker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPProseChecker.m; sourceTree = "<group>"; };
 		1F0D9D63194AC7CF008E1856 /* MPUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPUtilities.h; sourceTree = "<group>"; };
 		1F0D9D64194AC7CF008E1856 /* MPUtilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUtilities.m; sourceTree = "<group>"; };
 		1F0D9D69194AC7F7008E1856 /* MPEditorPreferencesViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPEditorPreferencesViewController.h; sourceTree = "<group>"; };
@@ -604,8 +607,10 @@
 				1F23A92019928E650052DB78 /* MPMathJaxListener.m */,
 				1F5A370E1C868EC0006E63E7 /* MPPlugIn.h */,
 				1F5A370F1C868EC0006E63E7 /* MPPlugIn.m */,
-				D0C1A1000000000000000001 /* MPDocxImageEmbedding.h */,
-				D0C1A1000000000000000002 /* MPDocxImageEmbedding.m */,
+				D0C1A1000000000000000001 /* MPDocxPostProcessing.h */,
+				D0C1A1000000000000000002 /* MPDocxPostProcessing.m */,
+				D0C1A1000000000000000011 /* MPProseChecker.h */,
+				D0C1A1000000000000000012 /* MPProseChecker.m */,
 				1F0D9D63194AC7CF008E1856 /* MPUtilities.h */,
 				1F0D9D64194AC7CF008E1856 /* MPUtilities.m */,
 			);
@@ -1239,7 +1244,8 @@
 				1F33F2A11A3B4B660001C849 /* MPDocumentSplitView.m in Sources */,
 				1F23A92119928E650052DB78 /* MPMathJaxListener.m in Sources */,
 				1F2649B01A7406DB00EF6AF3 /* NSDocumentController+Document.m in Sources */,
-				D0C1A1000000000000000003 /* MPDocxImageEmbedding.m in Sources */,
+				D0C1A1000000000000000003 /* MPDocxPostProcessing.m in Sources */,
+				D0C1A1000000000000000013 /* MPProseChecker.m in Sources */,
 				1F0D9D67194AC7CF008E1856 /* MPUtilities.m in Sources */,
 				852D523C1E260A6400BA7162 /* MPTerminalPreferencesViewController.m in Sources */,
 				1F0D9D78194AC7F7008E1856 /* MPHtmlPreferencesViewController.m in Sources */,

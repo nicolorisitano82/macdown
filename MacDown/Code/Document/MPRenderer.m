@@ -19,13 +19,6 @@
 #import "MPAsset.h"
 #import "MPPreferences.h"
 
-// Warning: If the version of MathJax is ever updated, please check the status
-// of https://github.com/mathjax/MathJax/issues/548. If the fix has been merged
-// in to MathJax, then the WebResourceLoadDelegate can be removed from MPDocument
-// and MathJax.js can be removed from this project.
-static NSString * const kMPMathJaxCDN =
-    @"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.3/MathJax.js"
-    @"?config=TeX-AMS-MML_HTMLorMML";
 static NSString * const kMPPrismScriptDirectory = @"Prism/components";
 static NSString * const kMPPrismThemeDirectory = @"Prism/themes";
 static NSString * const kMPPrismPluginDirectory = @"Prism/plugins";
@@ -451,19 +444,33 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
     return scripts;
 }
 
+/** MathJax, from the bundle rather than a CDN.
+ *
+ * It used to load the version 2 loader off cdnjs, with the local copy of
+ * MathJax.js swapped in by a resource-load delegate. That only ever half
+ * worked: MathJax 2 is a loader, it takes its base path from the script it
+ * was loaded as, and it then fetched config, jax and fonts over the network.
+ * Maths therefore needed an internet connection.
+ *
+ * The single-file SVG build carries everything, fonts included as glyph
+ * outlines, so there is nothing left to fetch. The es5 build is the one to
+ * take: it is the version that does not assume a current JavaScript engine,
+ * which matters in the legacy web view.
+ *
+ * No configuration script goes with it. MathJax 3 already looks for exactly
+ * the delimiters hoedown emits — \( \) inline and \[ \] display — and a
+ * configuration script would have to run before the library, which an inline
+ * script cannot be relied on to do here: the preview is refreshed by
+ * assigning innerHTML, and scripts inserted that way never execute.
+ */
 - (NSArray *)mathjaxScripts
 {
-    NSMutableArray *scripts = [NSMutableArray array];
-    NSURL *url = [NSURL URLWithString:kMPMathJaxCDN];
-    NSBundle *bundle = [NSBundle mainBundle];
-    MPEmbeddedScript *script =
-        [MPEmbeddedScript assetWithURL:[bundle URLForResource:@"init"
-                                                withExtension:@"js"
-                                                 subdirectory:@"MathJax"]
-                               andType:kMPMathJaxConfigType];
-    [scripts addObject:script];
-    [scripts addObject:[MPScript javaScriptWithURL:url]];
-    return scripts;
+    NSURL *url = [[NSBundle mainBundle] URLForResource:@"tex-svg"
+                                         withExtension:@"js"
+                                          subdirectory:@"MathJax"];
+    if (!url)
+        return @[];
+    return @[[MPScript javaScriptWithURL:url]];
 }
 
 /** Layout only; mermaid themes the diagrams themselves.
@@ -522,6 +529,11 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
         [stylesheets addObjectsFromArray:self.prismStylesheets];
     if ([delegate rendererHasMermaid:self])
         [stylesheets addObjectsFromArray:self.mermaidStylesheets];
+
+    // WikiLink styling. Bundle-only, so it cannot be shadowed by a stale copy
+    // in Application Support the way a preview style can.
+    [stylesheets addObject:
+        [MPStyleSheet CSSWithURL:MPExtensionURL(@"wikilink", @"css")]];
 
     if ([delegate rendererCodeBlockAccesory:self] == MPCodeBlockAccessoryCustom)
     {

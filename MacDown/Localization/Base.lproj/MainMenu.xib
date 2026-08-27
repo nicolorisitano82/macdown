@@ -413,6 +413,13 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="QMZ-Ld-Nza"/>
+                            <menuItem title="Highlight Prose Issues" keyEquivalent="p" id="prs-01-tgl">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleProseHighlights:" target="-1" id="prs-01-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="prs-01-sep"/>
                             <menuItem title="Enter Full Screen" keyEquivalent="f" id="1gz-YB-DZE">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                 <connections>

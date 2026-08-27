@@ -1,0 +1,84 @@
+{
+  "comment": [
+    "Word lists for the prose checker. Kept as a resource rather than in the",
+    "source so the lists can be edited, extended or translated without a",
+    "rebuild: Resources/Data is a folder reference, so this file ships as it",
+    "is found here.",
+    "",
+    "Each category needs an id, a name, a colour and at least one of words or",
+    "phrases. words match whole words only; phrases match a run of words with",
+    "any whitespace between them. Matching is case insensitive throughout.",
+    "",
+    "Colours are used for the underline drawn under a flagged word, so they",
+    "need to stay legible over both a light and a dark editor theme. The",
+    "Solarized accent colours below hold up on both."
+  ],
+
+  "categories": [
+    {
+      "id": "qualifier",
+      "name": "Qualifiers",
+      "color": "#B58900",
+      "words": [
+        "actually", "really", "very", "quite", "basically", "simply",
+        "essentially", "totally", "completely", "absolutely", "definitely",
+        "certainly", "literally", "somewhat", "rather", "fairly", "pretty",
+        "slightly", "arguably", "virtually", "practically"
+      ]
+    },
+    {
+      "id": "weasel",
+      "name": "Weasel words",
+      "color": "#CB4B16",
+      "words": [
+        "significant", "significantly", "substantial", "substantially",
+        "various", "several", "numerous", "appropriate", "relevant",
+        "suitable", "better", "improved", "enhanced", "optimal", "robust",
+        "seamless", "leverage", "utilize", "facilitate"
+      ]
+    },
+    {
+      "id": "hedge",
+      "name": "Hedging",
+      "color": "#6C71C4",
+      "words": [
+        "maybe", "perhaps", "possibly", "probably", "apparently",
+        "seemingly", "presumably", "generally", "usually", "often",
+        "sometimes"
+      ],
+      "phrases": [
+        "i believe", "i think", "i feel", "it seems", "it appears",
+        "in general", "for the most part", "more or less", "kind of",
+        "sort of", "would like to", "we might", "it could be"
+      ]
+    },
+    {
+      "id": "verbosity",
+      "name": "Wordiness",
+      "color": "#2AA198",
+      "phrases": [
+        "in order to", "due to the fact that", "at this point in time",
+        "in the event that", "for the purpose of", "with regard to",
+        "in terms of", "a large number of", "the majority of",
+        "it is important to note that", "needless to say",
+        "as a matter of fact"
+      ]
+    },
+    {
+      "id": "passive",
+      "name": "Passive tells",
+      "color": "#859900",
+      "phrases": [
+        "was made", "were made", "is being", "are being", "was given",
+        "were given", "has been", "have been", "had been", "will be",
+        "can be", "could be", "should be", "would be"
+      ]
+    }
+  ],
+
+  "repeated": {
+    "id": "repeated",
+    "name": "Repeated words",
+    "color": "#DC322F"
+  }
+}

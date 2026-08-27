@@ -1,0 +1,25 @@
+/* WikiLinks: [[Target]] and [[Target|label]].
+ *
+ * Bundle-only, like dark-mode.css, so it reaches every user rather than only
+ * the ones whose Application Support copy happens to be current.
+ *
+ * Colours come from the page: a wikilink should read as a link in whatever
+ * preview style is selected, so nothing here is hard-coded except the dotted
+ * underline that marks a target which is not there yet.
+ */
+
+.wikilink {
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+}
+
+.wikilink:hover {
+  border-bottom-color: currentColor;
+}
+
+/* A target that does not exist yet. Clicking it still works — MacDown offers
+ * to create the file — so this is a hint, not a warning. */
+.wikilink-missing {
+  border-bottom-style: dashed;
+  opacity: 0.65;
+}

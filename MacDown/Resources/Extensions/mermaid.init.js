@@ -18,6 +18,8 @@
 // ctrl-scroll to magnify part of it, drag to pan, double-click to fit again.
 //
 // Written in ES5 on purpose, to match the rest of the bundled extensions.
+// mermaid's render became asynchronous in version 10, and is driven here
+// through .then rather than async/await for the same reason.
 
 (function () {
 
@@ -337,32 +339,51 @@
     configure();
 
     for (var i = 0; i < blocks.length; i++) {
-      var block = blocks[i];
-      var source = block.innerText || block.textContent;
-      var holder = containerFor(block);
-      if (!holder)
-        continue;
+      renderOne(blocks[i], "d" + i);
+    }
+  }
 
-      // A malformed diagram must not take the rest of the page down with it,
-      // and while you are typing one it is malformed most of the time.
-      var id = "macdown-mermaid-" + (counter++);
-      try {
-        mermaid.render(id, source, function (svgCode) {
-          this.holder.innerHTML = svgCode;
-          var svg = this.holder.querySelector("svg");
-          if (svg)
-            makeZoomable(this.holder, svg, this.key);
-        }.bind({ holder: holder, key: "d" + i }));
-      } catch (e) {
-        holder.className = "mermaid-diagram mermaid-error";
-        holder.style.height = "";
-        holder.textContent = String(e && e.message ? e.message : e);
+  // A malformed diagram must not take the rest of the page down with it, and
+  // while you are typing one it is malformed most of the time. Since mermaid
+  // 10 the failure arrives as a rejected promise rather than a throw, so both
+  // paths end up in the same handler.
+  function renderOne(block, stateKey) {
+    var source = block.innerText || block.textContent;
+    var holder = containerFor(block);
+    if (!holder)
+      return;
 
-        // mermaid leaves its scratch element behind when a render throws.
-        var orphan = document.getElementById(id);
-        if (orphan && orphan.parentNode)
-          orphan.parentNode.removeChild(orphan);
-      }
+    var id = "macdown-mermaid-" + (counter++);
+
+    function succeeded(result) {
+      // mermaid 10 resolves to an object; older releases handed the string
+      // to a callback. Accept either, so a downgrade does not go silent.
+      var svgCode = (result && result.svg) ? result.svg : result;
+      holder.innerHTML = svgCode;
+      var svg = holder.querySelector("svg");
+      if (svg)
+        makeZoomable(holder, svg, stateKey);
+    }
+
+    function failed(e) {
+      holder.className = "mermaid-diagram mermaid-error";
+      holder.style.height = "";
+      holder.textContent = String(e && e.message ? e.message : e);
+
+      // mermaid leaves its scratch element behind when a render fails.
+      var orphan = document.getElementById(id);
+      if (orphan && orphan.parentNode)
+        orphan.parentNode.removeChild(orphan);
+    }
+
+    try {
+      var outcome = mermaid.render(id, source);
+      if (outcome && typeof outcome.then === "function")
+        outcome.then(succeeded, failed);
+      else
+        succeeded(outcome);
+    } catch (e) {
+      failed(e);
     }
   }
 

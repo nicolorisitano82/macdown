@@ -11,6 +11,14 @@
 @interface MPEditorView : NSTextView
 
 @property BOOL scrollsPastEnd;
+
+/// Underlines words the prose checker flags. Off by default.
+@property BOOL proseHighlightsEnabled;
+
 - (NSRect)contentRect;
+
+/// Recomputes the prose underlines. Cheap enough to call on every edit: it
+/// only touches the layout manager's temporary attributes, never the text.
+- (void)updateProseHighlights;
 
 @end

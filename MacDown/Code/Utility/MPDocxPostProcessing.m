@@ -1,6 +1,9 @@
 //
-//  MPDocxImageEmbedding.m
+//  MPDocxPostProcessing.m
 //  MacDown
+//
+//  Repairs a .docx after AppKit has written it, for the things its Word
+//  writer leaves out: pictures, shading, list indents and tables.
 //
 //  A .docx is a zip of XML parts. Foundation has no zip API, so this carries
 //  the little of the format it needs: read the central directory, inflate the
@@ -9,7 +12,7 @@
 //  only codec needed is an inflater, which libcompression provides.
 //
 
-#import "MPDocxImageEmbedding.h"
+#import "MPDocxPostProcessing.h"
 #import <compression.h>
 
 #pragma mark - CRC32
@@ -557,5 +560,340 @@ NSData *MPDocxDataByRepairingLayout(NSData *docxData,
             [out addObject:e];
         }
     }
+    return MPZipWrite(out);
+}
+
+
+#pragma mark - Tables
+
+@implementation MPDocxTextRun
+@end
+
+@implementation MPDocxTableCell
+@end
+
+@implementation MPDocxTable
+@end
+
+NS_INLINE NSString *MPXMLEscaped(NSString *text)
+{
+    NSMutableString *out = [text mutableCopy];
+    NSRange all = NSMakeRange(0, out.length);
+    [out replaceOccurrencesOfString:@"&" withString:@"&amp;" options:0
+                              range:all];
+    all = NSMakeRange(0, out.length);
+    [out replaceOccurrencesOfString:@"<" withString:@"&lt;" options:0
+                              range:all];
+    all = NSMakeRange(0, out.length);
+    [out replaceOccurrencesOfString:@">" withString:@"&gt;" options:0
+                              range:all];
+    return out;
+}
+
+/// Width of the text column on a portrait page with one inch margins, in
+/// twips. Tables are laid out to fill it rather than to fit their content,
+/// which is what makes a two column table look deliberate.
+static const NSInteger kMPDocxContentWidthTwips = 9360;
+
+static NSString *MPRunXML(MPDocxTextRun *run, NSString *bodyFamily,
+                          NSString *monospaceFamily, CGFloat pointSize)
+{
+    NSString *family = run.monospaced ? monospaceFamily : bodyFamily;
+    NSMutableString *properties = [NSMutableString string];
+    [properties appendFormat:
+        @"<w:rFonts w:ascii=\"%@\" w:hAnsi=\"%@\" w:cs=\"%@\"/>",
+        family, family, family];
+    // Half-points, which is how w:sz measures.
+    [properties appendFormat:@"<w:sz w:val=\"%ld\"/>",
+        (long)lround(pointSize * 2.0)];
+    if (run.bold)
+        [properties appendString:@"<w:b/>"];
+    if (run.italic)
+        [properties appendString:@"<w:i/>"];
+
+    return [NSString stringWithFormat:
+        @"<w:r><w:rPr>%@</w:rPr><w:t xml:space=\"preserve\">%@</w:t></w:r>",
+        properties, MPXMLEscaped(run.text)];
+}
+
+static NSString *MPCellXML(MPDocxTableCell *cell, NSInteger widthTwips,
+                           NSString *bodyFamily, NSString *monospaceFamily,
+                           CGFloat pointSize)
+{
+    NSMutableString *runs = [NSMutableString string];
+    for (MPDocxTextRun *run in cell.runs)
+    {
+        if (!run.text.length)
+            continue;
+        [runs appendString:MPRunXML(run, bodyFamily, monospaceFamily,
+                                    pointSize)];
+    }
+    // A cell must hold at least one paragraph, even when it is empty.
+    NSMutableString *properties = [NSMutableString string];
+    [properties appendString:@"<w:spacing w:after=\"0\"/>"];
+    if (cell.alignment.length)
+        [properties appendFormat:@"<w:jc w:val=\"%@\"/>", cell.alignment];
+
+    NSMutableString *cellProperties = [NSMutableString string];
+    [cellProperties appendFormat:
+        @"<w:tcW w:w=\"%ld\" w:type=\"dxa\"/>", (long)widthTwips];
+    if (cell.header)
+    {
+        [cellProperties appendString:
+            @"<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"ECECEC\"/>"];
+    }
+
+    return [NSString stringWithFormat:
+        @"<w:tc><w:tcPr>%@</w:tcPr><w:p><w:pPr>%@</w:pPr>%@</w:p></w:tc>",
+        cellProperties, properties, runs];
+}
+
+static NSString *MPTableXML(MPDocxTable *table, NSString *bodyFamily,
+                            NSString *monospaceFamily, CGFloat pointSize)
+{
+    NSUInteger columns = 0;
+    for (NSArray<MPDocxTableCell *> *row in table.rows)
+        columns = MAX(columns, row.count);
+    if (!columns || !table.rows.count)
+        return nil;
+
+    NSInteger columnWidth = kMPDocxContentWidthTwips / (NSInteger)columns;
+
+    NSMutableString *xml = [NSMutableString string];
+    [xml appendString:@"<w:tbl><w:tblPr>"
+        @"<w:tblW w:w=\"0\" w:type=\"auto\"/><w:tblBorders>"];
+    for (NSString *edge in @[@"top", @"left", @"bottom", @"right",
+                             @"insideH", @"insideV"])
+    {
+        // sz is eighths of a point, so 4 is a half point hairline.
+        [xml appendFormat:@"<w:%@ w:val=\"single\" w:sz=\"4\" w:space=\"0\" "
+                          @"w:color=\"BFBFBF\"/>", edge];
+    }
+    [xml appendString:@"</w:tblBorders><w:tblCellMar>"
+        @"<w:top w:w=\"60\" w:type=\"dxa\"/>"
+        @"<w:left w:w=\"100\" w:type=\"dxa\"/>"
+        @"<w:bottom w:w=\"60\" w:type=\"dxa\"/>"
+        @"<w:right w:w=\"100\" w:type=\"dxa\"/>"
+        @"</w:tblCellMar></w:tblPr><w:tblGrid>"];
+    for (NSUInteger i = 0; i < columns; i++)
+        [xml appendFormat:@"<w:gridCol w:w=\"%ld\"/>", (long)columnWidth];
+    [xml appendString:@"</w:tblGrid>"];
+
+    for (NSArray<MPDocxTableCell *> *row in table.rows)
+    {
+        BOOL headerRow = row.firstObject.header;
+        [xml appendString:@"<w:tr>"];
+        // Repeats the header if the table breaks across pages.
+        if (headerRow)
+            [xml appendString:@"<w:trPr><w:tblHeader/></w:trPr>"];
+
+        for (NSUInteger i = 0; i < columns; i++)
+        {
+            MPDocxTableCell *cell = i < row.count ? row[i] : nil;
+            if (!cell)
+            {
+                // Short row: pad it, or Word renders a ragged table.
+                cell = [[MPDocxTableCell alloc] init];
+                cell.runs = @[];
+                cell.header = headerRow;
+            }
+            [xml appendString:MPCellXML(cell, columnWidth, bodyFamily,
+                                        monospaceFamily, pointSize)];
+        }
+        [xml appendString:@"</w:tr>"];
+    }
+    [xml appendString:@"</w:tbl>"];
+
+    // A table has to be followed by a paragraph, or Word treats the document
+    // as malformed when it is the last thing in the body.
+    [xml appendString:@"<w:p/>"];
+    return xml;
+}
+
+/// Replaces the whole <w:p> holding `token` with `replacement`. A w:tbl is a
+/// sibling of w:p, not something that can live inside one, so the paragraph
+/// has to go rather than be edited.
+static BOOL MPReplaceParagraphContaining(NSMutableString *xml, NSString *token,
+                                         NSString *replacement)
+{
+    NSRange hit = [xml rangeOfString:token];
+    if (hit.location == NSNotFound)
+        return NO;
+
+    NSRange open = [xml rangeOfString:@"<w:p>" options:NSBackwardsSearch
+                                range:NSMakeRange(0, hit.location)];
+    NSUInteger tail = NSMaxRange(hit);
+    NSRange close = [xml rangeOfString:@"</w:p>" options:0
+                                 range:NSMakeRange(tail, xml.length - tail)];
+    if (open.location == NSNotFound || close.location == NSNotFound)
+        return NO;
+
+    [xml replaceCharactersInRange:
+        NSMakeRange(open.location, NSMaxRange(close) - open.location)
+                       withString:replacement];
+    return YES;
+}
+
+NSData *MPDocxDataByBuildingTables(NSData *docxData,
+                                   NSArray<MPDocxTable *> *tables,
+                                   NSString *bodyFamily,
+                                   NSString *monospaceFamily,
+                                   CGFloat pointSize)
+{
+    if (!tables.count)
+        return docxData;
+
+    NSArray<MPZipEntry *> *entries = MPZipRead(docxData);
+    if (!entries)
+        return nil;
+
+    NSMutableString *document =
+        [MPStringFromEntry(entries, @"word/document.xml") mutableCopy];
+    if (!document)
+        return nil;
+
+    NSUInteger built = 0;
+    for (MPDocxTable *table in tables)
+    {
+        NSString *xml = MPTableXML(table, bodyFamily, monospaceFamily,
+                                    pointSize);
+        if (!xml)
+            continue;
+        if (MPReplaceParagraphContaining(document, table.placeholder, xml))
+            built++;
+    }
+
+    if (!built)
+        return docxData;
+
+    NSMutableArray<MPZipEntry *> *out = [NSMutableArray array];
+    for (MPZipEntry *e in entries)
+    {
+        if ([e.name isEqualToString:@"word/document.xml"])
+        {
+            [out addObject:MPStoredEntry(e.name,
+                [document dataUsingEncoding:NSUTF8StringEncoding])];
+        }
+        else
+        {
+            [out addObject:e];
+        }
+    }
+    return MPZipWrite(out);
+}
+
+
+#pragma mark - Font table
+
+/// Panose classifications. Word leans on these when the named font is
+/// missing: the fourth byte is proportion, and 9 there means monospaced.
+static NSString * const kMPPanoseMonospace = @"020B0609030804020204";
+static NSString * const kMPPanoseSans      = @"020B0604020202020204";
+
+static NSString *MPFontEntryXML(NSString *family, NSString *alternative,
+                                BOOL fixedPitch)
+{
+    return [NSString stringWithFormat:
+        @"<w:font w:name=\"%@\">"
+        @"<w:altName w:val=\"%@\"/>"
+        @"<w:panose1 w:val=\"%@\"/>"
+        @"<w:charset w:val=\"00\"/>"
+        @"<w:family w:val=\"%@\"/>"
+        @"<w:pitch w:val=\"%@\"/>"
+        @"</w:font>",
+        MPXMLEscaped(family), MPXMLEscaped(alternative),
+        fixedPitch ? kMPPanoseMonospace : kMPPanoseSans,
+        fixedPitch ? @"modern" : @"swiss",
+        fixedPitch ? @"fixed" : @"variable"];
+}
+
+NSData *MPDocxDataByDeclaringFonts(NSData *docxData,
+                                   NSString *monospaceFamily,
+                                   NSString *monospaceAlternative,
+                                   NSString *bodyFamily,
+                                   NSString *bodyAlternative)
+{
+    if (!monospaceFamily.length)
+        return docxData;
+
+    NSArray<MPZipEntry *> *entries = MPZipRead(docxData);
+    if (!entries)
+        return nil;
+
+    for (MPZipEntry *e in entries)
+    {
+        if ([e.name isEqualToString:@"word/fontTable.xml"])
+            return docxData;    // Already declared; leave it alone.
+    }
+
+    NSMutableString *table = [NSMutableString string];
+    [table appendString:
+        @"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+        @"<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/"
+        @"wordprocessingml/2006/main\">"];
+    [table appendString:MPFontEntryXML(monospaceFamily,
+                                       monospaceAlternative.length
+                                           ? monospaceAlternative
+                                           : @"Courier New",
+                                       YES)];
+    if (bodyFamily.length)
+    {
+        [table appendString:MPFontEntryXML(bodyFamily,
+                                           bodyAlternative.length
+                                               ? bodyAlternative
+                                               : @"Arial",
+                                           NO)];
+    }
+    [table appendString:@"</w:fonts>"];
+
+    NSMutableString *rels =
+        [MPStringFromEntry(entries, @"word/_rels/document.xml.rels")
+            mutableCopy];
+    NSMutableString *types =
+        [MPStringFromEntry(entries, @"[Content_Types].xml") mutableCopy];
+    if (!rels || !types)
+        return nil;
+
+    NSString *relationship = [NSString stringWithFormat:
+        @"<Relationship Id=\"rIdFontTable\" Type=\"http://schemas."
+        @"openxmlformats.org/officeDocument/2006/relationships/fontTable\" "
+        @"Target=\"fontTable.xml\"/>"];
+    NSRange relsClose = [rels rangeOfString:@"</Relationships>"];
+    if (relsClose.location == NSNotFound)
+        return nil;
+    [rels replaceCharactersInRange:relsClose withString:
+        [relationship stringByAppendingString:@"</Relationships>"]];
+
+    NSString *override = [NSString stringWithFormat:
+        @"<Override PartName=\"/word/fontTable.xml\" ContentType=\""
+        @"application/vnd.openxmlformats-officedocument.wordprocessingml."
+        @"fontTable+xml\"/>"];
+    NSRange typesClose = [types rangeOfString:@"</Types>"];
+    if (typesClose.location == NSNotFound)
+        return nil;
+    [types replaceCharactersInRange:typesClose withString:
+        [override stringByAppendingString:@"</Types>"]];
+
+    NSMutableArray<MPZipEntry *> *out = [NSMutableArray array];
+    for (MPZipEntry *e in entries)
+    {
+        if ([e.name isEqualToString:@"word/_rels/document.xml.rels"])
+        {
+            [out addObject:MPStoredEntry(e.name,
+                [rels dataUsingEncoding:NSUTF8StringEncoding])];
+        }
+        else if ([e.name isEqualToString:@"[Content_Types].xml"])
+        {
+            [out addObject:MPStoredEntry(e.name,
+                [types dataUsingEncoding:NSUTF8StringEncoding])];
+        }
+        else
+        {
+            [out addObject:e];
+        }
+    }
+    [out addObject:MPStoredEntry(@"word/fontTable.xml",
+        [table dataUsingEncoding:NSUTF8StringEncoding])];
+
     return MPZipWrite(out);
 }

@@ -30,7 +30,8 @@
 #import "MPMathJaxListener.h"
 #import "WebView+WebViewPrivateHeaders.h"
 #import "MPToolbarController.h"
-#import "MPDocxImageEmbedding.h"
+#import "MPProseChecker.h"
+#import "MPDocxPostProcessing.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -174,7 +175,7 @@ NS_INLINE NSColor *MPGetWebViewBackgroundColor(WebView *webview)
 @interface MPDocument ()
     <NSSplitViewDelegate, NSTextViewDelegate, NSWindowDelegate,
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 101100
-     WebEditingDelegate, WebFrameLoadDelegate, WebPolicyDelegate, WebResourceLoadDelegate,
+     WebEditingDelegate, WebFrameLoadDelegate, WebPolicyDelegate,
 #endif
      MPAutosaving, MPRendererDataSource, MPRendererDelegate>
 
@@ -421,7 +422,6 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     self.preview.frameLoadDelegate = self;
     self.preview.policyDelegate = self;
     self.preview.editingDelegate = self;
-    self.preview.resourceLoadDelegate = self;
 
     NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
     [center addObserver:self selector:@selector(editorTextDidChange:)
@@ -854,21 +854,6 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 
 #pragma mark - WebResourceLoadDelegate
 
-- (NSURLRequest *)webView:(WebView *)sender resource:(id)identifier willSendRequest:(NSURLRequest *)request redirectResponse:(NSURLResponse *)redirectResponse fromDataSource:(WebDataSource *)dataSource
-{
-    
-    if ([[request.URL lastPathComponent] isEqualToString:@"MathJax.js"])
-    {
-        NSURLComponents *origComps = [NSURLComponents componentsWithURL:[request URL] resolvingAgainstBaseURL:YES];
-        NSURLComponents *updatedComps = [NSURLComponents componentsWithURL:[[NSBundle mainBundle] URLForResource:@"MathJax" withExtension:@"js" subdirectory:@"MathJax"] resolvingAgainstBaseURL:NO];
-        [updatedComps setQueryItems:[origComps queryItems]];
-        
-        request = [NSURLRequest requestWithURL:[updatedComps URL]];
-    }
-    
-    return request;
-}
-
 #pragma mark - WebFrameLoadDelegate
 
 - (void)webView:(WebView *)sender didCommitLoadForFrame:(WebFrame *)frame
@@ -892,14 +877,13 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 
 - (void)webView:(WebView *)sender didFinishLoadForFrame:(WebFrame *)frame
 {
-    // If MathJax is on, the on-completion callback will be invoked by the
-    // JavaScript handler injected in -webView:didCommitLoadForFrame:.
-    if (!self.preferences.htmlMathJax)
-    {
-        id callback = MPGetPreviewLoadingCompletionHandler(self);
-        NSOperationQueue *queue = [NSOperationQueue mainQueue];
-        [queue addOperationWithBlock:callback];
-    }
+    // Always, MathJax or not. This used to be left to a callback from
+    // MathJax's own startup when maths was enabled, which meant the window
+    // stayed frozen and the scroll position unsynced if that callback never
+    // arrived. MathJax still calls in when it has finished, as a second pass
+    // once the equations have changed the layout.
+    id callback = MPGetPreviewLoadingCompletionHandler(self);
+    [[NSOperationQueue mainQueue] addOperationWithBlock:callback];
 
     self.isPreviewReady = YES;
 
@@ -1063,6 +1047,126 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     return self.preferences.htmlHighlightingThemeName;
 }
 
+/** Whether a WikiLink target resolves to a file next to the document.
+ *
+ * Tries the name as written first, then the extensions a Markdown document is
+ * likely to carry, which is the same order MacDown itself uses when it
+ * follows a link.
+ */
+NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
+{
+    if (!directory.isFileURL || !target.length)
+        return NO;
+
+    NSFileManager *manager = [NSFileManager defaultManager];
+    NSURL *base = [directory URLByAppendingPathComponent:target];
+    if ([manager fileExistsAtPath:base.path])
+        return YES;
+
+    for (NSString *extension in @[@"md", @"markdown", @"txt"])
+    {
+        NSURL *candidate = [base URLByAppendingPathExtension:extension];
+        if ([manager fileExistsAtPath:candidate.path])
+            return YES;
+    }
+    return NO;
+}
+
+/** Turns [[Target]] and [[Target|label]] into links.
+ *
+ * The href deliberately carries no extension: MacDown's own link handling
+ * already tries .md and offers to create what is missing, so a WikiLink to a
+ * page that does not exist yet behaves the way it does in a wiki.
+ *
+ * Runs on the rendered HTML rather than the Markdown so that fenced code and
+ * inline code can be skipped — [[this]] inside a code block is code, not a
+ * link, and a pass over the Markdown could not tell the difference.
+ */
+- (NSString *)htmlByResolvingWikiLinksIn:(NSString *)html
+{
+    static NSRegularExpression *wikiRegex = nil;
+    static NSRegularExpression *codeRegex = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        wikiRegex = [[NSRegularExpression alloc] initWithPattern:
+            @"\\[\\[([^\\[\\]|]+)(?:\\|([^\\[\\]]+))?\\]\\]"
+                                                        options:0 error:NULL];
+        codeRegex = [[NSRegularExpression alloc] initWithPattern:
+            @"<pre[\\s\\S]*?</pre>|<code[\\s\\S]*?</code>"
+                    options:NSRegularExpressionCaseInsensitive error:NULL];
+    });
+
+    NSRange whole = NSMakeRange(0, html.length);
+    NSArray<NSTextCheckingResult *> *links =
+        [wikiRegex matchesInString:html options:0 range:whole];
+    if (!links.count)
+        return html;
+
+    NSArray<NSTextCheckingResult *> *codeSpans =
+        [codeRegex matchesInString:html options:0 range:whole];
+
+    // An unsaved document has nowhere to resolve against, so every target
+    // reads as missing until the file has been saved somewhere.
+    NSURL *directory = self.fileURL.URLByDeletingLastPathComponent;
+
+    NSMutableString *result = [html mutableCopy];
+
+    // Back to front, so each replacement leaves the earlier ranges valid.
+    for (NSInteger i = (NSInteger)links.count - 1; i >= 0; i--)
+    {
+        NSTextCheckingResult *link = links[(NSUInteger)i];
+
+        BOOL insideCode = NO;
+        for (NSTextCheckingResult *span in codeSpans)
+        {
+            if (NSIntersectionRange(span.range, link.range).length)
+            {
+                insideCode = YES;
+                break;
+            }
+        }
+        if (insideCode)
+            continue;
+
+        NSCharacterSet *spaces = [NSCharacterSet whitespaceCharacterSet];
+        NSString *target = [[html substringWithRange:[link rangeAtIndex:1]]
+            stringByTrimmingCharactersInSet:spaces];
+        if (!target.length)
+            continue;
+
+        NSRange labelRange = [link rangeAtIndex:2];
+        NSString *label = target;
+        if (labelRange.location != NSNotFound)
+        {
+            label = [[html substringWithRange:labelRange]
+                stringByTrimmingCharactersInSet:spaces];
+        }
+
+        NSString *href = [target stringByAddingPercentEncodingWithAllowedCharacters:
+            [NSCharacterSet URLPathAllowedCharacterSet]] ?: target;
+
+        NSString *replacement;
+        if (MPWikiTargetExists(directory, target))
+        {
+            replacement = [NSString stringWithFormat:
+                @"<a href=\"%@\" class=\"wikilink\">%@</a>", href, label];
+        }
+        else
+        {
+            NSString *tip = NSLocalizedString(
+                @"This page does not exist yet",
+                @"tooltip on a WikiLink whose target is missing");
+            replacement = [NSString stringWithFormat:
+                @"<a href=\"%@\" class=\"wikilink wikilink-missing\" "
+                @"title=\"%@\">%@</a>", href, tip, label];
+        }
+
+        [result replaceCharactersInRange:link.range withString:replacement];
+    }
+    return result;
+}
+
+
 - (void)renderer:(MPRenderer *)renderer didProduceHTMLOutput:(NSString *)html
 {
     if (self.alreadyRenderingInWeb)
@@ -1084,6 +1188,8 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
         [pasteboard clearContents];
         [pasteboard writeObjects:@[self.renderer.currentHtml]];
     }
+
+    html = [self htmlByResolvingWikiLinksIn:html];
 
     NSURL *baseUrl = self.fileURL;
     if (!baseUrl)   // Unsaved doument; just use the default URL.
@@ -1133,7 +1239,12 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
             // invoked by hand for the fences in this revision. window keeps
             // its properties across the swap, so the function is still there.
             [self.preview stringByEvaluatingJavaScriptFromString:
-                @"if (window.MacDownRenderMermaid) MacDownRenderMermaid();"];
+                @"if (window.MacDownRenderMermaid) MacDownRenderMermaid();"
+                // Same reason as mermaid: the swap leaves fresh TeX behind
+                // that MathJax has not seen. It typesets the whole document,
+                // so there is nothing to pass it.
+                @"if (window.MathJax && MathJax.typesetPromise)"
+                @" MathJax.typesetPromise();"];
 
             return;
         }
@@ -1150,6 +1261,9 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 
 - (void)editorTextDidChange:(NSNotification *)notification
 {
+    if (self.editor.proseHighlightsEnabled)
+        [self updateProseSummary];
+
     if (self.needsHtml)
         [self.renderer parseAndRenderLater];
 }
@@ -1414,6 +1528,7 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
         BOOL highlighting = controller.highlightingIncluded;
         NSString *html = [self.renderer HTMLForExportWithStyles:styles
                                                    highlighting:highlighting];
+        html = [self htmlByResolvingWikiLinksIn:html];
         html = [self htmlByInliningMermaidIn:html asImages:NO];
         [html writeToURL:panel.URL atomically:NO encoding:NSUTF8StringEncoding
                    error:NULL];
@@ -1521,7 +1636,7 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
 /** Swaps every <img> for a plain-text marker, collecting the pictures.
  *
  * The markers survive AppKit's Word writer as ordinary runs, which is what
- * gives MPDocxImageEmbedding somewhere to put the pictures back.
+ * gives MPDocxPostProcessing somewhere to put the pictures back.
  */
 - (NSString *)html:(NSString *)html
     withImagesReplacedByPlaceholders:(NSMutableArray<MPDocxImage *> *)images
@@ -1591,6 +1706,7 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
 {
     NSString *html = [self.renderer HTMLForExportWithStyles:NO
                                                highlighting:NO];
+    html = [self htmlByResolvingWikiLinksIn:html];
 
     NSURL *url = [[NSBundle mainBundle] URLForResource:@"word-export"
                                         withExtension:@"css"
@@ -1612,6 +1728,157 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
             [tag stringByAppendingString:@"</head>"]];
 }
 
+/** Collects the runs in a table cell, keeping the inline formatting.
+ *
+ * Walks the element rather than stripping tags, so a bold word or a snippet
+ * of code inside a cell still reads as one in the Word file.
+ */
+static void MPCollectCellRuns(NSXMLNode *node,
+                              NSMutableArray<MPDocxTextRun *> *runs,
+                              BOOL bold, BOOL italic, BOOL monospaced)
+{
+    for (NSXMLNode *child in node.children)
+    {
+        if (child.kind == NSXMLTextKind)
+        {
+            NSString *text = child.stringValue;
+            if (!text.length)
+                continue;
+            MPDocxTextRun *run = [[MPDocxTextRun alloc] init];
+            run.text = text;
+            run.bold = bold;
+            run.italic = italic;
+            run.monospaced = monospaced;
+            [runs addObject:run];
+            continue;
+        }
+
+        if (child.kind != NSXMLElementKind)
+            continue;
+
+        NSString *name = child.name.lowercaseString;
+        if ([name isEqualToString:@"br"])
+        {
+            MPDocxTextRun *run = [[MPDocxTextRun alloc] init];
+            run.text = @" ";
+            [runs addObject:run];
+            continue;
+        }
+
+        BOOL nowBold = bold
+            || [name isEqualToString:@"strong"] || [name isEqualToString:@"b"];
+        BOOL nowItalic = italic
+            || [name isEqualToString:@"em"] || [name isEqualToString:@"i"];
+        BOOL nowMono = monospaced
+            || [name isEqualToString:@"code"] || [name isEqualToString:@"tt"];
+        MPCollectCellRuns(child, runs, nowBold, nowItalic, nowMono);
+    }
+}
+
+/** Reads one hoedown-emitted <table> into the model the builder wants.
+ *
+ * Parsed as XML, which hoedown's output is: it closes every cell and escapes
+ * its text. Returns nil on anything it cannot parse, so the table is left to
+ * AppKit rather than half-converted.
+ */
+NS_INLINE MPDocxTable *MPDocxTableFromHTML(NSString *html,
+                                           NSString *placeholder)
+{
+    // Void elements hoedown writes unclosed, which XML will not accept.
+    NSMutableString *xml = [html mutableCopy];
+    [xml replaceOccurrencesOfString:@"<br>" withString:@"<br/>"
+                            options:NSCaseInsensitiveSearch
+                              range:NSMakeRange(0, xml.length)];
+
+    NSError *error = nil;
+    NSXMLDocument *parsed = [[NSXMLDocument alloc] initWithXMLString:xml
+                                                            options:0
+                                                              error:&error];
+    NSXMLElement *root = parsed.rootElement;
+    if (!root)
+        return nil;
+
+    NSArray<NSXMLNode *> *rowNodes = [root nodesForXPath:@".//tr" error:NULL];
+    if (!rowNodes.count)
+        return nil;
+
+    NSMutableArray *rows = [NSMutableArray array];
+    for (NSXMLNode *rowNode in rowNodes)
+    {
+        NSArray<NSXMLNode *> *cellNodes =
+            [rowNode nodesForXPath:@"./th|./td" error:NULL];
+        if (!cellNodes.count)
+            continue;
+
+        NSMutableArray<MPDocxTableCell *> *cells = [NSMutableArray array];
+        for (NSXMLNode *cellNode in cellNodes)
+        {
+            MPDocxTableCell *cell = [[MPDocxTableCell alloc] init];
+            cell.header = [cellNode.name.lowercaseString isEqualToString:@"th"];
+
+            NSMutableArray<MPDocxTextRun *> *runs = [NSMutableArray array];
+            MPCollectCellRuns(cellNode, runs, cell.header, NO, NO);
+            cell.runs = runs;
+
+            // hoedown puts the column alignment in a style attribute.
+            NSXMLNode *style = [(NSXMLElement *)cellNode attributeForName:@"style"];
+            NSString *value = style.stringValue;
+            if ([value containsString:@"center"])
+                cell.alignment = @"center";
+            else if ([value containsString:@"right"])
+                cell.alignment = @"right";
+
+            [cells addObject:cell];
+        }
+        [rows addObject:cells];
+    }
+
+    if (!rows.count)
+        return nil;
+
+    MPDocxTable *table = [[MPDocxTable alloc] init];
+    table.placeholder = placeholder;
+    table.rows = rows;
+    return table;
+}
+
+/** Swaps every <table> for a text marker, collecting its structure.
+ *
+ * The structure has to be read here: by the time AppKit has written the
+ * .docx, a table is a run of tab-separated paragraphs and there is nothing
+ * left to rebuild from.
+ */
+- (NSString *)html:(NSString *)html
+    withTablesReplacedByPlaceholders:(NSMutableArray<MPDocxTable *> *)tables
+{
+    NSRegularExpression *regex = [NSRegularExpression
+        regularExpressionWithPattern:@"<table[^>]*>[\\s\\S]*?</table>"
+                             options:NSRegularExpressionCaseInsensitive
+                               error:NULL];
+    NSArray<NSTextCheckingResult *> *matches =
+        [regex matchesInString:html options:0
+                         range:NSMakeRange(0, html.length)];
+
+    NSMutableString *result = [html mutableCopy];
+
+    // Back to front, so each replacement leaves the earlier ranges valid.
+    for (NSInteger i = (NSInteger)matches.count - 1; i >= 0; i--)
+    {
+        NSRange range = matches[(NSUInteger)i].range;
+        NSString *placeholder =
+            [NSString stringWithFormat:@"MPTBLPLACEHOLDER%ld", (long)i];
+        MPDocxTable *table = MPDocxTableFromHTML(
+            [html substringWithRange:range], placeholder);
+        if (!table)
+            continue;
+
+        [tables addObject:table];
+        [result replaceCharactersInRange:range withString:placeholder];
+    }
+    return result;
+}
+
+
 - (void)writeDocxToURL:(NSURL *)url
 {
     NSString *html = [self htmlForWordExport];
@@ -1625,6 +1892,9 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
     NSUInteger skipped = 0;
     html = [self html:html withImagesReplacedByPlaceholders:images
               skipped:&skipped];
+
+    NSMutableArray<MPDocxTable *> *tables = [NSMutableArray array];
+    html = [self html:html withTablesReplacedByPlaceholders:tables];
 
     NSData *htmlData = [html dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *readOptions = @{
@@ -1665,6 +1935,23 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
     NSData *repaired = MPDocxDataByRepairingLayout(docx, @"Menlo", @"F4F4F4");
     if (repaired)
         docx = repaired;
+
+    // Tables, which the writer flattens into tab-separated paragraphs. The
+    // fonts and size match word-export.css so a table sits with the prose.
+    NSData *tabled = MPDocxDataByBuildingTables(docx, tables,
+                                                @"Helvetica Neue", @"Menlo",
+                                                10.0);
+    if (tabled)
+        docx = tabled;
+
+    // Menlo ships with macOS and nowhere else, so on its own it leaves code
+    // blocks proportional in Word on Windows. The font table gives Word a
+    // fixed-pitch alternative to reach for.
+    NSData *withFonts = MPDocxDataByDeclaringFonts(docx, @"Menlo", @"Consolas",
+                                                   @"Helvetica Neue",
+                                                   @"Arial");
+    if (withFonts)
+        docx = withFonts;
 
     if (![docx writeToURL:url options:NSDataWritingAtomic error:&error])
     {
@@ -2054,6 +2341,39 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
     [self setSplitViewDividerLocation:0.5];
 }
 
+/** Turns the prose underlines on and off.
+ *
+ * Per window rather than a stored preference: it is a thing you switch on to
+ * go over a draft, not a way you leave the editor set up.
+ */
+- (IBAction)toggleProseHighlights:(id)sender
+{
+    self.editor.proseHighlightsEnabled = !self.editor.proseHighlightsEnabled;
+    [self updateProseSummary];
+}
+
+/// Puts the tally in the window subtitle, which is otherwise unused, so the
+/// count needs no widget of its own.
+- (void)updateProseSummary
+{
+    NSWindow *window = self.windowForSheet;
+    if (!window)
+        return;
+
+    if (!self.editor.proseHighlightsEnabled)
+    {
+        window.subtitle = @"";
+        return;
+    }
+
+    MPProseChecker *checker = [MPProseChecker sharedChecker];
+    NSArray<MPProseIssue *> *issues =
+        [checker issuesInString:self.editor.string ?: @""];
+    NSString *summary = [checker summaryForIssues:issues];
+    window.subtitle = summary ?: NSLocalizedString(
+        @"nothing flagged", @"prose checker found no issues");
+}
+
 - (IBAction)toggleToolbar:(id)sender
 {
     [self.windowForSheet toggleToolbarShown:sender];
@@ -2274,6 +2594,7 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
     NSString *js = [NSString stringWithFormat:
         @"document.documentElement.style.paddingTop = '%.0fpx';", overlap];
     [self.preview stringByEvaluatingJavaScriptFromString:js];
+
 }
 
 
