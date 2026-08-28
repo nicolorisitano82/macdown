@@ -11,7 +11,8 @@ $e = \sum_{n=0}^{\infty} \frac{1}{n!}$ dentro la riga di testo.
 
 Il delimitatore `$` in linea si può spegnere nelle preferenze, se scrivi
 spesso di prezzi e non vuoi che `$5` diventi una formula. Con quello spento
-restano `\(` e `\)`: \(a^2 + b^2 = c^2\).
+restano `\(` e `\)`, che vanno scritti con la barra raddoppiata perché il
+markdown se ne mangia una: \\(a^2 + b^2 = c^2\\).
 
 ## In blocco
 
