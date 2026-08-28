@@ -16,7 +16,6 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 
 @property (assign) NSString *firstVersionInstalled;
 @property (assign) NSString *latestVersionInstalled;
-@property (assign) BOOL updateIncludesPreReleases;
 @property (assign) BOOL supressesUntitledDocumentOnLaunch;
 @property (assign) BOOL createFileForLinkTarget;
 
@@ -73,6 +72,9 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 @property (assign) BOOL htmlWikiLinks;
 /// Whether a new document starts with the prose checker on.
 @property (assign) BOOL editorProseHighlights;
+/// Identifiers of plug-ins the user has switched off. Absent means enabled,
+/// so a newly dropped-in plug-in works without being turned on first.
+@property (copy) NSArray<NSString *> *disabledPlugIns;
 @property (assign) NSInteger htmlCodeBlockAccessory;
 @property (assign) NSURL *htmlDefaultDirectoryUrl;
 @property (assign) BOOL htmlRendersTOC;

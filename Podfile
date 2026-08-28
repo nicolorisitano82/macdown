@@ -16,7 +16,6 @@ target "MacDown" do
   pod 'LibYAML', '~> 0.1'
   pod 'M13OrderedDictionary', '~> 1.1'
   pod 'MASPreferences', '~> 1.3'
-  pod 'Sparkle', '~> 1.18', :inhibit_warnings => false
 
   # `~> 0.4` already resolves to 0.5 (see Podfile.lock), and this is pure
   # NSUserDefaults persistence with no UI, so the baseline bump is a no-op.

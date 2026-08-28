@@ -7,17 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D0C1A2020000000000000001 /* MPPreviewSchemeHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A2010000000000000001 /* MPPreviewSchemeHandler.m */; };
+		D0C1B00300000000000000A1 /* MPPlugInsWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1B00100000000000000A1 /* MPPlugInsWindowController.m */; };
 		1F002A23195B3DAE008B8D93 /* MPRenderer.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F002A22195B3DAE008B8D93 /* MPRenderer.m */; };
 		1F0D9D65194AC7CF008E1856 /* NSString+Lookup.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D5F194AC7CF008E1856 /* NSString+Lookup.m */; };
 		1F0D9D66194AC7CF008E1856 /* NSTextView+Autocomplete.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D61194AC7CF008E1856 /* NSTextView+Autocomplete.m */; };
 		1F0D9D67194AC7CF008E1856 /* MPUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D64194AC7CF008E1856 /* MPUtilities.m */; };
-		D0C1A1000000000000000003 /* MPDocxPostProcessing.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000002 /* MPDocxPostProcessing.m */; };
-		D0C1A1000000000000000046 /* MPEpubExport.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000045 /* MPEpubExport.m */; };
-		D0C1A1000000000000000043 /* MPZipArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000042 /* MPZipArchive.m */; };
-		D0C1A1000000000000000013 /* MPProseChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000012 /* MPProseChecker.m */; };
-		D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000022 /* MPMathEditorController.m */; };
-		D0C1A1000000000000000033 /* MPSidebarController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000032 /* MPSidebarController.m */; };
 		1F0D9D76194AC7F7008E1856 /* MPEditorPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D6A194AC7F7008E1856 /* MPEditorPreferencesViewController.m */; };
 		1F0D9D78194AC7F7008E1856 /* MPHtmlPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D6D194AC7F7008E1856 /* MPHtmlPreferencesViewController.m */; };
 		1F0D9D7A194AC7F7008E1856 /* MPMarkdownPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F0D9D70194AC7F7008E1856 /* MPMarkdownPreferencesViewController.m */; };
@@ -65,7 +59,6 @@
 		1F9A14ED194EEE9900D1C6A9 /* MPMainController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F9A14EB194EEE9900D1C6A9 /* MPMainController.m */; };
 		1F9A14EF194EEEDD00D1C6A9 /* Styles in Resources */ = {isa = PBXBuildFile; fileRef = 1F9A14EE194EEEDD00D1C6A9 /* Styles */; };
 		1F9A14F4194EF6A600D1C6A9 /* Themes in Resources */ = {isa = PBXBuildFile; fileRef = 1F9A14F3194EF6A600D1C6A9 /* Themes */; };
-		1FA6CDB91952D2CD008D5CA0 /* dsa_pub.pem in Resources */ = {isa = PBXBuildFile; fileRef = 1FA6CDB81952D2CD008D5CA0 /* dsa_pub.pem */; };
 		1FA6DE251941CC9E000409FB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FA6DE241941CC9E000409FB /* Cocoa.framework */; };
 		1FA6DE481941CC9E000409FB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FA6DE241941CC9E000409FB /* Cocoa.framework */; };
 		1FB3C0241E5061A2002AEB6A /* MPExportPanelAccessoryViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1FB3C0221E5061A2002AEB6A /* MPExportPanelAccessoryViewController.xib */; };
@@ -96,6 +89,13 @@
 		905EF1A9196164CA00FC3CE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 905EF1A8196164CA00FC3CE9 /* Foundation.framework */; };
 		905EF1B7196164F300FC3CE9 /* macdown in Copy Command Line Utility */ = {isa = PBXBuildFile; fileRef = 905EF1A7196164CA00FC3CE9 /* macdown */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		B5C5C1666A506FEA86435D25 /* libPods-macdown-cmd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 263367245B2D78A42C2F19D7 /* libPods-macdown-cmd.a */; };
+		D0C1A1000000000000000003 /* MPDocxPostProcessing.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000002 /* MPDocxPostProcessing.m */; };
+		D0C1A1000000000000000013 /* MPProseChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000012 /* MPProseChecker.m */; };
+		D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000022 /* MPMathEditorController.m */; };
+		D0C1A1000000000000000033 /* MPSidebarController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000032 /* MPSidebarController.m */; };
+		D0C1A1000000000000000043 /* MPZipArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000042 /* MPZipArchive.m */; };
+		D0C1A1000000000000000046 /* MPEpubExport.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000045 /* MPEpubExport.m */; };
+		D0C1A2020000000000000001 /* MPPreviewSchemeHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A2010000000000000001 /* MPPreviewSchemeHandler.m */; };
 		EBFE3157737058F5A63699C8 /* libPods-MacDownTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C949FDE45493AE77DAD9BF4 /* libPods-MacDownTests.a */; };
 /* End PBXBuildFile section */
 
@@ -155,8 +155,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		D0C1A2000000000000000001 /* MPPreviewSchemeHandler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MPPreviewSchemeHandler.h; sourceTree = "<group>"; };
-		D0C1A2010000000000000001 /* MPPreviewSchemeHandler.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MPPreviewSchemeHandler.m; sourceTree = "<group>"; };
+		D0C1B00100000000000000A1 /* MPPlugInsWindowController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MPPlugInsWindowController.m; path = Code/Application/MPPlugInsWindowController.m; sourceTree = "<group>"; };
+		D0C1B00200000000000000A1 /* MPPlugInsWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MPPlugInsWindowController.h; path = Code/Application/MPPlugInsWindowController.h; sourceTree = "<group>"; };
 		0D0EC0DE9FEA22F962083921 /* Pods-MacDownTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacDownTests.release.xcconfig"; path = "Pods/Target Support Files/Pods-MacDownTests/Pods-MacDownTests.release.xcconfig"; sourceTree = "<group>"; };
 		1A198D1BA59D710201DD3BC8 /* Pods-MacDown.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacDown.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MacDown/Pods-MacDown.debug.xcconfig"; sourceTree = "<group>"; };
 		1F002A21195B3DAE008B8D93 /* MPRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPRenderer.h; sourceTree = "<group>"; };
@@ -201,18 +201,6 @@
 		1F0D9D5F194AC7CF008E1856 /* NSString+Lookup.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+Lookup.m"; sourceTree = "<group>"; };
 		1F0D9D60194AC7CF008E1856 /* NSTextView+Autocomplete.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSTextView+Autocomplete.h"; sourceTree = "<group>"; };
 		1F0D9D61194AC7CF008E1856 /* NSTextView+Autocomplete.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSTextView+Autocomplete.m"; sourceTree = "<group>"; };
-		D0C1A1000000000000000001 /* MPDocxPostProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPDocxPostProcessing.h; sourceTree = "<group>"; };
-		D0C1A1000000000000000002 /* MPDocxPostProcessing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocxPostProcessing.m; sourceTree = "<group>"; };
-		D0C1A1000000000000000044 /* MPEpubExport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPEpubExport.h; sourceTree = "<group>"; };
-		D0C1A1000000000000000045 /* MPEpubExport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPEpubExport.m; sourceTree = "<group>"; };
-		D0C1A1000000000000000041 /* MPZipArchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPZipArchive.h; sourceTree = "<group>"; };
-		D0C1A1000000000000000042 /* MPZipArchive.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPZipArchive.m; sourceTree = "<group>"; };
-		D0C1A1000000000000000011 /* MPProseChecker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPProseChecker.h; sourceTree = "<group>"; };
-		D0C1A1000000000000000012 /* MPProseChecker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPProseChecker.m; sourceTree = "<group>"; };
-		D0C1A1000000000000000021 /* MPMathEditorController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMathEditorController.h; sourceTree = "<group>"; };
-		D0C1A1000000000000000022 /* MPMathEditorController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMathEditorController.m; sourceTree = "<group>"; };
-		D0C1A1000000000000000031 /* MPSidebarController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPSidebarController.h; sourceTree = "<group>"; };
-		D0C1A1000000000000000032 /* MPSidebarController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPSidebarController.m; sourceTree = "<group>"; };
 		1F0D9D63194AC7CF008E1856 /* MPUtilities.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPUtilities.h; sourceTree = "<group>"; };
 		1F0D9D64194AC7CF008E1856 /* MPUtilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUtilities.m; sourceTree = "<group>"; };
 		1F0D9D69194AC7F7008E1856 /* MPEditorPreferencesViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPEditorPreferencesViewController.h; sourceTree = "<group>"; };
@@ -416,7 +404,6 @@
 		1F9F35222099A1FC00C4B4F1 /* sk-SK */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "sk-SK"; path = "Localization/sk-SK.lproj/MPGeneralPreferencesViewController.strings"; sourceTree = "<group>"; };
 		1F9F35232099A1FC00C4B4F1 /* sk-SK */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "sk-SK"; path = "Localization/sk-SK.lproj/MPMarkdownPreferencesViewController.strings"; sourceTree = "<group>"; };
 		1F9F35242099A1FC00C4B4F1 /* sk-SK */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "sk-SK"; path = "Localization/sk-SK.lproj/MPDocument.strings"; sourceTree = "<group>"; };
-		1FA6CDB81952D2CD008D5CA0 /* dsa_pub.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = dsa_pub.pem; path = Resources/dsa_pub.pem; sourceTree = "<group>"; };
 		1FA6DE211941CC9E000409FB /* MacDown.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacDown.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1FA6DE241941CC9E000409FB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		1FA6DE271941CC9E000409FB /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -517,6 +504,20 @@
 		8CDC5EA0050D2F722FB1AADD /* Pods-MacDownTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacDownTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MacDownTests/Pods-MacDownTests.debug.xcconfig"; sourceTree = "<group>"; };
 		905EF1A7196164CA00FC3CE9 /* macdown */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = macdown; sourceTree = BUILT_PRODUCTS_DIR; };
 		905EF1A8196164CA00FC3CE9 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		D0C1A1000000000000000001 /* MPDocxPostProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPDocxPostProcessing.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000002 /* MPDocxPostProcessing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocxPostProcessing.m; sourceTree = "<group>"; };
+		D0C1A1000000000000000011 /* MPProseChecker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPProseChecker.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000012 /* MPProseChecker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPProseChecker.m; sourceTree = "<group>"; };
+		D0C1A1000000000000000021 /* MPMathEditorController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMathEditorController.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000022 /* MPMathEditorController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMathEditorController.m; sourceTree = "<group>"; };
+		D0C1A1000000000000000031 /* MPSidebarController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPSidebarController.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000032 /* MPSidebarController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPSidebarController.m; sourceTree = "<group>"; };
+		D0C1A1000000000000000041 /* MPZipArchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPZipArchive.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000042 /* MPZipArchive.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPZipArchive.m; sourceTree = "<group>"; };
+		D0C1A1000000000000000044 /* MPEpubExport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPEpubExport.h; sourceTree = "<group>"; };
+		D0C1A1000000000000000045 /* MPEpubExport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPEpubExport.m; sourceTree = "<group>"; };
+		D0C1A2000000000000000001 /* MPPreviewSchemeHandler.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MPPreviewSchemeHandler.h; sourceTree = "<group>"; };
+		D0C1A2010000000000000001 /* MPPreviewSchemeHandler.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MPPreviewSchemeHandler.m; sourceTree = "<group>"; };
 		E70ECDD4241C933C00537A46 /* ru-RU */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "ru-RU"; path = "Localization/ru-RU.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		E70ECDD5241C933C00537A46 /* ru-RU */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "ru-RU"; path = "Localization/ru-RU.lproj/MainMenu.strings"; sourceTree = "<group>"; };
 		E70ECDD6241C933C00537A46 /* ru-RU */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "ru-RU"; path = "Localization/ru-RU.lproj/MPMarkdownPreferencesViewController.strings"; sourceTree = "<group>"; };
@@ -703,7 +704,6 @@
 				1F8A82D819533E9300B6BF69 /* Prism */,
 				1F4C8E99194AE0B9004BF82E /* MarkdownDocument.icns */,
 				1F0D9DA6194AC8CB008E1856 /* Credits.rtf */,
-				1FA6CDB81952D2CD008D5CA0 /* dsa_pub.pem */,
 				1F3A47511953E84700293259 /* help.md */,
 				1F59491A1AB57C78007394CB /* syntax_highlighting.json */,
 				1F3FC8A91C85AE9F000965E1 /* MacDown.sdef */,
@@ -765,6 +765,8 @@
 				1F9A14E9194EEE9900D1C6A9 /* MPExportPanelAccessoryViewController.m */,
 				1FB3C0221E5061A2002AEB6A /* MPExportPanelAccessoryViewController.xib */,
 				1F5A37121C869C81006E63E7 /* MPPlugInController.h */,
+				D0C1B00200000000000000A1 /* MPPlugInsWindowController.h */,
+				D0C1B00100000000000000A1 /* MPPlugInsWindowController.m */,
 				1F5A37131C869C81006E63E7 /* MPPlugInController.m */,
 				85E24E5A1E5019C00056E696 /* MPToolbarController.h */,
 				85E24E5B1E5019C00056E696 /* MPToolbarController.m */,
@@ -941,7 +943,6 @@
 				1FA6DE1F1941CC9E000409FB /* Resources */,
 				1F8A82A81952F19B00B6BF69 /* Update Build Number */,
 				905EF1B6196164E300FC3CE9 /* Copy Command Line Utility */,
-				C5B8C48273E72106885CA8C4 /* [CP] Embed Pods Frameworks */,
 				1E02F0A95AAEBCEF65493F5F /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
@@ -1078,7 +1079,6 @@
 				1F0D9DB4194AC9EE008E1856 /* MainMenu.xib in Resources */,
 				1FBDFE9C196170FE00BEEA70 /* Extensions in Resources */,
 				1F41FF7B1C8EEE9200FD9886 /* Templates in Resources */,
-				1FA6CDB91952D2CD008D5CA0 /* dsa_pub.pem in Resources */,
 				1F27896B1973BEB100EE696A /* Localizable.strings in Resources */,
 				1F0D9DAD194AC8EF008E1856 /* Images.xcassets in Resources */,
 				1F0D9DAA194AC8CB008E1856 /* Credits.rtf in Resources */,
@@ -1211,24 +1211,6 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		C5B8C48273E72106885CA8C4 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MacDown/Pods-MacDown-frameworks.sh",
-				"${PODS_ROOT}/Sparkle/Sparkle.framework",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Sparkle.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MacDown/Pods-MacDown-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		E7FD807B2106CA8F0087F0A8 /* Transpile Styles */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -1255,6 +1237,7 @@
 				1F0D9D7A194AC7F7008E1856 /* MPMarkdownPreferencesViewController.m in Sources */,
 				1F0D9D7D194AC7F7008E1856 /* MPPreferencesViewController.m in Sources */,
 				1F33F2A41A3B56D20001C849 /* NSColor+HTML.m in Sources */,
+				D0C1B00300000000000000A1 /* MPPlugInsWindowController.m in Sources */,
 				1F5A37141C869C81006E63E7 /* MPPlugInController.m in Sources */,
 				1F0D9D65194AC7CF008E1856 /* NSString+Lookup.m in Sources */,
 				1F3FC87C1C854E1C000965E1 /* NSPasteboard+Types.m in Sources */,
@@ -1732,11 +1715,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lcompression",
 				);
-				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
 			name = Debug;

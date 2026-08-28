@@ -12,6 +12,11 @@
 @interface MPPlugIn : NSObject
 
 @property (nonatomic, readonly) NSString *name;
+/// The bundle identifier, or the file name when the bundle declares none.
+/// Used to remember which plug-ins have been switched off.
+@property (nonatomic, readonly) NSString *identifier;
+@property (nonatomic, readonly) NSString *version;
+@property (nonatomic, readonly) NSURL *bundleURL;
 
 - (instancetype)initWithBundle:(NSBundle *)bundle;
 - (BOOL)run:(id)sender;
