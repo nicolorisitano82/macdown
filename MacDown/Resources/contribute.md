@@ -56,22 +56,22 @@ without touching any code or rebuilding.
 ## Reporting something broken
 
 Open an issue on
-[this repository](https://github.com/nicolorisitano82/macdown/issues). Say
-what you did, what happened, and what you expected instead; a document that
-reproduces it is worth more than a description of one.
+[this repository](https://github.com/nicolorisitano82/macdown/issues),
+whatever it turns out to be. Whether a fault comes from this fork, from the
+MacDown it grew out of, or from one of the libraries underneath is rarely
+obvious from the outside, and working that out belongs to whoever picks the
+issue up rather than to you.
 
-If the problem is in the original MacDown rather than in what this fork
-adds, it is better reported
-[upstream](https://github.com/MacDownApp/macdown/issues), where more people
-will see it.
+Say what you did, what happened, and what you expected instead. A document
+that reproduces it is worth more than a description of one.
 
-MacDown leans on other open source projects — [Hoedown](https://github.com/hoedown/hoedown)
-for turning Markdown into HTML, [Prism](https://prismjs.com) for
-highlighting code, [PEG Markdown Highlight](https://github.com/ali-rantakari/peg-markdown-highlight)
-for highlighting the editor, [mermaid](https://mermaid.js.org) and
-[Graphviz](https://graphviz.org) for diagrams, and
-[MathJax](https://www.mathjax.org) for maths. A fault in one of those is
-usually best reported to the project itself.
+MacDown leans on other open source projects: [Hoedown](https://github.com/hoedown/hoedown)
+turns Markdown into HTML, [Prism](https://prismjs.com) highlights code,
+[PEG Markdown Highlight](https://github.com/ali-rantakari/peg-markdown-highlight)
+highlights the editor, [mermaid](https://mermaid.js.org) and
+[Graphviz](https://graphviz.org) draw the diagrams, and
+[MathJax](https://www.mathjax.org) sets the maths. They have the credit for
+the parts they do; the issues still come here.
 
 ## License
 
