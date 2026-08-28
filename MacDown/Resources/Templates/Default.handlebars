@@ -11,15 +11,18 @@
 {{{ this }}}
 {{/each }}
 
+<!-- Scripts belong in the head here, not at the end of the body: the
+     preview refreshes by replacing the body's innerHTML, and a script
+     inserted that way never runs. -->
+{{#each scriptTags }}
+{{{ this }}}
+{{/each }}
+
 </head>
 
 <body>
 
 {{{ body }}}
-
-{{#each scriptTags }}
-{{{ this }}}
-{{/each }}
 
 </body>
 
