@@ -88,6 +88,16 @@ typedef void(^HGStyleParsingErrorCallback)(NSArray *errorMessages);
  */
 @property int extensions;
 
+/** \brief Called after each parse, with the element list just cached.
+ *
+ * The list belongs to the highlighter: it is freed on the next parse, so a
+ * handler must read what it needs and not keep the pointer.
+ *
+ * MacDown uses this to style the source semantically without parsing the
+ * document a second time.
+ */
+@property (copy) void (^elementsDidChange)(pmh_element **elements);
+
 
 /** \brief Init new instance while setting targetTextView. */
 - (instancetype) initWithTextView:(NSTextView *)textView;

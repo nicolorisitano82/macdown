@@ -394,6 +394,10 @@ void styleparsing_error_callback(char *error_message, int line_number, void *con
 		_cachedElements = NULL;
 	}
 	_cachedElements = list;
+
+	// The one place a fresh parse lands, so the one place worth announcing.
+	if (self.elementsDidChange != NULL && list != NULL)
+		self.elementsDidChange(list);
 }
 
 - (void) clearElementsCache

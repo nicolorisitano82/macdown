@@ -72,6 +72,9 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 @property (assign) BOOL htmlWikiLinks;
 /// Whether a new document starts with the prose checker on.
 @property (assign) BOOL editorProseHighlights;
+/// Whether the editor sets headings larger, emphasis italic and so on,
+/// instead of showing the source in one uniform face.
+@property (assign) BOOL editorSemanticStyling;
 /// Identifiers of plug-ins the user has switched off. Absent means enabled,
 /// so a newly dropped-in plug-in works without being turned on first.
 @property (copy) NSArray<NSString *> *disabledPlugIns;

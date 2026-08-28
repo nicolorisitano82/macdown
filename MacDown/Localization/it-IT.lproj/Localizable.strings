@@ -139,3 +139,7 @@
 "Scale preview based on editor font size" = "Scala l'anteprima in base al corpo del carattere dell'editor";
 "Default path:" = "Percorso predefinito:";
 "None" = "Nessuna";
+
+/* Editor semantic styling */
+"Show formatting in the editor" = "Mostra la formattazione nell'editor";
+"Headings are set larger, emphasis italic and code monospaced. The Markdown itself stays visible." = "I titoli sono più grandi, l'enfasi in corsivo e il codice a spaziatura fissa. Il markdown resta visibile.";

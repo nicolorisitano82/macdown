@@ -30,6 +30,7 @@
 #import "MPToolbarController.h"
 #import "MPPreviewSchemeHandler.h"
 #import "MPProseChecker.h"
+#import "MPSemanticStyler.h"
 #import "MPMathEditorController.h"
 #import "MPSidebarController.h"
 #import "MPEpubExport.h"
@@ -75,7 +76,8 @@ NS_INLINE NSSet *MPEditorPreferencesToObserve()
             @"editorHorizontalInset", @"editorVerticalInset",
             @"editorWidthLimited", @"editorMaximumWidth", @"editorLineSpacing",
             @"editorOnRight", @"editorStyleName", @"editorShowWordCount",
-            @"editorScrollsPastEnd", @"editorProseHighlights", nil
+            @"editorScrollsPastEnd", @"editorProseHighlights",
+            @"editorSemanticStyling", nil
         ];
     });
     return keys;
@@ -198,6 +200,7 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (strong, nonatomic) MPSidebarController *sidebar;
 @property (strong, nonatomic) NSSplitView *outerSplitView;
 @property (strong) HGMarkdownHighlighter *highlighter;
+@property (strong) MPSemanticStyler *semanticStyler;
 @property (strong) MPRenderer *renderer;
 @property CGFloat previousSplitRatio;
 @property BOOL manualRender;
@@ -659,6 +662,15 @@ static NSString * const kMPScrollReporterSource =
     self.highlighter =
         [[HGMarkdownHighlighter alloc] initWithTextView:self.editor
                                            waitInterval:0.0];
+
+    // Rides on the highlighter's parse rather than running a second one:
+    // the element list it caches is exactly the semantic model needed here.
+    self.semanticStyler =
+        [[MPSemanticStyler alloc] initWithTextView:self.editor];
+    __weak MPDocument *weakSelf = self;
+    self.highlighter.elementsDidChange = ^(pmh_element **elements) {
+        [weakSelf.semanticStyler applyToElements:elements];
+    };
     self.renderer = [[MPRenderer alloc] init];
     self.renderer.dataSource = self;
     self.renderer.delegate = self;
@@ -3138,6 +3150,16 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
             self.wordCountWidget.hidden = YES;
             self.editorPaddingBottom.constant = 0.0;
         }
+    }
+
+    if (!changedKey || [changedKey isEqualToString:@"editorSemanticStyling"]
+            || [changedKey isEqualToString:@"editorBaseFontInfo"])
+    {
+        self.semanticStyler.baseFont = self.preferences.editorBaseFont;
+        self.semanticStyler.enabled = self.preferences.editorSemanticStyling;
+        // The styling is rebuilt from the next parse; ask for one rather
+        // than waiting for the reader to type something.
+        [self.highlighter parseAndHighlightNow];
     }
 
     if (!changedKey || [changedKey isEqualToString:@"editorProseHighlights"])
