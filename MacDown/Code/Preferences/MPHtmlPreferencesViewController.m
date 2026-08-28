@@ -11,7 +11,7 @@
 #import "MPPreferences.h"
 
 
-NS_INLINE NSString *MPPrismDefaultThemeName()
+NS_INLINE NSString *MPPrismDefaultThemeName(void)
 {
     return NSLocalizedString(@"(Default)", @"Prism theme title");
 }
@@ -24,7 +24,7 @@ NS_INLINE NSString *MPPrismDefaultThemeName()
 /// The controls that only make sense while syntax highlighting is on.
 @property (copy) NSArray<NSControl *> *highlightingDependents;
 @property (weak) NSButton *inlineDollarCheckbox;
-@property (assign) CGFloat rowLabelWidth;
+@property (assign, nonatomic) CGFloat rowLabelWidth;
 @end
 
 
