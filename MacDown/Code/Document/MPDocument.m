@@ -732,6 +732,7 @@ static NSString * const kMPSelectionSource =
     // the element list it caches is exactly the semantic model needed here.
     self.semanticStyler =
         [[MPSemanticStyler alloc] initWithTextView:self.editor];
+    self.semanticStyler.themeStyles = self.highlighter.styles;
     __weak MPDocument *weakSelf = self;
     self.highlighter.elementsDidChange = ^(pmh_element **elements) {
         [weakSelf.semanticStyler applyToElements:elements];
@@ -3261,9 +3262,11 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
     }
 
     if (!changedKey || [changedKey isEqualToString:@"editorSemanticStyling"]
-            || [changedKey isEqualToString:@"editorBaseFontInfo"])
+            || [changedKey isEqualToString:@"editorBaseFontInfo"]
+            || [changedKey isEqualToString:@"editorStyleName"])
     {
         self.semanticStyler.baseFont = self.preferences.editorBaseFont;
+        self.semanticStyler.themeStyles = self.highlighter.styles;
         self.semanticStyler.enabled = self.preferences.editorSemanticStyling;
         // The styling is rebuilt from the next parse; ask for one rather
         // than waiting for the reader to type something.

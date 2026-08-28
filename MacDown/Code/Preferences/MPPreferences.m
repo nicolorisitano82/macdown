@@ -300,6 +300,12 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
     // starts where the behaviour already was.
     if (![defaults objectForKey:@"htmlWikiLinks"])
         self.htmlWikiLinks = YES;
+
+    // On by default because it corrects rather than decorates: at the
+    // default body size it changes nothing at all, and above it stops
+    // headings from shrinking towards the text.
+    if (![defaults objectForKey:@"editorSemanticStyling"])
+        self.editorSemanticStyling = YES;
 }
 
 @end

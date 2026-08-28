@@ -88,13 +88,17 @@ typedef void(^HGStyleParsingErrorCallback)(NSArray *errorMessages);
  */
 @property int extensions;
 
-/** \brief Called after each parse, with the element list just cached.
+/** \brief Called after highlighting, with the element list it used.
+ *
+ * After rather than before, so that a handler layering anything over the
+ * fonts and colours just written into the text storage is not immediately
+ * undone by them.
  *
  * The list belongs to the highlighter: it is freed on the next parse, so a
  * handler must read what it needs and not keep the pointer.
  *
- * MacDown uses this to style the source semantically without parsing the
- * document a second time.
+ * MacDown uses this to size headings relative to the reader's font without
+ * parsing the document a second time.
  */
 @property (copy) void (^elementsDidChange)(pmh_element **elements);
 

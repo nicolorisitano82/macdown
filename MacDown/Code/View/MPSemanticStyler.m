@@ -4,22 +4,24 @@
 //
 
 #import "MPSemanticStyler.h"
+#import "HGMarkdownHighlightingStyle.h"
 
 
-/// Heading sizes as multiples of the editor's base size. The steps narrow as
-/// they go down, which is what keeps six levels from running out of room.
-static const CGFloat kMPHeadingScales[] = {
-    1.60,   // H1
-    1.42,   // H2
-    1.28,   // H3
-    1.16,   // H4
-    1.08,   // H5
-    1.04,   // H6
-};
+/** The body size a theme's numbers were chosen against.
+ *
+ * An assumption, and worth naming as one: no theme records this. It is
+ * MacDown's default editor size, which is what a theme author would have
+ * been looking at while picking the numbers. Being wrong about it costs
+ * proportion, not correctness — and at this size the styler is a no-op, so
+ * anyone on the default sees exactly what the theme intended.
+ */
+static const CGFloat kMPAssumedThemeBodySize = 14.0;
 
 
 @interface MPSemanticStyler ()
 @property (weak, nonatomic) NSTextView *textView;
+/// Element type to the ratio the theme wanted, against the body size.
+@property (strong, nonatomic) NSDictionary<NSNumber *, NSNumber *> *ratios;
 @end
 
 
@@ -35,53 +37,24 @@ static const CGFloat kMPHeadingScales[] = {
 }
 
 
-#pragma mark - Fonts
+#pragma mark - Reading the theme
 
-- (NSFont *)baseFontOrDefault
+- (void)setThemeStyles:(NSArray<HGMarkdownHighlightingStyle *> *)styles
 {
-    if (self.baseFont)
-        return self.baseFont;
-    return self.textView.font ?: [NSFont userFixedPitchFontOfSize:0.0];
-}
+    _themeStyles = [styles copy];
 
-- (NSFont *)fontWithTraits:(NSFontTraitMask)traits scale:(CGFloat)scale
-{
-    NSFont *base = [self baseFontOrDefault];
-    NSFontManager *manager = [NSFontManager sharedFontManager];
-
-    NSFont *font = base;
-    if (scale != 1.0)
+    NSMutableDictionary *ratios = [NSMutableDictionary dictionary];
+    for (HGMarkdownHighlightingStyle *style in styles)
     {
-        font = [manager convertFont:font toSize:round(base.pointSize * scale)];
+        NSDictionary *info = style.attributesToAdd[HGFontInformation];
+        CGFloat size = [info[HGFontInformationSizeKey] doubleValue];
+        // Only sizes. A theme that says nothing about an element's size is
+        // saying it should look like the body, which needs no help.
+        if (size <= 0.0)
+            continue;
+        ratios[@(style.elementType)] = @(size / kMPAssumedThemeBodySize);
     }
-    if (traits)
-    {
-        NSFont *converted = [manager convertFont:font toHaveTrait:traits];
-        // A monospaced editor font often has no italic cut. Obliquing it by
-        // hand beats silently showing emphasis as plain text.
-        if (converted == font && (traits & NSItalicFontMask))
-        {
-            NSFontDescriptor *oblique = [font.fontDescriptor
-                fontDescriptorByAddingAttributes:@{
-                    NSFontTraitsAttribute: @{NSFontSlantTrait: @(0.22)},
-                }];
-            converted = [NSFont fontWithDescriptor:oblique
-                                              size:0.0] ?: font;
-        }
-        font = converted;
-    }
-    return font;
-}
-
-- (NSFont *)monospacedFont
-{
-    NSFont *base = [self baseFontOrDefault];
-    // Already fixed pitch — most editor fonts are — so leave it be rather
-    // than swapping in a second monospaced face for no gain.
-    if (base.isFixedPitch)
-        return base;
-    return [NSFont monospacedSystemFontOfSize:base.pointSize
-                                       weight:NSFontWeightRegular];
+    _ratios = ratios;
 }
 
 
@@ -92,106 +65,76 @@ static const CGFloat kMPHeadingScales[] = {
     return self.textView.layoutManager;
 }
 
+/** Nothing to undo.
+ *
+ * The highlighter rewrites the theme's own fonts over the whole document on
+ * every pass, so switching this off and asking for a parse is enough to put
+ * them back. Removing anything here would strip the base font instead.
+ */
 - (void)removeStyling
 {
-    NSLayoutManager *manager = [self layoutManager];
-    NSUInteger length = self.textView.textStorage.length;
-    NSRange all = NSMakeRange(0, length);
-    if (!manager || !length)
-        return;
-
-    // Only the two attributes this class sets. A blanket removal would take
-    // the prose checker's underlines with it.
-    [manager removeTemporaryAttribute:NSFontAttributeName
-                    forCharacterRange:all];
-    [manager removeTemporaryAttribute:NSBackgroundColorAttributeName
-                    forCharacterRange:all];
 }
 
 - (void)applyToElements:(pmh_element **)elements
 {
-    NSLayoutManager *manager = [self layoutManager];
     NSTextStorage *storage = self.textView.textStorage;
-    if (!manager || !storage.length)
-        return;
-
-    [self removeStyling];
-    if (!self.enabled || elements == NULL)
-        return;
-
     NSUInteger length = storage.length;
+    if (!length)
+        return;
 
-    // Blocks first, spans second: emphasis inside a heading should keep the
-    // heading's size and gain the weight, not be overwritten by it.
-    pmh_element_type blockOrder[] = {
-        pmh_VERBATIM, pmh_H6, pmh_H5, pmh_H4, pmh_H3, pmh_H2, pmh_H1,
-    };
-    for (size_t i = 0; i < sizeof(blockOrder) / sizeof(blockOrder[0]); i++)
-        [self applyType:blockOrder[i] from:elements limit:length];
+    if (!self.enabled || elements == NULL || !self.ratios.count)
+        return;
 
-    pmh_element_type spanOrder[] = {
-        pmh_EMPH, pmh_STRONG, pmh_CODE,
-    };
-    for (size_t i = 0; i < sizeof(spanOrder) / sizeof(spanOrder[0]); i++)
-        [self applyType:spanOrder[i] from:elements limit:length];
-}
+    NSFont *base = self.baseFont ?: self.textView.font;
+    if (!base)
+        return;
 
-- (void)applyType:(pmh_element_type)type
-             from:(pmh_element **)elements
-            limit:(NSUInteger)length
-{
-    NSLayoutManager *manager = [self layoutManager];
+    // Nothing to correct when the reader is on the size the theme was
+    // written for, and saying so plainly beats re-applying identical fonts.
+    if (fabs(base.pointSize - kMPAssumedThemeBodySize) < 0.01)
+        return;
 
-    for (pmh_element *cursor = elements[type]; cursor != NULL;
-         cursor = cursor->next)
+    // Into the text storage, not as temporary attributes. Those are display
+    // only and documented not to affect layout: the font went in and the
+    // reader saw no change, because nothing was re-laid out. It never
+    // reaches the file — the document is saved as the string.
+    NSFontManager *fonts = [NSFontManager sharedFontManager];
+    [storage beginEditing];
+
+    for (NSNumber *key in self.ratios)
     {
-        if (cursor->end <= cursor->pos)
-            continue;
-        NSRange range = NSMakeRange(cursor->pos, cursor->end - cursor->pos);
-        // The parser works on its own copy; a stale element list outliving an
-        // edit would otherwise be a crash rather than a wrong colour.
-        if (NSMaxRange(range) > length)
+        pmh_element_type type = (pmh_element_type)key.integerValue;
+        CGFloat ratio = [self.ratios[key] doubleValue];
+        CGFloat size = round(base.pointSize * ratio);
+        if (size <= 0.0)
             continue;
 
-        NSDictionary *attributes = [self attributesForType:type];
-        if (attributes)
-            [manager addTemporaryAttributes:attributes forCharacterRange:range];
-    }
-}
+        for (pmh_element *cursor = elements[type]; cursor != NULL;
+             cursor = cursor->next)
+        {
+            if (cursor->end <= cursor->pos)
+                continue;
+            NSRange range = NSMakeRange(cursor->pos,
+                                        cursor->end - cursor->pos);
+            // A stale element list outliving an edit would otherwise be a
+            // crash rather than a wrong size.
+            if (NSMaxRange(range) > length)
+                continue;
 
-- (NSDictionary *)attributesForType:(pmh_element_type)type
-{
-    switch (type)
-    {
-        case pmh_H1: case pmh_H2: case pmh_H3:
-        case pmh_H4: case pmh_H5: case pmh_H6:
-        {
-            NSUInteger level = (NSUInteger)(type - pmh_H1);
-            CGFloat scale = kMPHeadingScales[MIN(level, (NSUInteger)5)];
-            return @{NSFontAttributeName:
-                [self fontWithTraits:NSBoldFontMask scale:scale]};
+            // Resized from whatever the highlighter left in place, so the
+            // weight and face the theme asked for come along.
+            NSFont *current = [storage attribute:NSFontAttributeName
+                                         atIndex:range.location
+                                  effectiveRange:NULL] ?: base;
+            NSFont *sized = [fonts convertFont:current toSize:size];
+            if (!sized)
+                continue;
+            [storage addAttribute:NSFontAttributeName value:sized
+                            range:range];
         }
-        case pmh_STRONG:
-            return @{NSFontAttributeName:
-                [self fontWithTraits:NSBoldFontMask scale:1.0]};
-        case pmh_EMPH:
-            return @{NSFontAttributeName:
-                [self fontWithTraits:NSItalicFontMask scale:1.0]};
-        case pmh_CODE:
-        case pmh_VERBATIM:
-        {
-            // A tint of the text colour rather than a fixed grey, so it sits
-            // on a dark editor theme as well as a light one.
-            NSColor *text = self.textView.textColor ?: [NSColor textColor];
-            NSColor *plate = [text colorWithAlphaComponent:0.08];
-            return @{
-                NSFontAttributeName: [self monospacedFont],
-                NSBackgroundColorAttributeName: plate,
-            };
-        }
-        default:
-            return nil;
     }
+
+    [storage endEditing];
 }
 
 @end

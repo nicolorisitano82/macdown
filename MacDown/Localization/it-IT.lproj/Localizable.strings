@@ -141,5 +141,5 @@
 "None" = "Nessuna";
 
 /* Editor semantic styling */
-"Show formatting in the editor" = "Mostra la formattazione nell'editor";
-"Headings are set larger, emphasis italic and code monospaced. The Markdown itself stays visible." = "I titoli sono più grandi, l'enfasi in corsivo e il codice a spaziatura fissa. Il markdown resta visibile.";
+"Scale headings with the editor font" = "Scala i titoli con il carattere dell'editor";
+"Editor themes state heading sizes in points, chosen for the default body size. This keeps their proportions at any size. At the default it changes nothing." = "I temi dell'editor indicano i corpi dei titoli in punti, scelti per la dimensione predefinita del testo. Questo ne mantiene le proporzioni a qualunque dimensione. Al valore predefinito non cambia nulla.";

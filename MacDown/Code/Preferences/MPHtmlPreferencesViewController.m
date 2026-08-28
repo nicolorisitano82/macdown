@@ -378,12 +378,13 @@ static const CGFloat kMPNoteWidth = 400.0;
             @"Highlight prose issues in new documents", @"Preference")
                             key:@"editorProseHighlights"],
         [self checkboxWithTitle:NSLocalizedString(
-            @"Show formatting in the editor", @"Preference")
+            @"Scale headings with the editor font", @"Preference")
                             key:@"editorSemanticStyling"],
         [self noteWithText:NSLocalizedString(
-            @"Headings are set larger, emphasis italic and code monospaced. "
-            @"The Markdown itself stays visible.",
-            @"Explains what semantic styling does")],
+            @"Editor themes state heading sizes in points, chosen for the "
+            @"default body size. This keeps their proportions at any size. "
+            @"At the default it changes nothing.",
+            @"Explains what heading scaling does")],
     ] to:stack];
 }
 
