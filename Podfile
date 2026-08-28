@@ -11,7 +11,9 @@ inhibit_all_warnings!
 
 target "MacDown" do
   pod 'handlebars-objc', '~> 1.4'
-  pod 'hoedown', '~> 3.0.7', :inhibit_warnings => false
+  # Vendored: patched to report source positions. See
+  # Dependency/hoedown/hoedown.podspec.
+  pod 'hoedown', :path => 'Dependency/hoedown', :inhibit_warnings => false
   pod 'JJPluralForm', '~> 2.1'
   pod 'LibYAML', '~> 0.1'
   pod 'M13OrderedDictionary', '~> 1.1'
