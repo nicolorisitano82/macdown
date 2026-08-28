@@ -97,6 +97,14 @@ NS_INLINE NSString *MPPrismDefaultThemeName()
     [self addPreviewSectionTo:stack];
 
     [self updateHighlightingDependents];
+
+    // The window is sized from this view's frame, and the frame it arrives
+    // with is the nib's — which described a pane that no longer exists. Left
+    // alone, the content gets squeezed into the old measurements.
+    [self.view layoutSubtreeIfNeeded];
+    NSSize needed = self.view.fittingSize;
+    if (needed.width > 0.0 && needed.height > 0.0)
+        self.view.frame = NSMakeRect(0.0, 0.0, needed.width, needed.height);
 }
 
 - (void)viewWillAppear
