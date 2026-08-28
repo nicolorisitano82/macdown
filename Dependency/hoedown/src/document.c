@@ -115,6 +115,19 @@ static char_trigger markdown_char_ptrs[] = {
 };
 
 struct hoedown_document {
+	/* --- MacDown: source position tracking ---------------------------- *
+	 * The first pass rewrites the input — it drops the BOM, removes link
+	 * and footnote definitions and expands tabs — so offsets in the buffer
+	 * the parser sees are not offsets in the document the reader edits.
+	 * One entry per line records the correspondence.
+	 */
+	struct { size_t norm; size_t src; } *src_lines;
+	size_t src_line_count;
+	size_t src_line_alloc;
+	/* Depth of parse_block recursion. Positions are only reported at the
+	 * outermost level; see hoedown_renderer_data. */
+	int src_depth;
+
 	hoedown_renderer md;
 	hoedown_renderer_data data;
 
@@ -127,6 +140,10 @@ struct hoedown_document {
 	size_t max_nesting;
 	int in_link_body;
 };
+
+/* MacDown: defined further down, next to the first pass that fills them. */
+static void hoedown_src_add_line(hoedown_document *doc, size_t norm, size_t src);
+static size_t hoedown_src_offset(const hoedown_document *doc, size_t norm);
 
 /***************************
  * HELPER FUNCTIONS *
@@ -2456,9 +2473,25 @@ parse_block(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t siz
 		doc->work_bufs[BUFFER_BLOCK].size > doc->max_nesting)
 		return;
 
+	/* MacDown: only the outermost pass sees the buffer the first pass built.
+	 * Deeper ones are handed content the parser has compacted in place, where
+	 * the original offsets no longer hold, so they report nothing.
+	 *
+	 * The outer value is put back on the way out. A blockquote's own callback
+	 * fires after its contents have been parsed, and without this it would
+	 * inherit the nothing its contents reported. */
+	size_t src_outer = doc->data.src_begin;
+	doc->src_depth++;
+	if (doc->src_depth > 1)
+		doc->data.src_begin = 0;
+
 	while (beg < size) {
 		txt_data = data + beg;
 		end = size - beg;
+
+		/* Biased by one: see hoedown_renderer_data. */
+		if (doc->src_depth == 1)
+			doc->data.src_begin = hoedown_src_offset(doc, beg) + 1;
 
 		if (is_atxheader(doc, txt_data, end))
 			beg += parse_atxheader(ob, doc, txt_data, end);
@@ -2503,6 +2536,9 @@ parse_block(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t siz
 		else
 			beg += parse_paragraph(ob, doc, txt_data, end);
 	}
+
+	doc->src_depth--;
+	doc->data.src_begin = src_outer;
 }
 
 
@@ -2730,6 +2766,56 @@ is_ref(const uint8_t *data, size_t beg, size_t end, size_t *last, struct link_re
 	return 1;
 }
 
+/* MacDown: remembers that `norm` in the parser's buffer is `src` in the
+ * document. Called once per line while the first pass copies it. */
+static void
+hoedown_src_add_line(hoedown_document *doc, size_t norm, size_t src)
+{
+	if (doc->src_line_count == doc->src_line_alloc) {
+		size_t next = doc->src_line_alloc ? doc->src_line_alloc * 2 : 256;
+		void *grown = realloc(doc->src_lines, next * sizeof(*doc->src_lines));
+		if (!grown)
+			return;   /* Positions are a convenience; losing them is not fatal. */
+		doc->src_lines = grown;
+		doc->src_line_alloc = next;
+	}
+	doc->src_lines[doc->src_line_count].norm = norm;
+	doc->src_lines[doc->src_line_count].src = src;
+	doc->src_line_count++;
+}
+
+/* MacDown: translates an offset in the parser's buffer back to the input.
+ *
+ * Exact at a line start, which is where every block begins and ends. Within
+ * a line it adds the distance, which is exact unless a tab was expanded
+ * earlier on that same line.
+ */
+static size_t
+hoedown_src_offset(const hoedown_document *doc, size_t norm)
+{
+	size_t low = 0, high, mid, best = 0, best_src = 0;
+
+	if (doc->src_line_count == 0)
+		return norm;
+
+	high = doc->src_line_count - 1;
+	while (low <= high) {
+		mid = low + (high - low) / 2;
+		if (doc->src_lines[mid].norm <= norm) {
+			best = doc->src_lines[mid].norm;
+			best_src = doc->src_lines[mid].src;
+			if (mid == doc->src_line_count - 1)
+				break;
+			low = mid + 1;
+		} else {
+			if (mid == 0)
+				break;
+			high = mid - 1;
+		}
+	}
+	return best_src + (norm - best);
+}
+
 static void expand_tabs(hoedown_buffer *ob, const uint8_t *line, size_t size)
 {
 	/* This code makes two assumptions:
@@ -2863,6 +2949,11 @@ hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t
 		memset(&doc->footnotes_used, 0x0, sizeof(doc->footnotes_used));
 	}
 
+	/* MacDown: a fresh map for this document. */
+	doc->src_line_count = 0;
+	doc->src_depth = 0;
+	doc->data.src_begin = 0;
+
 	/* first pass: looking for references, copying everything else */
 	beg = 0;
 
@@ -2880,6 +2971,10 @@ hoedown_document_render(hoedown_document *doc, hoedown_buffer *ob, const uint8_t
 			end = beg;
 			while (end < size && data[end] != '\n' && data[end] != '\r')
 				end++;
+
+			/* MacDown: this line begins here in both buffers. Recorded
+			 * before the copy, since expand_tabs changes the length. */
+			hoedown_src_add_line(doc, text->size, beg);
 
 			/* adding the line body if present */
 			if (end > beg)
@@ -2989,6 +3084,8 @@ hoedown_document_free(hoedown_document *doc)
 
 	hoedown_stack_uninit(&doc->work_bufs[BUFFER_SPAN]);
 	hoedown_stack_uninit(&doc->work_bufs[BUFFER_BLOCK]);
+
+	free(doc->src_lines);
 
 	free(doc);
 }

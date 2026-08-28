@@ -92,6 +92,19 @@ rndr_autolink(hoedown_buffer *ob, const hoedown_buffer *link, hoedown_autolink_t
 	return 1;
 }
 
+
+/* MacDown: writes the source position of the block being rendered, when the
+ * parser knew it. The attribute is what lets a selection in the preview be
+ * found in the editor, and the other way round. */
+static void
+hoedown_html_put_src(hoedown_buffer *ob, const hoedown_renderer_data *data)
+{
+	if (data == NULL || data->src_begin == 0)
+		return;
+	hoedown_buffer_printf(ob, " data-src=\"%lu\"",
+		(unsigned long)(data->src_begin - 1));
+}
+
 static void
 rndr_blockcode(hoedown_buffer *ob, const hoedown_buffer *text, const hoedown_buffer *lang, const hoedown_renderer_data *data)
 {
@@ -115,7 +128,9 @@ static void
 rndr_blockquote(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
 {
 	if (ob->size) hoedown_buffer_putc(ob, '\n');
-	HOEDOWN_BUFPUTSL(ob, "<blockquote>\n");
+	HOEDOWN_BUFPUTSL(ob, "<blockquote");
+	hoedown_html_put_src(ob, data);
+	HOEDOWN_BUFPUTSL(ob, ">\n");
 	if (content) hoedown_buffer_put(ob, content->data, content->size);
 	HOEDOWN_BUFPUTSL(ob, "</blockquote>\n");
 }
@@ -220,9 +235,11 @@ rndr_header(hoedown_buffer *ob, const hoedown_buffer *content, int level, const 
 		hoedown_buffer_putc(ob, '\n');
 
 	if (level <= state->toc_data.nesting_level)
-		hoedown_buffer_printf(ob, "<h%d id=\"toc_%d\">", level, state->toc_data.header_count++);
+		hoedown_buffer_printf(ob, "<h%d id=\"toc_%d\"", level, state->toc_data.header_count++);
 	else
-		hoedown_buffer_printf(ob, "<h%d>", level);
+		hoedown_buffer_printf(ob, "<h%d", level);
+	hoedown_html_put_src(ob, data);
+	HOEDOWN_BUFPUTSL(ob, ">");
 
 	if (content) hoedown_buffer_put(ob, content->data, content->size);
 	hoedown_buffer_printf(ob, "</h%d>\n", level);
@@ -295,7 +312,9 @@ rndr_paragraph(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_
 	if (i == content->size)
 		return;
 
-	HOEDOWN_BUFPUTSL(ob, "<p>");
+	HOEDOWN_BUFPUTSL(ob, "<p");
+	hoedown_html_put_src(ob, data);
+	HOEDOWN_BUFPUTSL(ob, ">");
 	if (state->flags & HOEDOWN_HTML_HARD_WRAP) {
 		size_t org;
 		while (i < content->size) {

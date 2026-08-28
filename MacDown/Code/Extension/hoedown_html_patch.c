@@ -55,7 +55,14 @@ void hoedown_patch_render_blockcode(
             lang = mapped;
     }
 
-    HOEDOWN_BUFPUTSL(ob, "<div><pre");
+    HOEDOWN_BUFPUTSL(ob, "<div");
+    if (data != NULL && data->src_begin != 0)
+    {
+        // Same attribute the stock renderers emit; see hoedown_renderer_data.
+        hoedown_buffer_printf(ob, " data-src=\"%lu\"",
+                              (unsigned long)(data->src_begin - 1));
+    }
+    HOEDOWN_BUFPUTSL(ob, "><pre");
     if (state->flags & HOEDOWN_HTML_BLOCKCODE_LINE_NUMBERS)
         HOEDOWN_BUFPUTSL(ob, " class=\"line-numbers\"");
     if (back && back->size)

@@ -90,6 +90,22 @@ typedef struct hoedown_document hoedown_document;
 
 struct hoedown_renderer_data {
 	void *opaque;
+
+	/* Where in the original input this block starts, plus one.
+	 *
+	 * MacDown uses it to find the source of what the reader is looking at,
+	 * and the other way round. Biased by one so that zero can mean "not
+	 * known": subtract one before use.
+	 *
+	 * The start only, because a renderer callback runs inside the function
+	 * that parses the block, before its length is known. A consumer that
+	 * wants ranges takes them from the next block's start.
+	 *
+	 * Top-level blocks only. The parser compacts nested content in place —
+	 * parse_blockquote memmoves the quote markers away — so inside a
+	 * blockquote or a list the original positions no longer exist.
+	 */
+	size_t src_begin;
 };
 typedef struct hoedown_renderer_data hoedown_renderer_data;
 
