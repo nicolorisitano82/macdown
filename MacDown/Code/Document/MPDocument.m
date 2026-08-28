@@ -187,6 +187,8 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (strong, nonatomic) NSColor *previewBackgroundColor;
 /// The drawn diagrams, posted by the page after each render.
 @property (copy, nonatomic) NSArray<NSString *> *harvestedDiagrams;
+/// The typeset formulas, likewise: {svg, display}.
+@property (copy, nonatomic) NSArray<NSDictionary *> *harvestedFormulas;
 @property (strong, nonatomic) NSURL *previewScratchDirectory;
 @property (strong, nonatomic) MPPreviewSchemeHandler *previewSchemeHandler;
 @property (weak) IBOutlet NSPopUpButton *wordCountWidget;
@@ -370,10 +372,39 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
         @"c.removeAttribute('width');c.removeAttribute('height');"
         @"c.style.width='';c.style.height='';c.style.maxWidth='100%';"
         @"out.push(c.outerHTML);}"
+        // MathJax draws with currentColor, which is inherited. Detached from
+        // the page for rasterising there is nothing to inherit from, and the
+        // formula would come out invisible.
+        @"var maths=[];"
+        @"var m=document.querySelectorAll('mjx-container');"
+        @"for(var j=0;j<m.length;j++){"
+        @"var svg=m[j].querySelector('svg');"
+        @"if(!svg)continue;"
+        @"var k=svg.cloneNode(true);"
+        @"k.setAttribute('color','#000000');"
+        @"k.style.color='#000000';"
+        // MathJax sizes its output in ex, which rasterises to a formula a
+        // few pixels wide. The page knows what it actually drew.
+        @"var r=svg.getBoundingClientRect();"
+        @"if(r.width>0&&r.height>0){"
+        @"k.setAttribute('width',Math.ceil(r.width));"
+        @"k.setAttribute('height',Math.ceil(r.height));"
+        @"k.style.width='';k.style.height='';}"
+        @"maths.push({svg:k.outerHTML,"
+        @"display:m[j].getAttribute('display')==='true'});}"
         @"try{window.webkit.messageHandlers.macdownDiagrams"
-        @".postMessage(out);}catch(e){}"
-        @"return out.length;})()";
-    [self.preview evaluateJavaScript:script completionHandler:nil];
+        @".postMessage({diagrams:out,formulas:maths});}catch(e){}"
+        @"return out.length;})";
+
+    // Installed as a function rather than run once, because it has to run
+    // again later: MathJax typesets after the page has finished loading, so
+    // a single pass here finds the diagrams and no formulas at all.
+    NSString *install = [NSString stringWithFormat:
+        @"window.MacDownHarvest = %@; MacDownHarvest();"
+        @"if (window.MathJax && MathJax.startup && MathJax.startup.promise)"
+        @" MathJax.startup.promise.then(function(){MacDownHarvest();});",
+        script];
+    [self.preview evaluateJavaScript:install completionHandler:nil];
 }
 
 /** Reads the body background out of the page, for the divider.
@@ -1170,8 +1201,12 @@ static NSString * const kMPScrollReporterSource =
 
     if ([message.name isEqualToString:kMPDiagramsMessage])
     {
-        if ([message.body isKindOfClass:[NSArray class]])
-            self.harvestedDiagrams = message.body;
+        NSDictionary *body = message.body;
+        if ([body isKindOfClass:[NSDictionary class]])
+        {
+            self.harvestedDiagrams = body[@"diagrams"];
+            self.harvestedFormulas = body[@"formulas"];
+        }
         return;
     }
 
@@ -1744,6 +1779,110 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
  * means something did not draw. Rather than risk pairing a diagram with the
  * wrong fence, that leaves every fence alone as a code block.
  */
+/** Puts the typeset formulas into exported markup, in place of their TeX.
+ *
+ * An EPUB carries no scripts, and neither does a Word file, so TeX left in
+ * the text stays TeX: the reader sees \(E = mc^2\) where the formula should
+ * be. MathJax has already drawn it in the preview, so what is exported is
+ * that drawing.
+ *
+ * MathJax normalises the delimiters while it works, so by the time this runs
+ * every formula is \( \) or \[ \] whatever the document used.
+ */
+- (NSString *)htmlByInliningFormulasIn:(NSString *)html asImages:(BOOL)asImages
+{
+    NSArray<NSDictionary *> *formulas = self.harvestedFormulas;
+    if (!formulas.count)
+        return html;
+
+    // Non-greedy, and the two forms in one alternation so that the matches
+    // come back in document order — the order MathJax typeset them in.
+    static NSString * const pattern =
+        @"\\\\\\[[\\s\\S]*?\\\\\\]|\\\\\\([\\s\\S]*?\\\\\\)";
+    NSRegularExpression *regex =
+        [NSRegularExpression regularExpressionWithPattern:pattern options:0
+                                                    error:NULL];
+    NSArray<NSTextCheckingResult *> *found =
+        [regex matchesInString:html options:0
+                         range:NSMakeRange(0, html.length)];
+
+    // An export embeds its scripts, and MathJax's own source is full of the
+    // sequences this is looking for — twenty of them in a document with two
+    // formulas in it. Only what lies outside a script is TeX.
+    static NSRegularExpression *scriptRegex = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        scriptRegex = [NSRegularExpression regularExpressionWithPattern:
+            @"<script[\\s\\S]*?</script>"
+            options:NSRegularExpressionCaseInsensitive error:NULL];
+    });
+    NSArray<NSTextCheckingResult *> *scripts =
+        [scriptRegex matchesInString:html options:0
+                               range:NSMakeRange(0, html.length)];
+
+    NSMutableArray<NSTextCheckingResult *> *matches = [NSMutableArray array];
+    for (NSTextCheckingResult *candidate in found)
+    {
+        BOOL inScript = NO;
+        for (NSTextCheckingResult *script in scripts)
+        {
+            if (NSLocationInRange(candidate.range.location, script.range))
+            {
+                inScript = YES;
+                break;
+            }
+        }
+        if (!inScript)
+            [matches addObject:candidate];
+    }
+
+    if (matches.count != formulas.count)
+        return html;
+
+    NSMutableString *result = [html mutableCopy];
+    for (NSInteger i = (NSInteger)matches.count - 1; i >= 0; i--)
+    {
+        NSDictionary *formula = formulas[(NSUInteger)i];
+        NSString *svg = formula[@"svg"];
+        if (![svg isKindOfClass:[NSString class]])
+            continue;
+
+        // EPUB carries SVG natively, and it is the better answer: the
+        // formula stays sharp at any zoom, and NSImage cannot rasterise
+        // what MathJax emits anyway — its <defs> and <use> come back a
+        // solid black rectangle. Word has no SVG, so there it is a picture
+        // and the black rectangle is a known limit.
+        NSString *tag = asImages ? MPImageTagForSVG(svg, 3.0) : svg;
+        if (!tag)
+            continue;
+
+        // A display formula sits on its own line; an inline one has to sit
+        // on the text's baseline, or it rides above it.
+        if ([formula[@"display"] boolValue])
+        {
+            tag = [NSString stringWithFormat:
+                @"<span style=\"display:block;text-align:center\">%@</span>",
+                tag];
+        }
+        else
+        {
+            // Only the picture needs help sitting on the baseline. The SVG
+            // arrives with MathJax's own vertical-align on it, which is the
+            // exact offset for that formula — and a second style attribute
+            // would not be valid XML anyway.
+            if (asImages)
+            {
+                tag = [tag stringByReplacingOccurrencesOfString:@"<img "
+                    withString:@"<img style=\"vertical-align:middle\" "];
+            }
+        }
+
+        [result replaceCharactersInRange:matches[(NSUInteger)i].range
+                              withString:tag];
+    }
+    return result;
+}
+
 - (NSString *)htmlByInliningDiagramsIn:(NSString *)html asImages:(BOOL)asImages
 {
     NSArray<NSString *> *diagrams = self.renderedDiagrams;
@@ -1836,6 +1975,7 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
                                                highlighting:NO];
     html = [self htmlByResolvingWikiLinksIn:html];
     html = [self htmlByInliningDiagramsIn:html asImages:YES];
+    html = [self htmlByInliningFormulasIn:html asImages:NO];
 
     NSURL *cssURL = [[NSBundle mainBundle] URLForResource:@"epub-export"
                                             withExtension:@"css"
@@ -2222,6 +2362,7 @@ NS_INLINE MPDocxTable *MPDocxTableFromHTML(NSString *html,
     // SVG support at all and would drop the diagrams without a word. They
     // then travel the same road as any other image below.
     html = [self htmlByInliningDiagramsIn:html asImages:YES];
+    html = [self htmlByInliningFormulasIn:html asImages:YES];
 
     NSMutableArray<MPDocxImage *> *images = [NSMutableArray array];
     NSUInteger skipped = 0;

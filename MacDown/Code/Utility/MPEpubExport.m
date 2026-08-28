@@ -41,6 +41,30 @@ NS_INLINE NSString *MPEpubEscaped(NSString *text)
  */
 NS_INLINE NSString *MPXHTMLFromHTML(NSString *html)
 {
+    // Tidy is an HTML tidier, and it discards elements HTML does not have —
+    // <svg> among them, which is how a typeset formula disappears between
+    // the preview and the package. SVG is already well formed XML and needs
+    // none of the repair the rest of the markup does, so it is lifted out,
+    // kept aside, and put back afterwards.
+    NSMutableArray<NSString *> *svgs = [NSMutableArray array];
+    NSRegularExpression *svgRegex = [NSRegularExpression
+        regularExpressionWithPattern:@"<svg[\\s\\S]*?</svg>"
+                             options:NSRegularExpressionCaseInsensitive
+                               error:NULL];
+    NSMutableString *guarded = [html mutableCopy];
+    NSArray<NSTextCheckingResult *> *svgMatches =
+        [svgRegex matchesInString:guarded options:0
+                            range:NSMakeRange(0, guarded.length)];
+    for (NSInteger i = (NSInteger)svgMatches.count - 1; i >= 0; i--)
+    {
+        NSRange range = svgMatches[(NSUInteger)i].range;
+        [svgs insertObject:[guarded substringWithRange:range] atIndex:0];
+        NSString *token = [NSString stringWithFormat:
+            @"<span id=\"mp-svg-%ld\"></span>", (long)i];
+        [guarded replaceCharactersInRange:range withString:token];
+    }
+    html = guarded;
+
     NSString *wrapped = [NSString stringWithFormat:
         @"<html><body>%@</body></html>", html];
 
@@ -77,6 +101,22 @@ NS_INLINE NSString *MPXHTMLFromHTML(NSString *html)
     [voids replaceMatchesInString:out options:0
                             range:NSMakeRange(0, out.length)
                      withTemplate:@"<$1$2/>"];
+
+    for (NSUInteger i = 0; i < svgs.count; i++)
+    {
+        // Written either way round depending on whether tidy kept the span
+        // as an empty element or gave it a closing tag.
+        NSString *empty = [NSString stringWithFormat:
+            @"<span id=\"mp-svg-%lu\"/>", (unsigned long)i];
+        NSString *paired = [NSString stringWithFormat:
+            @"<span id=\"mp-svg-%lu\"></span>", (unsigned long)i];
+        NSRange all = NSMakeRange(0, out.length);
+        [out replaceOccurrencesOfString:empty withString:svgs[i]
+                                options:0 range:all];
+        all = NSMakeRange(0, out.length);
+        [out replaceOccurrencesOfString:paired withString:svgs[i]
+                                options:0 range:all];
+    }
     return out;
 }
 
