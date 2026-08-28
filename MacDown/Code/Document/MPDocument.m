@@ -228,6 +228,7 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (copy) NSString *loadedString;
 
 - (void)adjustPreviewContentInsets;
+- (void)markPreviewAtSelection;
 - (void)setPreviewScrollTopTo:(CGFloat)top;
 - (void)refreshPreviewBackgroundColor;
 - (void)harvestDiagramsFromPreview;
@@ -242,6 +243,11 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     __weak MPDocument *weakObj = doc;
     return ^{
         [weakObj scaleWebview];
+
+        // A refresh rebuilds the page, so the mark showing where the reader
+        // is goes with it. Put it back rather than leaving the bar missing
+        // until the selection next happens to move.
+        [weakObj markPreviewAtSelection];
         [weakObj adjustPreviewContentInsets];
         [weakObj refreshPreviewBackgroundColor];
         [weakObj harvestDiagramsFromPreview];
@@ -538,6 +544,7 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 static NSString * const kMPScrollMessage = @"macdownScroll";
 static NSString * const kMPMathJaxMessage = @"macdownMathJax";
 static NSString * const kMPDiagramsMessage = @"macdownDiagrams";
+static NSString * const kMPSelectionMessage = @"macdownSelection";
 
 /** Reports scrolling and the page's dimensions back to the document.
  *
@@ -564,6 +571,57 @@ static NSString * const kMPScrollReporterSource =
     @"schedule();"
     @"})();";
 
+/** Keeps the two panes pointing at the same block.
+ *
+ * The blocks carry data-src, the byte offset they were rendered from; see
+ * the patch to hoedown. Everything here works off that.
+ *
+ * The style is injected rather than added to the renderer's stylesheets on
+ * purpose: a bar marking where the reader is working is an aid to editing,
+ * and has no business in an exported document.
+ */
+static NSString * const kMPSelectionSource =
+    @"(function(){"
+    @"var style=document.createElement('style');"
+    @"style.textContent='"
+    @"[data-src]{position:relative}"
+    @".macdown-here::before{content:\"\";position:absolute;"
+    @"left:-14px;top:0;bottom:0;width:3px;border-radius:2px;"
+    @"background:currentColor;opacity:0.35}"
+    @"';"
+    @"document.head.appendChild(style);"
+    @"function blocks(){"
+    @"return Array.prototype.slice.call("
+    @"document.querySelectorAll('[data-src]'));}"
+    @"window.MacDownMarkHere=function(offset){"
+    @"var all=blocks(),found=null;"
+    @"for(var i=0;i<all.length;i++){"
+    @"if(parseInt(all[i].getAttribute('data-src'),10)<=offset)found=all[i];"
+    @"else break;}"
+    @"for(var j=0;j<all.length;j++)"
+    @"all[j].classList.toggle('macdown-here',all[j]===found);"
+    @"};"
+    @"function report(){"
+    @"var sel=document.getSelection();"
+    @"if(!sel||!sel.anchorNode)return;"
+    @"var node=sel.anchorNode;"
+    @"if(node.nodeType===3)node=node.parentElement;"
+    @"while(node&&!node.hasAttribute('data-src'))node=node.parentElement;"
+    @"if(!node)return;"
+    @"var all=blocks(),i=all.indexOf(node);"
+    @"var begin=parseInt(node.getAttribute('data-src'),10);"
+    @"var end=(i>=0&&i+1<all.length)"
+    @"?parseInt(all[i+1].getAttribute('data-src'),10):-1;"
+    @"window.webkit.messageHandlers.macdownSelection.postMessage("
+    @"{begin:begin,end:end});}"
+    @"var pending=false;"
+    @"document.addEventListener('selectionchange',function(){"
+    @"if(pending)return;pending=true;"
+    @"requestAnimationFrame(function(){pending=false;report();});"
+    @"});"
+    @"})();";
+
+
 - (WKWebView *)buildPreviewWebView
 {
     WKWebViewConfiguration *configuration =
@@ -573,6 +631,7 @@ static NSString * const kMPScrollReporterSource =
     [content addScriptMessageHandler:self name:kMPScrollMessage];
     [content addScriptMessageHandler:self name:kMPMathJaxMessage];
     [content addScriptMessageHandler:self name:kMPDiagramsMessage];
+    [content addScriptMessageHandler:self name:kMPSelectionMessage];
 
     // At the end of the document, so the page it decorates exists, and in
     // every frame the preview will ever load rather than being re-injected
@@ -582,6 +641,12 @@ static NSString * const kMPScrollReporterSource =
          injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
       forMainFrameOnly:YES];
     [content addUserScript:reporter];
+
+    WKUserScript *selection = [[WKUserScript alloc]
+        initWithSource:kMPSelectionSource
+         injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
+      forMainFrameOnly:YES];
+    [content addUserScript:selection];
 
     // Everything the preview loads comes through here. See
     // MPPreviewSchemeHandler for why it cannot simply be file://.
@@ -988,6 +1053,27 @@ static NSString * const kMPScrollReporterSource =
 
 #pragma mark - NSTextViewDelegate
 
+/** Tells the preview where the reader is.
+ *
+ * Only the offset goes across: which block that lands in is worked out in
+ * the page, where the blocks and their offsets already are, rather than
+ * duplicated on this side.
+ */
+- (void)textViewDidChangeSelection:(NSNotification *)notification
+{
+    if (notification.object != self.editor)
+        return;
+    [self markPreviewAtSelection];
+}
+
+- (void)markPreviewAtSelection
+{
+    NSString *js = [NSString stringWithFormat:
+        @"if (window.MacDownMarkHere) MacDownMarkHere(%lu);",
+        (unsigned long)self.editor.selectedRange.location];
+    [self.preview evaluateJavaScript:js completionHandler:nil];
+}
+
 - (BOOL)textView:(NSTextView *)textView doCommandBySelector:(SEL)commandSelector
 {
     if (commandSelector == @selector(insertTab:))
@@ -1219,6 +1305,28 @@ static NSString * const kMPScrollReporterSource =
             self.harvestedDiagrams = body[@"diagrams"];
             self.harvestedFormulas = body[@"formulas"];
         }
+        return;
+    }
+
+    if ([message.name isEqualToString:kMPSelectionMessage])
+    {
+        NSDictionary *body = message.body;
+        if (![body isKindOfClass:[NSDictionary class]])
+            return;
+
+        NSInteger begin = [body[@"begin"] integerValue];
+        NSInteger end = [body[@"end"] integerValue];
+        NSUInteger length = self.editor.textStorage.length;
+        if (begin < 0 || (NSUInteger)begin > length)
+            return;
+        // The last block reports no end, since nothing follows it.
+        if (end < 0 || (NSUInteger)end > length)
+            end = (NSInteger)length;
+        if (end <= begin)
+            return;
+
+        self.editor.activeSourceRange =
+            NSMakeRange((NSUInteger)begin, (NSUInteger)(end - begin));
         return;
     }
 

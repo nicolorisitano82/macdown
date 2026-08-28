@@ -19,6 +19,7 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 
 
 @interface MPEditorView ()
+@property (assign, nonatomic) NSRange lastDrawnActiveRange;
 
 @property NSRect contentRect;
 @property CGFloat trailingHeight;
@@ -89,8 +90,60 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 
 
 - (void)awakeFromNib {
+    _activeSourceRange = NSMakeRange(NSNotFound, 0);
     [self registerForDraggedTypes:[NSArray arrayWithObjects: NSDragPboard, nil]];
     [super awakeFromNib];
+}
+
+- (void)setActiveSourceRange:(NSRange)range
+{
+    if (NSEqualRanges(range, _activeSourceRange))
+        return;
+    _activeSourceRange = range;
+    [self setNeedsDisplay:YES];
+}
+
+/** Draws the bar marking the block the preview is looking at.
+ *
+ * In the inset to the left of the text rather than beside it, so turning it
+ * on does not reflow a line.
+ */
+- (void)drawViewBackgroundInRect:(NSRect)rect
+{
+    [super drawViewBackgroundInRect:rect];
+
+    NSRange range = self.activeSourceRange;
+    if (range.location == NSNotFound || range.length == 0)
+        return;
+    if (NSMaxRange(range) > self.textStorage.length)
+        return;
+
+    NSLayoutManager *manager = self.layoutManager;
+    NSTextContainer *container = self.textContainer;
+    if (!manager || !container)
+        return;
+
+    NSRange glyphs = [manager glyphRangeForCharacterRange:range
+                                     actualCharacterRange:NULL];
+    NSRect bounds = [manager boundingRectForGlyphRange:glyphs
+                                       inTextContainer:container];
+    if (NSIsEmptyRect(bounds))
+        return;
+
+    CGFloat inset = self.textContainerInset.width;
+    // Centred in the inset, and never off the left edge on a narrow one.
+    CGFloat width = 3.0;
+    CGFloat x = MAX(2.0, inset / 2.0 - width / 2.0);
+
+    NSRect bar = NSMakeRect(x,
+                            bounds.origin.y + self.textContainerInset.height,
+                            width, bounds.size.height);
+    if (!NSIntersectsRect(bar, rect))
+        return;
+
+    NSColor *ink = self.insertionPointColor ?: [NSColor textColor];
+    [[ink colorWithAlphaComponent:0.45] setFill];
+    [[NSBezierPath bezierPathWithRoundedRect:bar xRadius:1.5 yRadius:1.5] fill];
 }
 
 - (NSDragOperation)draggingEntered:(id <NSDraggingInfo>)sender {

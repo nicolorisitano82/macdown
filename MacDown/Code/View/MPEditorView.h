@@ -12,6 +12,13 @@
 
 @property BOOL scrollsPastEnd;
 
+/** The block the preview is showing the reader, drawn as a margin bar.
+ *
+ * A location of NSNotFound clears it. Presentation only: it never touches
+ * the text or the selection.
+ */
+@property (assign, nonatomic) NSRange activeSourceRange;
+
 /// Underlines words the prose checker flags. Off by default.
 @property BOOL proseHighlightsEnabled;
 
