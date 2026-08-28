@@ -110,3 +110,32 @@
 /* (No Comment) */
 "WORDS_PLURAL_STRING" = "%@ parola;%@ parole";
 
+/* Rendering preference pane, rebuilt in code */
+"Style" = "Stile";
+"Stylesheet:" = "Foglio di stile:";
+"Reveal" = "Mostra";
+"Reload" = "Ricarica";
+"Code" = "Codice";
+"Highlight syntax in code blocks" = "Evidenzia la sintassi nei blocchi di codice";
+"Theme:" = "Tema:";
+"Label:" = "Etichetta:";
+"Language name" = "Nome del linguaggio";
+"Custom" = "Personalizzata";
+"Show line numbers" = "Mostra i numeri di riga";
+"Diagrams" = "Diagrammi";
+"Loaded only for documents that contain a diagram." = "Caricati solo per i documenti che contengono un diagramma.";
+"Math" = "Matematica";
+"TeX-like math syntax" = "Sintassi matematica in stile TeX";
+"Use dollar sign ($) as inline delimiter" = "Usa il simbolo dollaro ($) come delimitatore in linea";
+"MathJax is included in the application; no connection is required." = "MathJax è incluso nell'applicazione: non serve alcuna connessione.";
+"Task list syntax" = "Sintassi delle liste di attività";
+"Detect Jekyll front-matter" = "Rileva il front-matter di Jekyll";
+"Detect table of contents token" = "Rileva il token del sommario";
+"Render newline literally" = "Interpreta l'a capo alla lettera";
+"Writing" = "Scrittura";
+"Link [[wiki style]] references to neighbouring documents" = "Collega i riferimenti [[stile wiki]] ai documenti vicini";
+"Highlight prose issues in new documents" = "Evidenzia i problemi di prosa nei nuovi documenti";
+"Preview" = "Anteprima";
+"Scale preview based on editor font size" = "Scala l'anteprima in base al corpo del carattere dell'editor";
+"Default path:" = "Percorso predefinito:";
+"None" = "Nessuna";

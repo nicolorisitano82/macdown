@@ -13,3 +13,33 @@
 "CHARACTERS_PLURAL_STRING" = "%@ character;%@ characters";
 
 "CHARACTERS_NO_SPACES_PLURAL_STRING" = "%@ character (no spaces);%@ characters (no spaces)";
+
+/* Rendering preference pane, rebuilt in code */
+"Style" = "Style";
+"Stylesheet:" = "Stylesheet:";
+"Reveal" = "Reveal";
+"Reload" = "Reload";
+"Code" = "Code";
+"Highlight syntax in code blocks" = "Highlight syntax in code blocks";
+"Theme:" = "Theme:";
+"Label:" = "Label:";
+"Language name" = "Language name";
+"Custom" = "Custom";
+"Show line numbers" = "Show line numbers";
+"Diagrams" = "Diagrams";
+"Loaded only for documents that contain a diagram." = "Loaded only for documents that contain a diagram.";
+"Math" = "Math";
+"TeX-like math syntax" = "TeX-like math syntax";
+"Use dollar sign ($) as inline delimiter" = "Use dollar sign ($) as inline delimiter";
+"MathJax is included in the application; no connection is required." = "MathJax is included in the application; no connection is required.";
+"Markdown" = "Markdown";
+"Task list syntax" = "Task list syntax";
+"Detect Jekyll front-matter" = "Detect Jekyll front-matter";
+"Detect table of contents token" = "Detect table of contents token";
+"Render newline literally" = "Render newline literally";
+"Writing" = "Writing";
+"Link [[wiki style]] references to neighbouring documents" = "Link [[wiki style]] references to neighbouring documents";
+"Highlight prose issues in new documents" = "Highlight prose issues in new documents";
+"Preview" = "Preview";
+"Scale preview based on editor font size" = "Scale preview based on editor font size";
+"Default path:" = "Default path:";

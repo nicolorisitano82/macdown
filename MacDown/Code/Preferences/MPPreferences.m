@@ -124,6 +124,8 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
 @dynamic htmlLineNumbers;
 @dynamic htmlGraphviz;
 @dynamic htmlMermaid;
+@dynamic htmlWikiLinks;
+@dynamic editorProseHighlights;
 @dynamic htmlCodeBlockAccessory;
 @dynamic htmlRendersTOC;
 
@@ -292,6 +294,11 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
         self.htmlMermaid = YES;
     if (![defaults objectForKey:@"htmlGraphviz"])
         self.htmlGraphviz = YES;
+
+    // WikiLinks were unconditional before they had a switch, so the switch
+    // starts where the behaviour already was.
+    if (![defaults objectForKey:@"htmlWikiLinks"])
+        self.htmlWikiLinks = YES;
 }
 
 @end

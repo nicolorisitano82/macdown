@@ -75,7 +75,7 @@ NS_INLINE NSSet *MPEditorPreferencesToObserve()
             @"editorHorizontalInset", @"editorVerticalInset",
             @"editorWidthLimited", @"editorMaximumWidth", @"editorLineSpacing",
             @"editorOnRight", @"editorStyleName", @"editorShowWordCount",
-            @"editorScrollsPastEnd", nil
+            @"editorScrollsPastEnd", @"editorProseHighlights", nil
         ];
     });
     return keys;
@@ -1474,7 +1474,8 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
         [pasteboard writeObjects:@[self.renderer.currentHtml]];
     }
 
-    html = [self htmlByResolvingWikiLinksIn:html];
+    if (self.preferences.htmlWikiLinks)
+        html = [self htmlByResolvingWikiLinksIn:html];
 
     NSURL *baseUrl = self.fileURL;
     if (!baseUrl)   // Unsaved doument; just use the default URL.
@@ -1944,6 +1945,7 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
         BOOL highlighting = controller.highlightingIncluded;
         NSString *html = [self.renderer HTMLForExportWithStyles:styles
                                                    highlighting:highlighting];
+        if (self.preferences.htmlWikiLinks)
         html = [self htmlByResolvingWikiLinksIn:html];
         html = [self htmlByInliningDiagramsIn:html asImages:NO];
         [html writeToURL:panel.URL atomically:NO encoding:NSUTF8StringEncoding
@@ -1973,7 +1975,8 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
     // the Word export does it — nothing here runs scripts.
     NSString *html = [self.renderer HTMLForExportWithStyles:NO
                                                highlighting:NO];
-    html = [self htmlByResolvingWikiLinksIn:html];
+    if (self.preferences.htmlWikiLinks)
+        html = [self htmlByResolvingWikiLinksIn:html];
     html = [self htmlByInliningDiagramsIn:html asImages:YES];
     html = [self htmlByInliningFormulasIn:html asImages:NO];
 
@@ -2181,7 +2184,8 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
 {
     NSString *html = [self.renderer HTMLForExportWithStyles:NO
                                                highlighting:NO];
-    html = [self htmlByResolvingWikiLinksIn:html];
+    if (self.preferences.htmlWikiLinks)
+        html = [self htmlByResolvingWikiLinksIn:html];
 
     NSURL *url = [[NSBundle mainBundle] URLForResource:@"word-export"
                                         withExtension:@"css"
@@ -2973,7 +2977,13 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
 
 - (IBAction)toggleProseHighlights:(id)sender
 {
-    self.editor.proseHighlightsEnabled = !self.editor.proseHighlightsEnabled;
+    BOOL on = !self.editor.proseHighlightsEnabled;
+    self.editor.proseHighlightsEnabled = on;
+
+    // Remembered, so the choice outlives the window it was made in. It used
+    // to live only on the editor, which meant switching it on and reopening
+    // the document switched it off again.
+    self.preferences.editorProseHighlights = on;
     [self updateProseSummary];
 }
 
@@ -3128,6 +3138,13 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
             self.wordCountWidget.hidden = YES;
             self.editorPaddingBottom.constant = 0.0;
         }
+    }
+
+    if (!changedKey || [changedKey isEqualToString:@"editorProseHighlights"])
+    {
+        self.editor.proseHighlightsEnabled =
+            self.preferences.editorProseHighlights;
+        [self updateProseSummary];
     }
 
     if (!changedKey || [changedKey isEqualToString:@"editorScrollsPastEnd"])
