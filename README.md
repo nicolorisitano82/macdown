@@ -1,12 +1,82 @@
 # MacDown
 
-MacDown is an open source Markdown editor for OS X, released under the MIT License. The author stole the idea from [Chen Luo](https://twitter.com/chenluois)’s [Mou](http://mouapp.com) so that people can make crappy clones.
+A Markdown editor for macOS, released under the MIT License.
 
-This is a fork of [MacDown](https://github.com/MacDownApp/macdown) by Tzu-ping Chung.
+This is a fork of [MacDown](https://github.com/MacDownApp/macdown) by
+Tzu-ping Chung, who took the idea from [Chen Luo](https://twitter.com/chenluois)’s
+[Mou](http://mouapp.com). It has been brought up to macOS 26 and extended,
+mostly around the two things the original left thin: diagrams, and getting a
+document out of the app in a shape someone else can open.
 
 ## Screenshot
 
 ![screenshot](assets/screenshot.png)
+
+## What this fork adds
+
+### Diagrams
+
+* **Mermaid 11.13**, up from the 8.4.3 the original shipped. Flowcharts,
+  sequence diagrams, gantt charts, state and class diagrams, and the newer
+  types 8.x never had.
+* **Graphviz works.** Its bundled script used to replace the whole page body
+  with the first graph it drew, taking the rest of the document with it, and
+  it stopped redrawing after the first keystroke. Six layout engines —
+  `dot`, `neato`, `fdp`, `circo`, `twopi`, `osage` — each its own fence
+  language.
+* **Zoom and pan on any diagram.** A wide gantt or a large graph is fitted
+  to the pane and its labels collide; pinch or ⌃-scroll to magnify, drag to
+  pan, double-click to fit again. The zoom survives a refresh, so you keep
+  your place while typing.
+* **Diagrams follow the appearance**, dark or light, and are **on by
+  default** — the libraries are only loaded for documents that use them.
+
+### Export
+
+* **EPUB 3.3.** Local images are copied into the package, and the table of
+  contents is built from the headings.
+* **Word (.docx) that survives the trip.** AppKit's own writer drops
+  pictures, flattens tables into tab-separated paragraphs, loses list
+  indentation and code block shading, and names a Mac-only font with nothing
+  to substitute it. Each of those is repaired in the file afterwards, so
+  tables arrive as tables and code arrives monospaced on Windows too.
+* **Diagrams are drawn into every export**, HTML, Word and EPUB alike,
+  rather than shipping the source and a library and hoping the reader runs
+  JavaScript.
+
+### Writing
+
+* **A prose checker**: qualifiers, weasel words, hedging, wordiness, passive
+  tells and repeated words, in **English and Italian**. The word lists are a
+  resource file, editable without rebuilding.
+* **A maths editor** for TeX, with a live preview, backed by a bundled
+  MathJax — so formulas render with no network.
+* **WikiLinks**: `[[Another note]]` links to a neighbouring document, and
+  says so when the file is not there.
+* **A sidebar** with the document outline, for moving around a long file.
+
+### Appearance
+
+* Built against the macOS 26 SDK, with the window chrome to match: content
+  runs the full height under a unified toolbar, which picks up the glass
+  material and the scroll edge effect.
+* **The preview has a dark mode**, and follows the system.
+* **Typing no longer makes the preview flash.** It used to reload the whole
+  page on every keystroke.
+
+## Installing
+
+Builds are on the [releases page](https://github.com/nicolorisitano82/macdown/releases).
+Requires macOS 26.
+
+They are **not signed or notarised** — no Developer ID certificate stands
+behind them — so macOS will refuse one on a double-click. After dragging the
+app to Applications:
+
+    xattr -d com.apple.quarantine /Applications/MacDown.app
+
+Whether to run an unsigned binary from the internet is your call; building
+from source is the alternative, and the next section says how.
 
 ## License
 
@@ -76,4 +146,17 @@ account for it:
 
 ## Credits
 
-MacDown depends a lot on other open source projects, such as [Hoedown](https://github.com/hoedown/hoedown) for Markdown-to-HTML rendering, [Prism](http://prismjs.com) for syntax highlighting (in code blocks), and [PEG Markdown Highlight](https://github.com/ali-rantakari/peg-markdown-highlight) for editor highlighting. If you find problems with those particular features, it is often worth reporting them upstream as well.
+MacDown leans on other open source projects:
+[Hoedown](https://github.com/hoedown/hoedown) turns Markdown into HTML,
+[Prism](https://prismjs.com) highlights code blocks,
+[PEG Markdown Highlight](https://github.com/ali-rantakari/peg-markdown-highlight)
+highlights the editor, [mermaid](https://mermaid.js.org) and
+[Graphviz](https://graphviz.org), through
+[Viz.js](https://github.com/mdaines/viz.js), draw the diagrams, and
+[MathJax](https://www.mathjax.org) sets the maths.
+
+They have the credit for the parts they do. Problems you run into here are
+still best [reported here](https://github.com/nicolorisitano82/macdown/issues):
+telling apart a fault in this fork, in the MacDown it grew out of, and in
+something underneath is rarely possible from the outside, and it is not the
+reporter's job.

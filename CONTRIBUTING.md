@@ -1,111 +1,156 @@
-# Contributing to MacDown
+# Contributing
 
-## Coding Style
+For what is worth working on, see the **Contributing** page in the
+application's Help menu, or `MacDown/Resources/contribute.md`. This file is
+about how the code here is written.
 
-All style rules are enforced under all circumstances except for external dependencies.
+## Before you start
 
-### Objective-C
+Some of this codebase will surprise you. These are the parts that have cost
+the most time.
 
-#### The 80-column Rule
+**Open the workspace, not the project.** `MacDown.xcworkspace` has the pods;
+`MacDown.xcodeproj` on its own does not build.
 
-All code should obey the 80-column rule.
+**The Debug build has its own preferences.** Its bundle identifier ends in
+`-debug`, so it reads a different defaults domain from a Release build. A
+setting you turn on while debugging is not on in the app you ship, and a
+feature can look fine in Debug and be dead in Release for no other reason.
+When a feature depends on a preference, test the Release build too.
 
-Exception: If a URL in a comment is too long, it can go over the limit. This happens a lot for Apple’s official documentation. Remember, however, that many websites offer alternative, shorter URL forms that are permanent. For example:
+**The preview runs on WebKit's legacy `WebView`.** It is refreshed by
+replacing the document's `innerHTML`, which does *not* re-execute the page's
+scripts. Anything injected into the preview has to expose a function that
+`MPDocument` can call again after each refresh — see how `mermaid.init.js`
+and `diagram-zoom.js` do it. Binding to the `load` event alone means your
+code runs once and never again after the first keystroke.
 
-* The title slug in StackOverflow (and other StackExchange sites) URLs can be ommitted. The following two are equivalent:
+**`Resources/Data` and `Resources/Extensions` are folder references.** Files
+dropped in there ship with the app without touching the project file. Adding
+a `.m` still means editing the project.
 
-    `http://stackoverflow.com/questions/13155612/how-does-one-eliminate-objective-c-try-catch-blocks-like-this`
-    `http://stackoverflow.com/questions/13155612`
+**Deployment target is macOS 26.0**, so Xcode 26 or later is required. The
+Command Line Tools cannot stand in for Xcode. The README has the setup
+steps.
 
-* The commit hash in GitHub commit page’s URL can be shortened. The followings are all equivalent:
+## Coding style
 
-    `https://github.com/uranusjr/macdown/commit/1612abb9dbd24113751958777a49cffc6767989c`
-    `https://github.com/uranusjr/macdown/commit/1612abb9dbd24`
-    `https://github.com/uranusjr/macdown/commit/1612abb`
+These rules hold everywhere except in external dependencies.
 
-#### Code Blocks
+### The 80-column rule
 
-* Braces go in separate lines. ([Allman style](http://en.wikipedia.org/wiki/Indent_style#Allman_style).)
-* If only one statement is contained inside the block, omit braces unless...
-    * This is part of an if-(else if-)else structure. All brace styles in the same structure should match (i.e. either non or all of them omit braces).
+All code obeys it.
 
-#### Stetements Inside `if`, `while`, etc.
+The exception is a URL in a comment that cannot be shortened. Many can:
+StackOverflow drops its title slug, and a GitHub commit hash can be cut to
+its first seven characters, so all of these are the same page:
 
-* Prefer implicit boolean conversion when it makes sense.
-    * `if (str.length)` is better than `if (str.length != 0)` if you want to know whether a string is empty. 
-    * The same applies when checking for an object’s `nil`-ness.
-    * If what you want to compare against is *zero as a number*, not emptiness, such as for `NSRange` position, `NSPoint` coordinates, etc., *do* use the `== 0`/`!= 0` expression.
+    https://github.com/nicolorisitano82/macdown/commit/1612abb9dbd24113751958777a49cffc6767989c
+    https://github.com/nicolorisitano82/macdown/commit/1612abb9dbd24
+    https://github.com/nicolorisitano82/macdown/commit/1612abb
 
-* If statements need to span multiple lines, prefer putting logical operators at the *beginning* of the line.
+### Braces and blocks
 
-    Yes:
-    ```c
-    while (this_is_very_long
-           || this_is_also_very_long)
-    {
-        // ...
-    }
-    ```
+Braces go on their own line — [Allman style](https://en.wikipedia.org/wiki/Indentation_style#Allman_style).
 
-    No:
-    ```c
-    while (this_is_very_long ||
-           this_is_also_very_long)
-    {
-        // ...
-    }
-    ```
+A block holding a single statement omits its braces, unless it is part of an
+`if`/`else if`/`else` chain: within one chain, either all of the blocks have
+braces or none do.
 
-* If code alignment is ambiguious, add extra indentation.
+### Conditions
 
-    Yes:
-    ```c
-    if (this_is_very_long
-            || this_is_also_very_long)
-        foo++;
-    ```
+Prefer an implicit boolean conversion where it reads as one. `if (str.length)`
+says "if the string has anything in it" better than `if (str.length != 0)`,
+and the same goes for checking an object against `nil`.
 
-    No:
-    ```c
-    if (this_is_very_long
+Where the comparison really is against *zero as a number* — an `NSRange`
+location, an `NSPoint` coordinate — write `== 0` or `!= 0` and mean it.
+
+When a condition spans lines, the logical operator starts the line:
+
+```objc
+while (this_is_very_long
+       || this_is_also_very_long)
+{
+    // ...
+}
+```
+
+not
+
+```objc
+while (this_is_very_long ||
+       this_is_also_very_long)
+{
+    // ...
+}
+```
+
+Where the wrapping would leave the condition looking like the body, indent it
+further:
+
+```objc
+if (this_is_very_long
         || this_is_also_very_long)
-        foo++;
-    ```
+    foo++;
+```
 
-    The above is not enforced (but recommended) if braces exist. Useful if you have a hard time fitting the statement into the 80-column constraint.
+Braces make that unambiguous on their own, so with them the extra
+indentation is optional — useful when a line is fighting the 80-column
+limit:
 
-    Okay:
-    ```c
-    if (this_is_very_long
-        || this_is_very_very_truly_long)
-    {
-        foo++;
-        bar--;
-    }
-    ```
+```objc
+if (this_is_very_long
+    || this_is_very_very_truly_long)
+{
+    foo++;
+    bar--;
+}
+```
 
-#### Invisible Characters
+### Whitespace
 
-Always use *four spaces* instead of tabs for indentation. Trailing whitespaces should be removed. You can turn on the **Automatically trim trailing whitespace** option in Xcode to let it do the job for you.
+Four spaces, never tabs. No trailing whitespace — Xcode's **Automatically
+trim trailing whitespace** does it for you. End files with a newline.
 
-Try to ensure that there’s a trailing newline in the end of a file. This is not strictly enforced since there are no easy ways to do that (except checking manually), but I’d appriciate the effort.
+### Comments
 
-## Version Control
+Comment the reasoning, not the mechanics: what the code does is already
+there to read, why it does it that way usually is not. Most of the comments
+worth writing in this codebase record a constraint that is not visible from
+the call site — a format that refuses something, an API that behaves
+differently than its name suggests, a workaround for a bug in a dependency.
 
-MacDown uses Git for source control, and is hosted on GitHub.
+## Version control
 
-### Commit Messages
+### Commit messages
 
-[General rules](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html) apply. If you absolutely need to, the first line of the message *can* go as long as 72 (instead of 50) characters, but it must not exceed it.
+[The general rules](https://cbea.ms/git-commit/) apply: a summary line, a
+blank line, then the body wrapped at 72 columns. The summary can run to 72
+characters if it must, but not further.
 
-Xcode’s commit window does not do a good job indicating whether your commit message is well-formed. I seldom use it personally, but if you do, you can check whether the commit message is good after you push to GitHub—If you see the first line of your commit message getting truncated, it is too long.
+Write the body for someone reading the log in two years with no memory of
+the change. Say what was wrong and why the fix is shaped the way it is,
+rather than restating the diff.
 
-### Pull Requests
+### Pull requests
 
-Please rebase your branch to `master` when you submit the pull request. There can be some nagging bugs when Git tries to merge files that are not code, particularly `.xib` and project files. When in doubt, always consider splitting changes into smaller commits so that you won’t need to re-apply your changes when things break.
+Rebase onto `master` before opening one. Git merges `.xib` files and the
+project file badly, and a rebase avoids most of the trouble. Smaller commits
+help for the same reason: when a merge does go wrong, there is less to
+reapply.
 
-Under certain circumstances I may wish you to perform further rebasing and/or squashing *after* you submit your pull request, or even perform them myself instead of merging your commits as-is. Don’t worry—you will always get full credits for your contribution.
+Your branch may be asked to be rebased or squashed again after review. The
+history stays yours either way.
 
-## More to Come
+### Verifying a change
 
-This style guide is a work in progress. Please feel free to ask if you have any questions about it. I’ll add more rules if there’s ambiguity.
+Building is not testing. A change to the preview, to an exporter or to
+anything that touches WebKit needs to be run and looked at — most of the
+faults this project has had passed the compiler without complaint.
+
+Exporters are worth checking against something other than the app that wrote
+the file: open the `.docx` in Word or LibreOffice, put the `.epub` through
+[epubcheck](https://www.w3.org/publishing/epubcheck/), unzip either and read
+the XML. A file that opens in one reader and not another is the usual way
+these break.
