@@ -36,7 +36,97 @@
     _closings = [NSMutableArray array];
     _revealed = [NSIndexSet indexSet];
     textView.layoutManager.delegate = self;
+
+    // The parse arrives after a pause, and the text keeps moving in the
+    // meantime. Without this the recorded positions are a description of a
+    // document that no longer exists, and a deletion aimed at a marker
+    // lands on a letter.
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self selector:@selector(textStorageDidProcessEditing:)
+               name:NSTextStorageDidProcessEditingNotification
+             object:textView.textStorage];
     return self;
+}
+
+- (void)dealloc
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+
+#pragma mark - Keeping up with the text
+
+/** Moves the recorded constructs to where the edit left them.
+ *
+ * Three things can happen to a construct. An edit before it slides it along;
+ * an edit inside its content stretches it; an edit that touches one of its
+ * delimiters destroys it as a construct, and it is forgotten until the next
+ * parse says otherwise.
+ */
+- (void)textStorageDidProcessEditing:(NSNotification *)notification
+{
+    NSTextStorage *storage = notification.object;
+    if (!(storage.editedMask & NSTextStorageEditedCharacters))
+        return;
+    if (!self.constructs.count)
+        return;
+
+    NSInteger delta = storage.changeInLength;
+    NSRange edited = storage.editedRange;
+    // The range as it was before the edit, which is what the recorded
+    // positions are still describing.
+    NSRange was = NSMakeRange(edited.location,
+                              edited.length >= (NSUInteger)MAX(delta, 0)
+                                  ? edited.length - delta : 0);
+
+    NSMutableArray<NSValue *> *constructs = [NSMutableArray array];
+    NSMutableArray<NSValue *> *openings = [NSMutableArray array];
+    NSMutableArray<NSValue *> *closings = [NSMutableArray array];
+    NSMutableIndexSet *markers = [NSMutableIndexSet indexSet];
+
+    for (NSUInteger i = 0; i < self.constructs.count; i++)
+    {
+        NSRange construct = self.constructs[i].rangeValue;
+        NSRange opening = self.openings[i].rangeValue;
+        NSRange closing = self.closings[i].rangeValue;
+
+        if (NSMaxRange(was) <= construct.location)
+        {
+            construct.location += delta;
+            opening.location += delta;
+            closing.location += delta;
+        }
+        else if (was.location >= NSMaxRange(construct))
+        {
+            // Untouched.
+        }
+        else if (was.location >= NSMaxRange(opening)
+                 && NSMaxRange(was) <= closing.location)
+        {
+            construct.length += delta;
+            closing.location += delta;
+        }
+        else
+        {
+            continue;
+        }
+
+        if (NSMaxRange(construct) > storage.length
+                || closing.location < NSMaxRange(opening))
+            continue;
+
+        [constructs addObject:[NSValue valueWithRange:construct]];
+        [openings addObject:[NSValue valueWithRange:opening]];
+        [closings addObject:[NSValue valueWithRange:closing]];
+        [markers addIndexesInRange:opening];
+        [markers addIndexesInRange:closing];
+    }
+
+    self.constructs = constructs;
+    self.openings = openings;
+    self.closings = closings;
+    self.markers = markers;
+    [self recomputeRevealed];
 }
 
 - (void)setEnabled:(BOOL)enabled
@@ -246,9 +336,14 @@
 
 /** The markers to show, because the caret is working on their construct.
  *
- * The construct's own range is widened by one at each end: with the caret
- * just past a closing marker you are about to delete it, and it has to be
- * visible for that to make sense.
+ * Strictly inside, not merely adjacent. Typing the closing `**` of a piece
+ * of bold text puts the caret immediately after the construct, and that is
+ * exactly the moment it should collapse and show as bold — so the edges do
+ * not count as being in it.
+ *
+ * Nothing relies on the edges any more. Deleting a marker is handled from
+ * the construct itself, whether it is drawn or not, and moving the caret
+ * steps over the delimiters rather than landing on them.
  */
 - (void)recomputeRevealed
 {
@@ -258,12 +353,18 @@
     for (NSValue *value in self.constructs)
     {
         NSRange construct = value.rangeValue;
-        NSRange touched = NSMakeRange(
-            construct.location > 0 ? construct.location - 1 : 0,
-            construct.length + (construct.location > 0 ? 2 : 1));
-
-        BOOL inside = NSLocationInRange(selection.location, touched)
-            || NSIntersectionRange(selection, touched).length > 0;
+        BOOL inside;
+        if (selection.length)
+        {
+            // A selection that merely stops at the edge is not in it; one
+            // that covers any of it is.
+            inside = NSIntersectionRange(selection, construct).length > 0;
+        }
+        else
+        {
+            inside = selection.location > construct.location
+                && selection.location < NSMaxRange(construct);
+        }
         if (inside)
             [shown addIndexesInRange:construct];
     }
@@ -314,6 +415,12 @@
 - (BOOL)isSkippableMarkerAtIndex:(NSUInteger)index
 {
     return self.enabled && [self.markers containsIndex:index];
+}
+
+- (BOOL)isHiddenMarkerAtIndex:(NSUInteger)index
+{
+    return self.enabled && [self.markers containsIndex:index]
+        && ![self.revealed containsIndex:index];
 }
 
 - (BOOL)construct:(NSRange *)outRange

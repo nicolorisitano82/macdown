@@ -33,6 +33,12 @@
 /// The blockquotes, drawn as a bar in the margin. Presentation only.
 @property (copy, nonatomic) NSArray<NSValue *> *quoteRanges;
 
+/** Whether pasting formatted text writes Markdown rather than plain text.
+ *
+ * ⌘⇧V is unaffected, and stays the way to paste exactly what was copied.
+ */
+@property (assign, nonatomic) BOOL pastesAsMarkdown;
+
 /** The horizontal rules, drawn as a line across the text.
  *
  * Set only when their dashes are being hidden as well, so that the drawn

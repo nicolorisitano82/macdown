@@ -94,6 +94,7 @@
 		B5C5C1666A506FEA86435D25 /* libPods-macdown-cmd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 263367245B2D78A42C2F19D7 /* libPods-macdown-cmd.a */; };
 		D0C1A1000000000000000003 /* MPDocxPostProcessing.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000002 /* MPDocxPostProcessing.m */; };
 		D0C1A1000000000000000013 /* MPProseChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000012 /* MPProseChecker.m */; };
+		2B1ED4173F22E318E5273038 /* MPMarkdownFromRichText.m in Sources */ = {isa = PBXBuildFile; fileRef = 29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */; };
 		D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000022 /* MPMathEditorController.m */; };
 		D0C1A1000000000000000033 /* MPSidebarController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000032 /* MPSidebarController.m */; };
 		D0C1A1000000000000000043 /* MPZipArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000042 /* MPZipArchive.m */; };
@@ -517,6 +518,8 @@
 		D0C1A1000000000000000002 /* MPDocxPostProcessing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocxPostProcessing.m; sourceTree = "<group>"; };
 		D0C1A1000000000000000011 /* MPProseChecker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPProseChecker.h; sourceTree = "<group>"; };
 		D0C1A1000000000000000012 /* MPProseChecker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPProseChecker.m; sourceTree = "<group>"; };
+		F4515DE9C37E50F01037E3DA /* MPMarkdownFromRichText.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMarkdownFromRichText.h; sourceTree = "<group>"; };
+		29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkdownFromRichText.m; sourceTree = "<group>"; };
 		D0C1A1000000000000000021 /* MPMathEditorController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMathEditorController.h; sourceTree = "<group>"; };
 		D0C1A1000000000000000022 /* MPMathEditorController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMathEditorController.m; sourceTree = "<group>"; };
 		D0C1A1000000000000000031 /* MPSidebarController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPSidebarController.h; sourceTree = "<group>"; };
@@ -635,6 +638,8 @@
 				D0C1A1000000000000000042 /* MPZipArchive.m */,
 				D0C1A1000000000000000011 /* MPProseChecker.h */,
 				D0C1A1000000000000000012 /* MPProseChecker.m */,
+				F4515DE9C37E50F01037E3DA /* MPMarkdownFromRichText.h */,
+				29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */,
 				1F0D9D63194AC7CF008E1856 /* MPUtilities.h */,
 				1F0D9D64194AC7CF008E1856 /* MPUtilities.m */,
 			);
@@ -1284,6 +1289,7 @@
 				D0C1A2020000000000000001 /* MPPreviewSchemeHandler.m in Sources */,
 				D0C1A1000000000000000043 /* MPZipArchive.m in Sources */,
 				D0C1A1000000000000000013 /* MPProseChecker.m in Sources */,
+				2B1ED4173F22E318E5273038 /* MPMarkdownFromRichText.m in Sources */,
 				D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */,
 				D0C1A1000000000000000033 /* MPSidebarController.m in Sources */,
 				1F0D9D67194AC7CF008E1856 /* MPUtilities.m in Sources */,

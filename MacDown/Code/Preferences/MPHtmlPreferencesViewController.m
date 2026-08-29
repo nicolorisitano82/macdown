@@ -386,15 +386,22 @@ static const CGFloat kMPNoteWidth = 400.0;
         [self checkboxWithTitle:NSLocalizedString(
             @"Indent lists and quotations in the editor", @"Preference")
                             key:@"editorBlockLayout"],
+        [self checkboxWithTitle:NSLocalizedString(
+            @"Paste formatted text as Markdown", @"Preference")
+                            key:@"editorPasteAsMarkdown"],
         [self noteWithText:NSLocalizedString(
             @"Editor themes state heading sizes in points, chosen for the "
             @"default body size. This keeps their proportions at any size. "
             @"At the default it changes nothing.",
             @"Explains what heading scaling does")],
         [self noteWithText:NSLocalizedString(
-            @"With the last two together, three dashes are drawn as a line "
-            @"across the page instead of being shown as dashes.",
+            @"Hiding the markers and indenting, together, also draw three "
+            @"dashes as a line across the page.",
             @"Explains that horizontal rules need both settings")],
+        [self noteWithText:NSLocalizedString(
+            @"Pasted headings, lists and links keep their shape. "
+            @"⌘⇧V pastes the text exactly as it was copied.",
+            @"Explains what pasting as Markdown does")],
     ] to:stack];
 }
 

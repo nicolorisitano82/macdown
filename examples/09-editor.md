@@ -1,8 +1,9 @@
 # L'editor che mostra il testo
 
-Le tre preferenze in **Preferenze › Resa grafica › Scrittura** che cambiano
-come l'editor *disegna* il markdown. Nessuna di loro cambia cosa viene
-salvato: il documento resta la stringa che vedi in un editor di testo.
+Le preferenze in **Preferenze › Resa grafica › Scrittura** che cambiano
+come l'editor *disegna* il markdown e come si comporta mentre scrivi.
+Nessuna di loro cambia cosa viene salvato: il documento resta la stringa
+che vedi in un editor di testo.
 
 Questo file va guardato **nell'editor**, non nell'anteprima. Accendi e
 spegni le preferenze mentre lo hai davanti.
@@ -47,6 +48,36 @@ Il [link di riferimento][rif] è lasciato in chiaro di proposito: nascondere
 > La barra resta continua anche quando una riga va a capo da sola e non ha
 > un simbolo di citazione tutto suo.
 
+## Incolla il testo formattato come markdown
+
+Copia un pezzo di pagina web — un titolo, un elenco, una tabella — e
+incollalo qui: arriva come markdown, non come una riga di testo che una
+volta era un titolo.
+
+Funziona con quello che i browser mettono negli appunti insieme al testo
+semplice. Riconosce titoli, elenchi anche annidati, collegamenti,
+immagini, blocchi di codice con il loro linguaggio, citazioni e tabelle.
+Quello che non riconosce lascia passare il testo e basta.
+
+**⌘⇧V** (*Modifica › Incolla senza formattazione*) incolla invece il testo
+esattamente com'era.
+
+## I marcatori collassano da soli
+
+Scrivi `**una prova**` qui sotto e guarda cosa succede quando batti il
+secondo asterisco: gli asterischi spariscono nel momento in cui il
+costrutto è completo, senza dover spostare il cursore.
+
+E con il cursore subito dopo una parola in grassetto, il tasto di
+cancellazione toglie la lettera che vedi, non i marcatori che non vedi.
+Quando resta una lettera sola, il costrutto se ne va tutto insieme.
+
+## ⌘B e ⌘I sulla parola
+
+Metti il cursore dentro una parola qualsiasi di questa riga e premi ⌘B:
+la parola diventa grassetta senza doverla selezionare. Premi di nuovo e
+torna com'era. Lo stesso vale per ⌘I, ⌘K e il codice in linea.
+
 ## Le due insieme
 
 Con **entrambe** accese, tre trattini smettono di essere tre trattini e
@@ -54,5 +85,6 @@ diventano una linea attraverso la pagina:
 
 ---
 
-Serve che siano accese tutte e due: una linea disegnata accanto a tre
-trattini visibili sarebbero due righe orizzontali invece di una.
+Serve che siano accese sia **Nascondi i marcatori** sia **Rientra liste e
+citazioni**: una linea disegnata accanto a tre trattini visibili sarebbero
+due righe orizzontali invece di una.

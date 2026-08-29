@@ -286,9 +286,65 @@ static NSString * const kMPBlockquoteLinePattern = @"^((?:\\> ?)+).*$";
     return YES;
 }
 
+/** The word the caret is in, for a toggle with nothing selected.
+ *
+ * ⌘B with no selection is expected to act on the word you are standing in,
+ * the way it does in a word processor. With the markers hidden it also has
+ * to work from where the word *looks* like it ends: the caret after
+ * `**bold**` is drawn immediately after the `d`, so a delimiter sitting
+ * between the caret and the word is stepped over before the word is taken.
+ *
+ * Returns a zero-length range at the caret when there is no word there, and
+ * the caller falls back to inserting an empty pair.
+ */
+- (NSRange)wordRangeForToggleWithPrefix:(NSString *)prefix
+                                 suffix:(NSString *)suffix
+{
+    NSString *content = self.string;
+    NSUInteger length = content.length;
+    NSUInteger caret = self.selectedRange.location;
+    if (caret > length)
+        return NSMakeRange(caret, 0);
+
+    if (caret >= suffix.length
+            && [[content substringWithRange:NSMakeRange(caret - suffix.length,
+                                                        suffix.length)]
+                    isEqualToString:suffix])
+        caret -= suffix.length;
+    else if (caret + prefix.length <= length
+            && [[content substringWithRange:NSMakeRange(caret, prefix.length)]
+                    isEqualToString:prefix])
+        caret += prefix.length;
+
+    // Letters and digits, plus the marks that sit inside a word. Not the
+    // marker characters: `_` is one, and a word is what would be wrapped,
+    // never the wrapping itself.
+    NSMutableCharacterSet *word = [NSMutableCharacterSet
+        alphanumericCharacterSet];
+    [word addCharactersInString:@"'’-"];
+
+    NSUInteger start = caret;
+    while (start > 0
+           && [word characterIsMember:[content characterAtIndex:start - 1]])
+        start--;
+    NSUInteger end = caret;
+    while (end < length
+           && [word characterIsMember:[content characterAtIndex:end]])
+        end++;
+
+    return NSMakeRange(start, end - start);
+}
+
 - (BOOL)toggleForMarkupPrefix:(NSString *)prefix suffix:(NSString *)suffix
 {
     NSRange range = self.selectedRange;
+    if (!range.length)
+    {
+        NSRange word = [self wordRangeForToggleWithPrefix:prefix
+                                                   suffix:suffix];
+        if (word.length)
+            range = word;
+    }
     NSString *selection = [self.string substringWithRange:range];
     BOOL isOn = NO;
 

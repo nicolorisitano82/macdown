@@ -133,6 +133,9 @@
 /* Class = "NSMenuItem"; title = "Paste"; ObjectID = "gVA-U4-sdL"; */
 "gVA-U4-sdL.title" = "Incolla";
 
+/* Class = "NSMenuItem"; title = "Paste and Match Style"; ObjectID = "Pms-7k-Qz3"; */
+"Pms-7k-Qz3.title" = "Incolla senza formattazione";
+
 /* Class = "NSMenuItem"; title = "Show Spelling and Grammar"; ObjectID = "HFo-cy-zxI"; */
 "HFo-cy-zxI.title" = "Mostra Ortografia e Grammatica";
 

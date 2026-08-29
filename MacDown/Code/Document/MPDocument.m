@@ -3285,6 +3285,9 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
         }
     }
 
+    if (!changedKey || [changedKey isEqualToString:@"editorPasteAsMarkdown"])
+        self.editor.pastesAsMarkdown = self.preferences.editorPasteAsMarkdown;
+
     if (!changedKey || [changedKey isEqualToString:@"editorHideMarkers"]
             || [changedKey isEqualToString:@"editorBlockLayout"]
             || [changedKey isEqualToString:@"editorBaseFontInfo"])

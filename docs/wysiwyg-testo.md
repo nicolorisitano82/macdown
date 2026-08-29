@@ -3,10 +3,9 @@
 Una roadmap per arrivare a un editor che mostra quello che il testo
 significa, senza smettere di essere un editor di markdown.
 
-Il punto di partenza non è zero: le prime quattro fasi sono fatte e sono
-segnate come tali. Quello che resta è la fase 4, il comportamento in
-scrittura, che è dove si sente la differenza fra «bello» e «si scrive
-meglio».
+Il punto di partenza non è zero, e a questo punto non è nemmeno la fine:
+tutte e cinque le fasi qui sotto sono fatte e segnate come tali. Quello
+che resta è scritto in fondo, sotto «Dove andare da qui».
 
 ---
 
@@ -193,7 +192,7 @@ una linea disegnata accanto a tre trattini visibili sono due righe.
 
 ---
 
-## Fase 4 — Il comportamento in scrittura
+## Fase 4 — Il comportamento in scrittura *(fatta)*
 
 Quello che trasforma «guarda come è bello» in «si scrive meglio».
 
@@ -203,6 +202,99 @@ Quello che trasforma «guarda come è bello» in «si scrive meglio».
 
 Questa fase ha senso solo dopo la 2: senza sparizione dei marcatori,
 collassarli non significa niente.
+
+### Il collasso era una riga sola
+
+La regola della fase 2 allargava di un carattere per lato l'intervallo che
+rivela i marcatori, così che con il cursore appena fuori si potesse
+cancellarli. Bastava toglierla — rivelare solo *dentro* — perché il
+collasso funzionasse: chiudendo il secondo `**` il cursore finisce
+esattamente sul bordo, che ora non conta come «dentro».
+
+Si poteva togliere perché nel frattempo la cancellazione non dipendeva più
+da cosa fosse visibile. **Quando una fase sembra richiedere codice nuovo,
+vale la pena guardare se una decisione precedente è diventata superflua.**
+
+### ⌘B senza selezione
+
+Il toggle c'era già e sapeva anche togliere il markup; gli mancava solo
+cosa fare a selezione vuota — inseriva `****` e ci metteva il cursore in
+mezzo. Ora prende la parola sotto il cursore, come farebbe un
+elaboratore di testi.
+
+Con i marcatori nascosti c'è un dettaglio: il cursore dopo `**forte**` è
+disegnato subito dopo la `e`, quindi «la parola sotto il cursore» deve
+scavalcare il delimitatore che sta in mezzo prima di cercarla.
+
+### Il difetto vero: gli intervalli invecchiano
+
+Questa è la lezione della fase, e non riguarda nessuno dei tre punti.
+
+Il parse arriva dopo una pausa, ma il testo si muove a ogni tasto. Fra i
+due, gli intervalli registrati descrivono un documento che non esiste più.
+Finché servivano solo a *non disegnare* dei glifi, l'errore durava un
+decimo di secondo e non si vedeva. Appena hanno cominciato a decidere
+*cosa cancellare*, dieci backspace veloci lasciavano una fila di
+asterischi orfani.
+
+La correzione non è aspettare il parse: è far seguire agli intervalli le
+modifiche mentre avvengono. Una modifica prima del costrutto lo trasla,
+una dentro il contenuto lo allunga, una che tocca un delimitatore lo
+distrugge — e quel costrutto smette di esistere fino al parse successivo.
+
+**Se un dato derivato inizia a guidare un'azione distruttiva, la latenza
+con cui si aggiorna smette di essere un dettaglio di rendering.**
+
+E il secondo pezzo della stessa storia: dopo aver cancellato *attraverso*
+dei marcatori nascosti, il cursore va rimesso dall'altra parte. Lasciarlo
+nel punto della cancellazione lo mette dentro il costrutto, che quindi si
+rivela, e il tasto premuto una seconda volta fa una cosa diversa dalla
+prima. Un comando ripetuto deve ripetersi.
+
+### Incollare
+
+Un convertitore HTML→markdown scritto per l'occasione
+(`MPMarkdownFromRichText`): titoli, elenchi annidati, link, immagini,
+codice con il linguaggio, citazioni, tabelle, entità. Quello che non
+riconosce contribuisce il suo testo e nient'altro — cioè lo stesso
+risultato di incollare testo semplice, mai una pagina di parentesi
+angolari.
+
+Le tre cose che il mondo reale impone e che non si scoprono a tavolino:
+
+- **Google Docs avvolge tutto in `<b style="font-weight:normal">`.** Preso
+  alla lettera, ogni incollaggio da Google Docs è in grassetto.
+- **Un `<a>` che avvolge un `<h3>`.** Il markup in linea non può
+  attraversare un confine di blocco: se il contenuto di un costrutto
+  contiene un a capo, i delimitatori vanno tolti, non chiusi.
+- **`<p>` dentro `<li>`.** Preso alla lettera stacca il testo dal punto
+  elenco. Dentro una lista lo stacco di blocco si riduce a una riga.
+
+E una scelta: `⌘⇧V` incolla il testo esattamente com'è. Serviva una via
+d'uscita, e la voce di menu non c'era — è stata aggiunta.
+
+---
+
+## Dove andare da qui
+
+Le cinque fasi coprono il testo. Quello che resta è fuori dal testo, ed è
+in ordine di rapporto fra guadagno e rischio:
+
+- **Le tabelle.** Vederle allineate mentre le si scrive, invece di
+  contare le barre verticali. Il modello è lo stesso — larghezze
+  calcolate, sorgente intatta — ma la resa vera vuole tabulazioni
+  personalizzate per colonna.
+- **Le immagini in linea.** Un `![](…)` che mostra l'immagine.
+  Tecnicamente è un allegato in un `NSTextAttachment`, cioè il primo
+  posto in cui il testo dell'editor smetterebbe di essere solo testo:
+  va disegnato, non inserito.
+- **I diagrammi.** Stessa domanda delle immagini, con in più il fatto che
+  il rendering sta nell'anteprima e passarlo all'editor significa
+  renderizzare due volte.
+
+E una cosa che *non* è un'estensione naturale: rendere modificabile
+l'anteprima. Continua a essere l'unica strada che rompe la proprietà da
+cui siamo partiti — vedi qui sotto.
 
 ---
 

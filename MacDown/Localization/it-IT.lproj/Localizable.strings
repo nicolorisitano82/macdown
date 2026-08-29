@@ -155,4 +155,8 @@
 
 /* Editor block layout */
 "Indent lists and quotations in the editor" = "Rientra liste e citazioni nell'editor";
-"With the last two together, three dashes are drawn as a line across the page instead of being shown as dashes." = "Con le ultime due insieme, tre trattini vengono disegnati come una linea attraverso la pagina invece di essere mostrati come trattini.";
+"Hiding the markers and indenting, together, also draw three dashes as a line across the page." = "Nascondere i marcatori e rientrare, insieme, disegnano anche tre trattini come una linea attraverso la pagina.";
+
+/* Paste as Markdown */
+"Paste formatted text as Markdown" = "Incolla il testo formattato come markdown";
+"Pasted headings, lists and links keep their shape. ⌘⇧V pastes the text exactly as it was copied." = "Titoli, elenchi e collegamenti incollati mantengono la loro forma. ⌘⇧V incolla il testo esattamente come è stato copiato.";

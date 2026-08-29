@@ -79,6 +79,8 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 @property (assign) BOOL editorHideMarkers;
 /// Whether lists are indented, quotations get a bar and headings get room.
 @property (assign) BOOL editorBlockLayout;
+/// Whether pasting formatted text writes the Markdown that means the same.
+@property (assign) BOOL editorPasteAsMarkdown;
 /// Identifiers of plug-ins the user has switched off. Absent means enabled,
 /// so a newly dropped-in plug-in works without being turned on first.
 @property (copy) NSArray<NSString *> *disabledPlugIns;

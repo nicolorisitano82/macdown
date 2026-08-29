@@ -71,6 +71,15 @@
  */
 - (BOOL)isSkippableMarkerAtIndex:(NSUInteger)index;
 
+/** Whether the character at `index` is a marker that is not being drawn.
+ *
+ * The difference from -isSkippableMarkerAtIndex: matters when deleting. A
+ * marker you can see is a character like any other and backspace over it
+ * means something; one that is not drawn should behave as though it were
+ * not between the caret and the text.
+ */
+- (BOOL)isHiddenMarkerAtIndex:(NSUInteger)index;
+
 /** The construct whose delimiter covers `index`, and the part to keep.
  *
  * Lets the editor treat a construct as one thing when it is deleted:

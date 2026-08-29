@@ -9,6 +9,7 @@
 #import "MPEditorView.h"
 #import "MPProseChecker.h"
 #import "MPMarkerHider.h"
+#import "MPMarkdownFromRichText.h"
 
 
 NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
@@ -464,21 +465,165 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     return YES;
 }
 
+/** Deletes past a run of markers that are not being drawn.
+ *
+ * With `**bold**` shown as `bold`, the caret after the last `d` is really
+ * after the closing asterisks, and backspace there has to remove the `d` —
+ * that is the character the reader sees in front of the caret. So the run
+ * of undrawn markers is stepped over and the deletion lands on the text.
+ *
+ * Two cases end differently. A construct with nothing left inside it is
+ * removed whole, because `****` is not something anyone meant to type; and
+ * one that has no content at all — a horizontal rule, which is delimiter
+ * from end to end — goes the same way in a single press.
+ */
+- (BOOL)deleteThroughHiddenMarkersFrom:(NSUInteger)caret backward:(BOOL)back
+{
+    MPMarkerHider *hider = self.markerHider;
+    if (!hider)
+        return NO;
+
+    NSUInteger edge = caret;
+    if (back)
+    {
+        while (edge > 0 && [hider isHiddenMarkerAtIndex:edge - 1])
+            edge--;
+    }
+    else
+    {
+        while (edge < self.string.length
+               && [hider isHiddenMarkerAtIndex:edge])
+            edge++;
+    }
+    if (edge == caret)
+        return NO;
+
+    // The construct that owns the run, taken from one of its own markers.
+    NSRange construct = NSMakeRange(NSNotFound, 0);
+    NSRange inner = NSMakeRange(NSNotFound, 0);
+    NSUInteger marker = back ? edge : caret;
+    if (![hider construct:&construct content:&inner
+        coveringMarkerAtIndex:marker])
+        return NO;
+    if (NSMaxRange(construct) > self.string.length)
+        return NO;
+
+    NSRange doomed;
+    if (inner.length <= 1)
+        doomed = construct;
+    else if (back)
+        doomed = NSMakeRange(edge - 1, 1);
+    else
+        doomed = NSMakeRange(edge, 1);
+
+    if (back && inner.length > 1 && doomed.location < inner.location)
+        return NO;
+    if (!back && inner.length > 1 && doomed.location >= NSMaxRange(inner))
+        return NO;
+
+    if (![self shouldChangeTextInRange:doomed replacementString:@""])
+        return NO;
+    [self.textStorage replaceCharactersInRange:doomed withString:@""];
+    [self didChangeText];
+
+    // Back where it looked like it was, which is on the far side of the
+    // markers. Leaving it at the deletion point would put it inside the
+    // construct, which reveals the markers — and the next press of the same
+    // key would then be deleting something else.
+    NSUInteger rest;
+    if (inner.length <= 1)
+        rest = construct.location;
+    else
+        rest = back ? caret - doomed.length : caret;
+    self.selectedRange = NSMakeRange(rest, 0);
+    return YES;
+}
+
+#pragma mark - Pasting
+
+/** The Markdown for what is on the pasteboard, if it is worth having.
+ *
+ * Nil when the pasteboard holds nothing but plain text, and also when the
+ * conversion comes back the same as the plain text — in both cases the
+ * ordinary paste does the same thing, and going through here would only
+ * risk doing it differently.
+ */
+- (NSString *)markdownFromPasteboard:(NSPasteboard *)board
+{
+    NSString *plain = [board stringForType:NSPasteboardTypeString];
+    NSString *markdown = nil;
+
+    NSString *html = [board stringForType:NSPasteboardTypeHTML];
+    if (html.length)
+    {
+        markdown = [MPMarkdownFromRichText markdownFromHTML:html];
+    }
+    else
+    {
+        // Word processors and note-takers that offer styled text and no
+        // HTML. Less to go on, but better than dropping the formatting.
+        NSData *data = [board dataForType:NSPasteboardTypeRTFD]
+            ?: [board dataForType:NSPasteboardTypeRTF];
+        if (data.length)
+        {
+            NSAttributedString *styled = [[NSAttributedString alloc]
+                initWithData:data options:@{} documentAttributes:NULL
+                       error:NULL];
+            if (styled.length)
+                markdown = [MPMarkdownFromRichText
+                    markdownFromAttributedString:styled];
+        }
+    }
+
+    if (!markdown.length)
+        return nil;
+    if (plain && [markdown isEqualToString:plain])
+        return nil;
+    return markdown;
+}
+
+- (void)paste:(id)sender
+{
+    NSString *markdown = self.pastesAsMarkdown
+        ? [self markdownFromPasteboard:[NSPasteboard generalPasteboard]] : nil;
+    if (!markdown)
+    {
+        [super paste:sender];
+        return;
+    }
+    // Through insertText: so that it is one undo step and the delegate sees
+    // it, exactly as a plain paste would be.
+    [self insertText:markdown replacementRange:self.selectedRange];
+}
+
+
+#pragma mark - Deleting
+
 - (void)deleteBackward:(id)sender
 {
     NSRange selection = self.selectedRange;
-    if (selection.length == 0 && selection.location > 0
-            && [self removeConstructForDeletionAt:selection.location - 1])
-        return;
+    if (selection.length == 0 && selection.location > 0)
+    {
+        if ([self deleteThroughHiddenMarkersFrom:selection.location
+                                        backward:YES])
+            return;
+        if ([self removeConstructForDeletionAt:selection.location - 1])
+            return;
+    }
     [super deleteBackward:sender];
 }
 
 - (void)deleteForward:(id)sender
 {
     NSRange selection = self.selectedRange;
-    if (selection.length == 0 && selection.location < self.string.length
-            && [self removeConstructForDeletionAt:selection.location])
-        return;
+    if (selection.length == 0 && selection.location < self.string.length)
+    {
+        if ([self deleteThroughHiddenMarkersFrom:selection.location
+                                        backward:NO])
+            return;
+        if ([self removeConstructForDeletionAt:selection.location])
+            return;
+    }
     [super deleteForward:sender];
 }
 
