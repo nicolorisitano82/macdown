@@ -375,9 +375,16 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 {
     static NSString * const script =
         @"(function(){var out=[];"
-        @"var nodes=document.querySelectorAll('.macdown-diagram svg');"
+        // Containers rather than drawings. A diagram whose source does not
+        // parse leaves a container with no svg in it, and skipping those
+        // shifts every later diagram onto the wrong fence — or, since the
+        // counts then disagree, throws away every diagram in the document.
+        // An empty string holds the place instead.
+        @"var nodes=document.querySelectorAll('.macdown-diagram');"
         @"for(var i=0;i<nodes.length;i++){"
-        @"var c=nodes[i].cloneNode(true);"
+        @"var g=nodes[i].querySelector('svg');"
+        @"if(!g){out.push('');continue;}"
+        @"var c=g.cloneNode(true);"
         @"c.removeAttribute('width');c.removeAttribute('height');"
         @"c.style.width='';c.style.height='';c.style.maxWidth='100%';"
         @"out.push(c.outerHTML);}"
@@ -1870,24 +1877,10 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
  */
 - (NSArray<NSString *> *)renderedDiagrams
 {
-    // Normalised for a document that is not MacDown's preview: the fixed
-    // pixel size the zoom viewport needs gives way to a responsive one. The
-    // element ids stay, because the <style> mermaid inlines is scoped to them.
-    static NSString * const script =
-        @"(function(){var out=[];"
-        @"var nodes=document.querySelectorAll('.macdown-diagram svg');"
-        @"for(var i=0;i<nodes.length;i++){"
-        @"var c=nodes[i].cloneNode(true);"
-        @"c.removeAttribute('width');c.removeAttribute('height');"
-        @"c.style.width='';c.style.height='';c.style.maxWidth='100%';"
-        @"out.push(c.outerHTML);}"
-        @"return JSON.stringify(out);})()";
-
     // Collected after each render and kept, rather than asked for here.
     // Exporting is synchronous — a save panel returns a URL and the file is
-    // written — and there is no longer any way to ask the page a question
-    // and have the answer in the same breath.
-    (void)script;
+    // written — and there is no way to ask the page a question and have the
+    // answer in the same breath.
     return self.harvestedDiagrams ?: @[];
 }
 
@@ -2048,6 +2041,12 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
     for (NSInteger i = (NSInteger)matches.count - 1; i >= 0; i--)
     {
         NSString *svg = diagrams[(NSUInteger)i];
+        // The placeholder for a diagram that would not draw. Its fence is
+        // left as it stands, which is the honest thing to export: the source
+        // of a diagram nobody could render.
+        if (![svg isKindOfClass:[NSString class]] || !svg.length)
+            continue;
+
         NSString *replacement = asImages
             ? MPImageTagForSVG(svg, 2.0)
             : [NSString stringWithFormat:@"<p>%@</p>", svg];

@@ -43,3 +43,11 @@
 "Preview" = "Preview";
 "Scale preview based on editor font size" = "Scale preview based on editor font size";
 "Default path:" = "Default path:";
+
+/* Prose issue categories */
+"Qualifiers" = "Qualifiers";
+"Weasel words" = "Weasel words";
+"Hedging" = "Hedging";
+"Wordiness" = "Wordiness";
+"Passive tells" = "Passive tells";
+"Repeated words" = "Repeated words";

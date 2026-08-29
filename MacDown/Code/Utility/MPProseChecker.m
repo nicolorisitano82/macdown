@@ -129,7 +129,10 @@ NS_INLINE NSString *MPProsePattern(NSString *entry, BOOL isPhrase)
 
     MPProseCategory *category = [[MPProseCategory alloc] init];
     category.identifier = identifier;
-    category.name = name;
+    // Translated where a translation exists, and left as written where it
+    // does not — the lists are meant to be extended, and someone's own
+    // category should appear as they named it.
+    category.name = NSLocalizedString(name, @"Prose issue category");
     category.regex = regex;
     category.color = [colorName isKindOfClass:[NSString class]]
         ? [NSColor colorWithHTMLName:colorName] : nil;
@@ -168,7 +171,9 @@ NS_INLINE NSString *MPProsePattern(NSString *entry, BOOL isPhrase)
     {
         MPProseCategory *repeated = [[MPProseCategory alloc] init];
         repeated.identifier = repeatedInfo[@"id"] ?: @"repeated";
-        repeated.name = repeatedInfo[@"name"] ?: @"Repeated words";
+        repeated.name = NSLocalizedString(
+            repeatedInfo[@"name"] ?: @"Repeated words",
+            @"Prose issue category");
         NSString *colorName = repeatedInfo[@"color"];
         repeated.color = [colorName isKindOfClass:[NSString class]]
             ? [NSColor colorWithHTMLName:colorName] : nil;
