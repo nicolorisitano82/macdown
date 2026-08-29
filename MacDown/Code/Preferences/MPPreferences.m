@@ -43,10 +43,16 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
     if (!self)
         return nil;
 
-    // On rather than off, and so registered rather than set on first run:
-    // it is what pasting a heading into a Markdown editor should do, and an
-    // existing installation should get it too. ⌘⇧V still pastes verbatim.
-    [[self userDefaults] registerDefaults:@{@"editorPasteAsMarkdown": @YES}];
+    // On rather than off, and registered rather than set on first run, so
+    // that an existing installation gets them too. These are what the
+    // editor is for now; someone who wants the source shown plainly turns
+    // them off, which is the rarer choice and the easier one to discover.
+    [[self userDefaults] registerDefaults:@{
+        @"editorPasteAsMarkdown": @YES,     // ⌘⇧V still pastes verbatim.
+        @"editorHideMarkers": @YES,
+        @"editorBlockLayout": @YES,
+        @"editorAlignTables": @YES,
+    }];
 
     [self cleanupObsoleteAutosaveValues];
 
