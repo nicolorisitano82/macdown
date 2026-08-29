@@ -91,10 +91,44 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 }
 
 
+/** Turns off the corrections that rewrite Markdown as you type.
+ *
+ * `---` is a horizontal rule, the underline of a setext heading, and the
+ * separator row of a table; turned into an em dash it is none of them, and
+ * the table stops being a table. Straight quotes belong in a link title and
+ * in any HTML the document carries. Capitalising the first word of a line
+ * rewrites `git` and `npm` in a document about them.
+ *
+ * The document already asks for these to be off when it sets the editor
+ * up. Something puts them back — typing `---` in a released build produced
+ * an em dash — and the mechanism is not yet pinned down; setting them from
+ * the view, last of all as it takes focus, is the position nothing later
+ * can undo.
+ */
+- (void)disableTextSubstitutions
+{
+    self.automaticDashSubstitutionEnabled = NO;
+    self.automaticQuoteSubstitutionEnabled = NO;
+    self.automaticTextReplacementEnabled = NO;
+    self.automaticSpellingCorrectionEnabled = NO;
+    self.automaticDataDetectionEnabled = NO;
+    if (@available(macOS 10.12.2, *))
+        self.automaticTextCompletionEnabled = NO;
+}
+
+- (BOOL)becomeFirstResponder
+{
+    BOOL became = [super becomeFirstResponder];
+    if (became)
+        [self disableTextSubstitutions];
+    return became;
+}
+
 - (void)awakeFromNib {
     _activeSourceRange = NSMakeRange(NSNotFound, 0);
     [self registerForDraggedTypes:[NSArray arrayWithObjects: NSDragPboard, nil]];
     [super awakeFromNib];
+    [self disableTextSubstitutions];
 }
 
 - (void)setActiveSourceRange:(NSRange)range
