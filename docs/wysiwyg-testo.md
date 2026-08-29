@@ -67,6 +67,15 @@ delimitatori. Enfasi, forte e codice in linea, come previsto.
 
 **Le due lezioni che valgono più del codice.**
 
+La terza, trovata molto dopo mentre si estendeva il nascondimento ai
+titoli: **la freccia destra scavalcava i marcatori e poi faceva anche il
+passo**, mentre la freccia sinistra faceva il passo e poi scavalcava. Con
+il cursore appoggiato su un marcatore — ci si arriva con un clic, con
+Inizio, o tornando all'inizio di una riga — quello a destra usciva un
+carattere oltre. Il difetto è rimasto invisibile finché non si è provato a
+cancellare da lì. *Due operazioni simmetriche vanno scritte simmetriche,
+altrimenti la differenza si paga in un caso che nessuno pensa di provare.*
+
 La prima: la regola «scavalca ciò che non si vede» *si autoannulla*.
 Avvicinandosi a un costrutto il ripristino rende i marcatori visibili,
 quindi non esiste un istante in cui il cursore è adiacente a un marcatore

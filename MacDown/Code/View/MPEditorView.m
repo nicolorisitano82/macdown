@@ -399,20 +399,21 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 
 - (void)moveRight:(id)sender
 {
-    NSRange selection = self.selectedRange;
-    if (selection.length == 0)
-    {
-        NSUInteger skipped =
-            [self positionSkippingHiddenMarkersFrom:selection.location
-                                            forward:YES];
-        if (skipped != selection.location)
-        {
-            self.selectedRange = NSMakeRange(skipped, 0);
-            // The markers are behind the caret now; carry on with the step
-            // the reader actually asked for.
-        }
-    }
+    // The step first, then over whatever markers it landed on — the same
+    // order as -moveLeft:. Skipping first and stepping afterwards counted
+    // the markers as a move of their own, so a caret standing on one (put
+    // there by a click, by Home, or by arriving at the start of a line)
+    // came out one character past where it should.
     [super moveRight:sender];
+
+    NSRange selection = self.selectedRange;
+    if (selection.length != 0)
+        return;
+    NSUInteger skipped =
+        [self positionSkippingHiddenMarkersFrom:selection.location
+                                        forward:YES];
+    if (skipped != selection.location)
+        self.selectedRange = NSMakeRange(skipped, 0);
 }
 
 - (void)moveLeft:(id)sender
