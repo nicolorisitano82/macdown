@@ -30,6 +30,16 @@
  */
 @property (weak, nonatomic) MPMarkerHider *markerHider;
 
+/// The blockquotes, drawn as a bar in the margin. Presentation only.
+@property (copy, nonatomic) NSArray<NSValue *> *quoteRanges;
+
+/** The horizontal rules, drawn as a line across the text.
+ *
+ * Set only when their dashes are being hidden as well, so that the drawn
+ * line replaces them rather than joining them.
+ */
+@property (copy, nonatomic) NSArray<NSValue *> *ruleRanges;
+
 - (NSRect)contentRect;
 
 /// Recomputes the prose underlines. Cheap enough to call on every edit: it

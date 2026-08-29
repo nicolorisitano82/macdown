@@ -14,6 +14,7 @@ descriverla.
 | [[06-prosa]] | Il controllo di prosa, in italiano e in inglese |
 | [[07-esportazione]] | Un documento che mette alla prova gli export |
 | [[08-sommario]] | Sommario automatico e barra laterale |
+| [[09-editor]] | L'editor che disegna il markdown invece di mostrarlo |
 
 I riferimenti qui sopra sono WikiLinks: se sono attivi nelle preferenze
 diventano collegabili, altrimenti restano testo.

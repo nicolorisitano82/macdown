@@ -3,8 +3,10 @@
 Una roadmap per arrivare a un editor che mostra quello che il testo
 significa, senza smettere di essere un editor di markdown.
 
-Il punto di partenza non è zero: due dei passi qui sotto sono già fatti e
-sono segnati come tali. Quello che resta è, in ordine, il lavoro vero.
+Il punto di partenza non è zero: le prime quattro fasi sono fatte e sono
+segnate come tali. Quello che resta è la fase 4, il comportamento in
+scrittura, che è dove si sente la differenza fra «bello» e «si scrive
+meglio».
 
 ---
 
@@ -129,9 +131,25 @@ scritto il codice per dodici tipi.
 meccanico — l'unico che richiede una decisione nuova è il link, che ha
 due parti e obbliga a scegliere cosa mostrare.
 
+### I link, fatti dopo *(fatti)*
+
+La decisione è stata: si mostra il testo, sparisce la destinazione.
+`[testo](url)` si legge «testo» finché il cursore non entra.
+
+La cosa da sapere prima di scriverla: fino a qui i due capi di un
+costrutto erano **uguali** — due asterischi di qua, due di là. Un link
+no: `[` da una parte e `](url)` dall'altra. Il codice che teneva «la
+lunghezza del marcatore» andava sostituito con due intervalli separati,
+apertura e chiusura, e da lì tutto il resto (rivelazione, cancellazione,
+salto del cursore) ha continuato a funzionare senza toccarlo.
+
+I link di riferimento — `[testo][rif]` con la definizione altrove — sono
+lasciati stare di proposito: nascondere `[rif]` toglie l'unico modo di
+sapere quale definizione stavi usando.
+
 ---
 
-## Fase 3 — L'impaginazione di blocco
+## Fase 3 — L'impaginazione di blocco *(fatta)*
 
 Qui i temi non arrivano, e il guadagno visivo è alto rispetto al rischio.
 
@@ -141,10 +159,37 @@ Qui i temi non arrivano, e il guadagno visivo è alto rispetto al rischio.
 - **Righe orizzontali** disegnate invece che tre trattini
 
 `NSParagraphStyle` copre rientri e spaziature. La barra della citazione e
-la riga orizzontale vanno disegnate, in `drawViewBackgroundInRect:`.
+la riga orizzontale sono disegnate in `drawViewBackgroundInRect:`.
 
-Nessuno di questi tocca il cursore, quindi la fase è tranquilla. Un buon
-posto dove andare se la fase 2 si è impantanata e serve un risultato.
+Nessuno di questi tocca il cursore, e infatti è stata la fase tranquilla
+che prometteva di essere. Un buon posto dove andare se la fase 2 si è
+impantanata e serve un risultato.
+
+**Le tre cose che non erano ovvie.**
+
+*Lo stile di paragrafo va derivato, non costruito.* La spaziatura fra le
+righe scelta nelle preferenze vive nello stesso attributo dei rientri:
+un `NSParagraphStyle` nuovo di zecca la butta via senza dire niente. Si
+parte da quello che c'è già e si aggiunge.
+
+*Una barra si disegna per frammento di riga, non per intervallo.* Una
+citazione che va a capo ha un solo rettangolo che copre due righe, e la
+riga di continuazione non ha un `>` suo: disegnando dai frammenti la
+barra viene continua, disegnando dall'intervallo viene a pezzi.
+
+*I glifi soppressi a inizio riga finiscono nel frammento di sopra.* La
+riga orizzontale è fatta solo di trattini nascosti, quindi chiedere «dove
+sono i trattini» risponde con la riga precedente e la linea viene
+disegnata una riga più su. Si misura dal ritorno a capo che chiude la
+riga, che un glifo ce l'ha. Vale per qualunque costrutto interamente
+nascosto: è la stessa insidia della fase 2 vista da un'altra angolazione.
+
+E una scelta di struttura che si è rivelata giusta: gli intervalli delle
+righe orizzontali li produce **chi nasconde i trattini**, non chi
+impagina. Sono esattamente i caratteri che hanno smesso di essere
+disegnati, e una seconda misura fatta altrove potrebbe non coincidere.
+Per lo stesso motivo il disegno richiede entrambe le preferenze accese:
+una linea disegnata accanto a tre trattini visibili sono due righe.
 
 ---
 

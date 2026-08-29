@@ -383,11 +383,18 @@ static const CGFloat kMPNoteWidth = 400.0;
         [self checkboxWithTitle:NSLocalizedString(
             @"Hide the Markdown markers until the caret reaches them",
             @"Preference") key:@"editorHideMarkers"],
+        [self checkboxWithTitle:NSLocalizedString(
+            @"Indent lists and quotations in the editor", @"Preference")
+                            key:@"editorBlockLayout"],
         [self noteWithText:NSLocalizedString(
             @"Editor themes state heading sizes in points, chosen for the "
             @"default body size. This keeps their proportions at any size. "
             @"At the default it changes nothing.",
             @"Explains what heading scaling does")],
+        [self noteWithText:NSLocalizedString(
+            @"With the last two together, three dashes are drawn as a line "
+            @"across the page instead of being shown as dashes.",
+            @"Explains that horizontal rules need both settings")],
     ] to:stack];
 }
 

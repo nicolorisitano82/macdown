@@ -19,9 +19,10 @@
  * hook. That is also why this needs TextKit 1, which the editor is already
  * using — TextKit 2 has no equivalent.
  *
- * Emphasis, strong and inline code only. Links and images have two parts, a
- * text and a destination, and hiding either raises a question this does not
- * answer yet.
+ * Emphasis, strong, inline code, and inline links — a link shows its text
+ * and hides its destination until the caret arrives. Reference links are
+ * left alone: their pointer is the only way to see which definition they
+ * meant.
  */
 @interface MPMarkerHider : NSObject <NSLayoutManagerDelegate>
 
@@ -29,6 +30,15 @@
 
 /// When off, every marker is visible and this costs nothing.
 @property (assign, nonatomic) BOOL enabled;
+
+/** Whether to replace a horizontal rule's dashes with a drawn line.
+ *
+ * Unlike the rest, hiding these leaves nothing behind — the whole construct
+ * is delimiter — so the hiding and the drawing are one decision. The dashes
+ * go, and the ranges they occupied are handed to the view, which draws a
+ * line down the middle of each.
+ */
+@property (assign, nonatomic) BOOL hidesRules;
 
 /** Recomputes which characters are markers, from a fresh parse.
  *
@@ -61,8 +71,14 @@
  */
 - (BOOL)isSkippableMarkerAtIndex:(NSUInteger)index;
 
+/** The construct whose delimiter covers `index`, and the part to keep.
+ *
+ * Lets the editor treat a construct as one thing when it is deleted:
+ * backspace over the last asterisk of `**bold**` leaves `bold` rather than
+ * `**bold*`, and over a link's tail leaves the link's text.
+ */
 - (BOOL)construct:(NSRange *)outRange
-     markerLength:(NSUInteger *)outLength
+          content:(NSRange *)outContent
     coveringMarkerAtIndex:(NSUInteger)index;
 
 @end

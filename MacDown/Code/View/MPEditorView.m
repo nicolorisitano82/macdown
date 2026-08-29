@@ -104,6 +104,100 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     [self setNeedsDisplay:YES];
 }
 
+/// A rule down the margin of a quotation, where the preview draws one too.
+- (void)drawQuoteBars
+{
+    if (!self.quoteRanges.count)
+        return;
+
+    NSLayoutManager *manager = self.layoutManager;
+    NSTextContainer *container = self.textContainer;
+    NSColor *ink = self.textColor ?: [NSColor textColor];
+    if (!manager || !container)
+        return;
+
+    [[ink colorWithAlphaComponent:0.25] setFill];
+    CGFloat unit = self.textContainerInset.width;
+
+    for (NSValue *value in self.quoteRanges)
+    {
+        NSRange range = value.rangeValue;
+        if (NSMaxRange(range) > self.textStorage.length)
+            continue;
+
+        NSRange glyphs = [manager glyphRangeForCharacterRange:range
+                                         actualCharacterRange:NULL];
+
+        // Per line fragment, not once for the whole range. A quotation whose
+        // line wraps has one bounding rectangle covering both lines, and its
+        // continuation carries no > of its own; drawing from the fragments
+        // gives an unbroken rule beside every line the quotation occupies.
+        [manager enumerateLineFragmentsForGlyphRange:glyphs
+            usingBlock:^(NSRect fragment, NSRect used, NSTextContainer *c,
+                         NSRange glyphRange, BOOL *stop) {
+            // A fixed distance from the margin rather than following the
+            // text: the indent is the same on every line, and a bar that
+            // moved with the words would not read as one rule.
+            NSRect bar = NSMakeRect(unit + 6.0,
+                                    fragment.origin.y
+                                        + self.textContainerInset.height,
+                                    2.0, fragment.size.height);
+            NSRectFillUsingOperation(bar, NSCompositingOperationSourceOver);
+        }];
+    }
+}
+
+/** A line across the text where the source has three dashes.
+ *
+ * The dashes are hidden by then, so the line stands in for them rather than
+ * decorating them; that is why this and the hiding are switched on together.
+ */
+- (void)drawRules
+{
+    if (!self.ruleRanges.count)
+        return;
+
+    NSLayoutManager *manager = self.layoutManager;
+    NSTextContainer *container = self.textContainer;
+    NSColor *ink = self.textColor ?: [NSColor textColor];
+    if (!manager || !container)
+        return;
+
+    [[ink colorWithAlphaComponent:0.3] setFill];
+    NSSize inset = self.textContainerInset;
+
+    for (NSValue *value in self.ruleRanges)
+    {
+        NSRange range = value.rangeValue;
+        if (NSMaxRange(range) > self.textStorage.length)
+            continue;
+
+        // Measured from the line break that closes the rule, not from the
+        // dashes. Their glyphs are suppressed, and a run of suppressed
+        // glyphs at the head of a line is folded into the fragment above it
+        // — asking where the dashes are puts the answer one row too high.
+        NSUInteger anchor = NSMaxRange(range);
+        if (anchor >= self.textStorage.length)
+            anchor = range.location;
+        NSRange glyphs = [manager glyphRangeForCharacterRange:NSMakeRange(anchor, 1)
+                                         actualCharacterRange:NULL];
+        if (!glyphs.length)
+            continue;
+        NSRect fragment = [manager lineFragmentRectForGlyphAtIndex:glyphs.location
+                                                    effectiveRange:NULL];
+        if (NSIsEmptyRect(fragment))
+            continue;
+
+        // Down the middle of the line the dashes would have occupied: the
+        // line keeps its height even with nothing drawn in it, so the rule
+        // sits in the gap rather than pushing the text apart.
+        NSRect rule = NSMakeRect(inset.width + 4.0,
+                                 inset.height + NSMidY(fragment) - 0.5,
+                                 container.size.width - 8.0, 1.0);
+        NSRectFillUsingOperation(rule, NSCompositingOperationSourceOver);
+    }
+}
+
 /** Draws the bar marking the block the preview is looking at.
  *
  * In the inset to the left of the text rather than beside it, so turning it
@@ -112,6 +206,8 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 - (void)drawViewBackgroundInRect:(NSRect)rect
 {
     [super drawViewBackgroundInRect:rect];
+    [self drawQuoteBars];
+    [self drawRules];
 
     NSRange range = self.activeSourceRange;
     if (range.location == NSNotFound || range.length == 0)
@@ -341,7 +437,8 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
  * which is broken Markdown made out of characters that were invisible a
  * moment earlier. What someone means by that keystroke is "stop this being
  * bold", so the whole construct is replaced by what it contains — one edit,
- * and one step to undo.
+ * and one step to undo. Over a link's tail it leaves the link's text, which
+ * is the same idea.
  *
  * Only when the markers are being hidden. With them visible, deleting one
  * asterisk of a pair is ordinary text editing and none of this business.
@@ -349,13 +446,11 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 - (BOOL)removeConstructForDeletionAt:(NSUInteger)index
 {
     NSRange construct = NSMakeRange(NSNotFound, 0);
-    NSUInteger marker = 0;
-    if (![self.markerHider construct:&construct markerLength:&marker
+    NSRange inner = NSMakeRange(NSNotFound, 0);
+    if (![self.markerHider construct:&construct content:&inner
                coveringMarkerAtIndex:index])
         return NO;
 
-    NSRange inner = NSMakeRange(construct.location + marker,
-                                construct.length - 2 * marker);
     if (inner.length == 0 || NSMaxRange(construct) > self.string.length)
         return NO;
 

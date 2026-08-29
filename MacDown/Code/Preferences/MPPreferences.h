@@ -77,6 +77,8 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 @property (assign) BOOL editorSemanticStyling;
 /// Whether the editor hides the Markdown markers until the caret arrives.
 @property (assign) BOOL editorHideMarkers;
+/// Whether lists are indented, quotations get a bar and headings get room.
+@property (assign) BOOL editorBlockLayout;
 /// Identifiers of plug-ins the user has switched off. Absent means enabled,
 /// so a newly dropped-in plug-in works without being turned on first.
 @property (copy) NSArray<NSString *> *disabledPlugIns;

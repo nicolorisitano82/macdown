@@ -152,3 +152,7 @@
 "Passive tells" = "Spie del passivo";
 "Repeated words" = "Parole ripetute";
 "Hide the Markdown markers until the caret reaches them" = "Nascondi i marcatori markdown finché il cursore non li raggiunge";
+
+/* Editor block layout */
+"Indent lists and quotations in the editor" = "Rientra liste e citazioni nell'editor";
+"With the last two together, three dashes are drawn as a line across the page instead of being shown as dashes." = "Con le ultime due insieme, tre trattini vengono disegnati come una linea attraverso la pagina invece di essere mostrati come trattini.";

@@ -32,6 +32,7 @@
 #import "MPProseChecker.h"
 #import "MPSemanticStyler.h"
 #import "MPMarkerHider.h"
+#import "MPBlockStyler.h"
 #import "MPMathEditorController.h"
 #import "MPSidebarController.h"
 #import "MPEpubExport.h"
@@ -78,7 +79,7 @@ NS_INLINE NSSet *MPEditorPreferencesToObserve()
             @"editorWidthLimited", @"editorMaximumWidth", @"editorLineSpacing",
             @"editorOnRight", @"editorStyleName", @"editorShowWordCount",
             @"editorScrollsPastEnd", @"editorProseHighlights",
-            @"editorSemanticStyling", @"editorHideMarkers", nil
+            @"editorSemanticStyling", @"editorHideMarkers", @"editorBlockLayout", nil
         ];
     });
     return keys;
@@ -203,6 +204,7 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (strong) HGMarkdownHighlighter *highlighter;
 @property (strong) MPSemanticStyler *semanticStyler;
 @property (strong) MPMarkerHider *markerHider;
+@property (strong) MPBlockStyler *blockStyler;
 @property (strong) MPRenderer *renderer;
 @property CGFloat previousSplitRatio;
 @property BOOL manualRender;
@@ -743,11 +745,13 @@ static NSString * const kMPSelectionSource =
         [[MPSemanticStyler alloc] initWithTextView:self.editor];
     self.markerHider = [[MPMarkerHider alloc] initWithTextView:self.editor];
     self.editor.markerHider = self.markerHider;
+    self.blockStyler = [[MPBlockStyler alloc] initWithTextView:self.editor];
     self.semanticStyler.themeStyles = self.highlighter.styles;
     __weak MPDocument *weakSelf = self;
     self.highlighter.elementsDidChange = ^(pmh_element **elements) {
         [weakSelf.semanticStyler applyToElements:elements];
         [weakSelf.markerHider updateWithElements:elements];
+        [weakSelf.blockStyler applyToElements:elements];
     };
     self.renderer = [[MPRenderer alloc] init];
     self.renderer.dataSource = self;
@@ -3281,8 +3285,24 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
         }
     }
 
-    if (!changedKey || [changedKey isEqualToString:@"editorHideMarkers"])
+    if (!changedKey || [changedKey isEqualToString:@"editorHideMarkers"]
+            || [changedKey isEqualToString:@"editorBlockLayout"]
+            || [changedKey isEqualToString:@"editorBaseFontInfo"])
+    {
+        // A drawn horizontal rule needs both halves: the dashes hidden and a
+        // line put in their place. With only one of the two switched on you
+        // would get either a rule beside its own dashes or a blank line where
+        // a rule used to be, so neither half acts alone.
+        BOOL rules = self.preferences.editorHideMarkers
+            && self.preferences.editorBlockLayout;
+
+        self.markerHider.hidesRules = rules;
         self.markerHider.enabled = self.preferences.editorHideMarkers;
+
+        self.blockStyler.baseFont = self.preferences.editorBaseFont;
+        self.blockStyler.enabled = self.preferences.editorBlockLayout;
+        [self.highlighter parseAndHighlightNow];
+    }
 
     if (!changedKey || [changedKey isEqualToString:@"editorSemanticStyling"]
             || [changedKey isEqualToString:@"editorBaseFontInfo"]
