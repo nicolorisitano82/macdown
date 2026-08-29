@@ -56,10 +56,27 @@ del testo. Ora le proporzioni del tema vengono mantenute e riscalate.
 
 ---
 
-## Fase 2 — Far sparire i marcatori
+## Fase 2 — Far sparire i marcatori *(fatta)*
 
-**È qui che si decide se il progetto sta in piedi.** Tutto il resto è
-lavoro; questa è la parte con le domande difficili.
+**Era qui che si decideva se il progetto stava in piedi**, e sta in piedi.
+
+Fatto: soppressione dei glifi, ripristino sotto il cursore, cancellazione
+che toglie l'enfasi invece di spezzarla, movimento che scavalca i
+delimitatori. Enfasi, forte e codice in linea, come previsto.
+
+**Le due lezioni che valgono più del codice.**
+
+La prima: la regola «scavalca ciò che non si vede» *si autoannulla*.
+Avvicinandosi a un costrutto il ripristino rende i marcatori visibili,
+quindi non esiste un istante in cui il cursore è adiacente a un marcatore
+nascosto. La regola giusta è più rozza e funziona: con il nascondimento
+acceso i delimitatori non sono posizioni.
+
+La seconda: la correzione a «cancellare un asterisco lascia l'altro» non
+è cancellare anche l'altro — resterebbe markup rotto dall'altro capo. È
+togliere l'enfasi: `**grassetto**` diventa `grassetto`. Quando una
+correzione sembra doversi applicare due volte, di solito l'operazione è
+un'altra.
 
 ### Il meccanismo
 
@@ -107,6 +124,10 @@ sollevano subito la domanda su cosa mostrare.
 Se il cursore si comporta bene su questi tre, il resto è estensione. Se
 non si comporta bene, hai scoperto che la fase non regge prima di aver
 scritto il codice per dodici tipi.
+
+**Esito:** si comporta bene. Estendere ad altri tipi è ora lavoro
+meccanico — l'unico che richiede una decisione nuova è il link, che ha
+due parti e obbliga a scegliere cosa mostrare.
 
 ---
 

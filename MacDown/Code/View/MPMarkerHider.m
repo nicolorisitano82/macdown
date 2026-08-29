@@ -201,6 +201,11 @@
 }
 
 
+- (BOOL)isSkippableMarkerAtIndex:(NSUInteger)index
+{
+    return self.enabled && [self.markers containsIndex:index];
+}
+
 - (BOOL)construct:(NSRange *)outRange
      markerLength:(NSUInteger *)outLength
     coveringMarkerAtIndex:(NSUInteger)index

@@ -46,6 +46,21 @@
  * `**bold*`. Returns the whole construct and the length of one delimiter,
  * which is all that is needed to rebuild it without them.
  */
+/** Whether the caret should step over the character at `index`.
+ *
+ * True for any marker while hiding is on, revealed or not. Keying it to
+ * what is currently drawn sounds better and does nothing: approaching a
+ * construct reveals it, so by the time the caret is next to a marker it is
+ * visible again, and there is never a moment where one is both adjacent and
+ * hidden.
+ *
+ * So the rule is the blunter one: with the markers hidden, a construct's
+ * delimiters are not places the caret goes. It steps from outside the
+ * construct to the start of its content. Deleting already treats the
+ * construct as one thing, and this agrees with it.
+ */
+- (BOOL)isSkippableMarkerAtIndex:(NSUInteger)index;
+
 - (BOOL)construct:(NSRange *)outRange
      markerLength:(NSUInteger *)outLength
     coveringMarkerAtIndex:(NSUInteger)index;

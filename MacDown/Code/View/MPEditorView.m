@@ -266,6 +266,73 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 }
 
 
+#pragma mark - Moving across a marker
+
+/** Steps over markers the reader cannot see.
+ *
+ * The characters are still there when they are hidden, so the caret used to
+ * stall on them: two presses of the right arrow to cross `**`, both of them
+ * moving nothing that anyone could see. It now crosses the whole run at
+ * once, in either direction.
+ *
+ * Every marker, not only the ones currently out of sight: arriving next to
+ * a construct reveals it, so a marker is never both adjacent and hidden.
+ * With hiding on, delimiters are simply not places the caret stops.
+ */
+- (NSUInteger)positionSkippingHiddenMarkersFrom:(NSUInteger)position
+                                        forward:(BOOL)forward
+{
+    NSUInteger length = self.string.length;
+    NSUInteger result = position;
+
+    if (forward)
+    {
+        while (result < length
+               && [self.markerHider isSkippableMarkerAtIndex:result])
+            result++;
+    }
+    else
+    {
+        while (result > 0
+               && [self.markerHider isSkippableMarkerAtIndex:result - 1])
+            result--;
+    }
+    return result;
+}
+
+- (void)moveRight:(id)sender
+{
+    NSRange selection = self.selectedRange;
+    if (selection.length == 0)
+    {
+        NSUInteger skipped =
+            [self positionSkippingHiddenMarkersFrom:selection.location
+                                            forward:YES];
+        if (skipped != selection.location)
+        {
+            self.selectedRange = NSMakeRange(skipped, 0);
+            // The markers are behind the caret now; carry on with the step
+            // the reader actually asked for.
+        }
+    }
+    [super moveRight:sender];
+}
+
+- (void)moveLeft:(id)sender
+{
+    [super moveLeft:sender];
+
+    NSRange selection = self.selectedRange;
+    if (selection.length != 0)
+        return;
+    NSUInteger skipped =
+        [self positionSkippingHiddenMarkersFrom:selection.location
+                                        forward:NO];
+    if (skipped != selection.location)
+        self.selectedRange = NSMakeRange(skipped, 0);
+}
+
+
 #pragma mark - Deleting a marker
 
 /** Removes the emphasis rather than half of its punctuation.
