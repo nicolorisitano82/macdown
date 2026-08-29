@@ -13,6 +13,76 @@
 
 #pragma mark - Escaping
 
+/** Turns the entities in rendered HTML back into the characters they stand
+ *  for, so that escaping them for XML escapes them once and not twice.
+ *
+ * A heading's text is taken from the HTML, where an apostrophe is already
+ * `&#39;`. Escaped again it becomes `&amp;#39;`, and a reader shows the
+ * contents entry with the entity spelled out in it.
+ */
+NS_INLINE NSString *MPEpubDecoded(NSString *text)
+{
+    if ([text rangeOfString:@"&"].location == NSNotFound)
+        return text;
+
+    NSMutableString *out = [NSMutableString stringWithCapacity:text.length];
+    NSDictionary *named = @{@"amp": @"&", @"lt": @"<", @"gt": @">",
+                            @"quot": @"\"", @"apos": @"'", @"nbsp": @"\u00a0"};
+    NSUInteger i = 0;
+    while (i < text.length)
+    {
+        unichar c = [text characterAtIndex:i];
+        if (c != '&')
+        {
+            [out appendFormat:@"%C", c];
+            i++;
+            continue;
+        }
+
+        NSRange window = NSMakeRange(i, MIN((NSUInteger)10, text.length - i));
+        NSRange end = [text rangeOfString:@";" options:0 range:window];
+        if (end.location == NSNotFound || end.location == i + 1)
+        {
+            [out appendString:@"&"];
+            i++;
+            continue;
+        }
+
+        NSString *name = [text substringWithRange:
+            NSMakeRange(i + 1, end.location - i - 1)];
+        NSString *value = named[name.lowercaseString];
+        if (value)
+        {
+            [out appendString:value];
+        }
+        else if ([name hasPrefix:@"#"])
+        {
+            NSString *digits = [name substringFromIndex:1];
+            BOOL hex = [digits.lowercaseString hasPrefix:@"x"];
+            unsigned int point = 0;
+            unsigned long long decimal = 0;
+            NSScanner *scanner = [NSScanner scannerWithString:
+                hex ? [digits substringFromIndex:1] : digits];
+            BOOL ok = hex ? [scanner scanHexInt:&point]
+                          : [scanner scanUnsignedLongLong:&decimal];
+            uint32_t code = (uint32_t)(hex ? point : decimal);
+            NSString *character = nil;
+            if (ok && code && code <= 0x10FFFF)
+                character = [[NSString alloc] initWithBytes:&code
+                    length:sizeof(code)
+                  encoding:NSUTF32LittleEndianStringEncoding];
+            [out appendString:character ?: @""];
+        }
+        else
+        {
+            [out appendString:[text substringWithRange:
+                NSMakeRange(i, end.location - i + 1)]];
+        }
+        i = end.location + 1;
+    }
+    return out;
+}
+
 NS_INLINE NSString *MPEpubEscaped(NSString *text)
 {
     NSMutableString *out = [text mutableCopy] ?: [NSMutableString string];
@@ -194,7 +264,7 @@ NS_INLINE NSArray<MPEpubHeading *> *MPHeadingsByAnchoring(NSMutableString *html)
         }
 
         MPEpubHeading *heading = [[MPEpubHeading alloc] init];
-        heading.title = text;
+        heading.title = MPEpubDecoded(text);
         heading.anchor = anchor;
         heading.level = level.integerValue;
         [headings insertObject:heading atIndex:0];
@@ -318,7 +388,7 @@ NS_INLINE NSString *MPEpubTimestamp(void)
 }
 
 NS_INLINE NSString *MPNavXHTML(NSArray<MPEpubHeading *> *headings,
-                               NSString *title)
+                               NSString *title, NSString *language)
 {
     NSMutableString *list = [NSMutableString string];
     if (headings.count)
@@ -343,24 +413,30 @@ NS_INLINE NSString *MPNavXHTML(NSArray<MPEpubHeading *> *headings,
     return [NSString stringWithFormat:
         @"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         @"<html xmlns=\"http://www.w3.org/1999/xhtml\" "
-        @"xmlns:epub=\"http://www.idpf.org/2007/ops\" xml:lang=\"en\">\n"
+        @"xmlns:epub=\"http://www.idpf.org/2007/ops\" xml:lang=\"%@\">\n"
         @"<head><title>%@</title>"
         @"<meta charset=\"utf-8\"/></head>\n"
         @"<body>\n<nav epub:type=\"toc\" id=\"toc\">\n<h1>%@</h1>\n%@</nav>\n"
         @"</body>\n</html>\n",
+        MPEpubEscaped(language ?: @"en"),
         MPEpubEscaped(title), MPEpubEscaped(title), list];
 }
 
 NS_INLINE NSString *MPPackageOPF(MPEpubMetadata *metadata,
-                                 NSArray<MPEpubImage *> *images)
+                                 NSArray<MPEpubImage *> *images,
+                                 BOOL contentHasSVG)
 {
     NSMutableString *manifest = [NSMutableString string];
-    [manifest appendString:
+    // A reading system is told in the manifest what it will find inside a
+    // document before it opens it, and a formula rendered as inline SVG has
+    // to be declared or the book does not conform.
+    [manifest appendFormat:
         @"<item id=\"nav\" href=\"nav.xhtml\" "
         @"media-type=\"application/xhtml+xml\" properties=\"nav\"/>\n"
         @"<item id=\"content\" href=\"content.xhtml\" "
-        @"media-type=\"application/xhtml+xml\"/>\n"
-        @"<item id=\"style\" href=\"style.css\" media-type=\"text/css\"/>\n"];
+        @"media-type=\"application/xhtml+xml\"%@/>\n"
+        @"<item id=\"style\" href=\"style.css\" media-type=\"text/css\"/>\n",
+        contentHasSVG ? @" properties=\"svg\"" : @""];
     for (MPEpubImage *image in images)
     {
         [manifest appendFormat:
@@ -473,8 +549,9 @@ NSData *MPEpubDataFromHTML(NSString *html, NSString *css, NSURL *baseURL,
 
     NSDictionary<NSString *, NSString *> *documents = @{
         @"META-INF/container.xml": container,
-        @"EPUB/package.opf": MPPackageOPF(info, images),
-        @"EPUB/nav.xhtml": MPNavXHTML(headings, info.title),
+        @"EPUB/package.opf": MPPackageOPF(info, images,
+            [content rangeOfString:@"<svg"].location != NSNotFound),
+        @"EPUB/nav.xhtml": MPNavXHTML(headings, info.title, info.language),
         @"EPUB/content.xhtml": content,
         @"EPUB/style.css": css ?: @"",
     };

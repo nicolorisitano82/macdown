@@ -4,7 +4,7 @@ Un riferimento fra due parentesi quadre diventa un collegamento al
 documento vicino con quel nome. Serve per tenere insieme una cartella di
 appunti senza scrivere percorsi.
 
-Si accende in **Preferenze › Rendering › Scrittura**.
+Si accende in **Preferenze › Resa grafica › Scrittura**.
 
 ## Riferimenti che esistono
 

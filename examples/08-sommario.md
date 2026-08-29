@@ -4,7 +4,7 @@ Due modi di muoversi in un documento lungo.
 
 ## Il token del sommario
 
-Con **Rileva il token del sommario** acceso in Preferenze › Rendering, la
+Con **Rileva il token del sommario** acceso in Preferenze › Resa grafica, la
 riga qui sotto diventa un indice costruito dai titoli del documento.
 
 [TOC]
@@ -13,7 +13,7 @@ L'indice sta nell'anteprima e finisce anche nelle esportazioni.
 
 ## La barra laterale
 
-**Vista › Show Sidebar** apre l'elenco dei titoli a sinistra. Un clic
+**Vista › Mostra barra laterale** apre l'elenco dei titoli a sinistra. Un clic
 porta al punto corrispondente nell'editor.
 
 A differenza del token, la barra laterale non tocca il documento: è solo un

@@ -51,7 +51,7 @@ Con **Task list syntax** acceso:
 Codice in linea: `NSString *nome = @"MacDown";`
 
 Con **Fenced code block** acceso, un blocco con il linguaggio dichiarato —
-e con **Evidenzia la sintassi** acceso in Preferenze › Rendering, colorato:
+e con **Evidenzia la sintassi** acceso in Preferenze › Resa grafica, colorato:
 
 ```objectivec
 - (NSString *)saluta:(NSString *)nome

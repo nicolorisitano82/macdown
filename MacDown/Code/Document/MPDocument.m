@@ -830,6 +830,13 @@ static NSString * const kMPSelectionSource =
         self.loadedString = nil;
         [self.renderer parseAndRenderNow];
         [self.highlighter parseAndHighlightNow];
+
+        // Setting the string is not an edit, so nothing else asks for these.
+        // Without them a document that has just been opened reports having
+        // nothing to flag, however much prose is in it, until the first
+        // keystroke.
+        [self.editor updateProseHighlights];
+        [self updateProseSummary];
     }
 }
 
@@ -1054,6 +1061,21 @@ static NSString * const kMPSelectionSource =
                           @"Toggle editor pane menu item") :
         NSLocalizedString(@"Restore Editor Pane",
                           @"Toggle editor pane menu item");
+    }
+    else if (action == @selector(toggleSidebar:))
+    {
+        NSMenuItem *it = (NSMenuItem *)item;
+        it.title = self.sidebarVisible ?
+            NSLocalizedString(@"Hide Sidebar", @"Toggle sidebar menu item") :
+            NSLocalizedString(@"Show Sidebar", @"Toggle sidebar menu item");
+    }
+    else if (action == @selector(toggleProseHighlights:))
+    {
+        // A tick rather than a second wording: the command reads the same
+        // either way, and what is missing is whether it is on.
+        NSMenuItem *it = (NSMenuItem *)item;
+        it.state = self.editor.proseHighlightsEnabled
+            ? NSControlStateValueOn : NSControlStateValueOff;
     }
     return result;
 }
@@ -1603,17 +1625,20 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
     
     self.alreadyRenderingInWeb = YES;
 
-    // Delayed copying for -copyHtml.
+    if (self.preferences.htmlWikiLinks)
+        html = [self htmlByResolvingWikiLinksIn:html];
+
+    // Delayed copying for -copyHtml, after the document has finished with
+    // the renderer's output rather than before: what is copied should be
+    // what the preview was given, and a WikiLink that is a link on screen
+    // and in every export should not arrive on the pasteboard as brackets.
     if (self.copying)
     {
         self.copying = NO;
         NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
         [pasteboard clearContents];
-        [pasteboard writeObjects:@[self.renderer.currentHtml]];
+        [pasteboard writeObjects:@[html]];
     }
-
-    if (self.preferences.htmlWikiLinks)
-        html = [self htmlByResolvingWikiLinksIn:html];
 
     NSURL *baseUrl = self.fileURL;
     if (!baseUrl)   // Unsaved doument; just use the default URL.
@@ -1821,18 +1846,12 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
         @"if (window.getSelection) getSelection().removeAllRanges();"
                    completionHandler:nil];
 
-    // If the preview is hidden, the HTML are not updating on text change.
-    // Perform one extra rendering so that the HTML is up to date, and do the
-    // copy in the rendering callback.
-    if (!self.needsHtml)
-    {
-        self.copying = YES;
-        [self.renderer parseAndRenderNow];
-        return;
-    }
-    NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-    [pasteboard clearContents];
-    [pasteboard writeObjects:@[self.renderer.currentHtml]];
+    // Always through the rendering callback, even when the HTML is already
+    // up to date. What the renderer holds is its own output; what the
+    // preview was given has been through the document as well, and that is
+    // what someone copying the HTML is looking at.
+    self.copying = YES;
+    [self.renderer parseAndRenderNow];
 }
 
 /** A PNG <img> tag for SVG markup, for consumers that cannot read SVG.
@@ -3029,15 +3048,22 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
     [self.sidebar updateOutlineWithMarkdown:self.editor.string ?: @""];
 }
 
+/// Whether the sidebar is open, as the menu and the toggle both need to know.
+- (BOOL)sidebarVisible
+{
+    NSSplitView *outer = self.outerSplitView;
+    NSView *sidebar = outer.subviews.firstObject;
+    return outer && sidebar && ![outer isSubviewCollapsed:sidebar]
+        && sidebar.frame.size.width > 1.0;
+}
+
 - (IBAction)toggleSidebar:(id)sender
 {
     NSSplitView *outer = self.outerSplitView;
     if (!outer)
         return;
 
-    NSView *sidebar = outer.subviews.firstObject;
-    BOOL visible = ![outer isSubviewCollapsed:sidebar]
-        && sidebar.frame.size.width > 1.0;
+    BOOL visible = self.sidebarVisible;
     [outer setPosition:(visible ? 0.0 : 240.0) ofDividerAtIndex:0];
     [outer adjustSubviews];
 

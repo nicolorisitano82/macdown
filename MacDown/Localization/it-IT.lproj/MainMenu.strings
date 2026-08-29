@@ -346,3 +346,17 @@
 /* Class = "NSMenuItem"; title = "New Paragraph"; ObjectID = "zHE-JL-8eu"; */
 "zHE-JL-8eu.title" = "Nuovo Paragrafo";
 
+/* Class = "NSMenuItem"; title = "Highlight Prose Issues"; ObjectID = "prs-01-tgl"; */
+"prs-01-tgl.title" = "Evidenzia i problemi di prosa";
+
+/* Class = "NSMenuItem"; title = "Show Sidebar"; ObjectID = "sbr-01-itm"; */
+"sbr-01-itm.title" = "Mostra barra laterale";
+
+/* Class = "NSMenuItem"; title = "Insert Math…"; ObjectID = "mth-01-itm"; */
+"mth-01-itm.title" = "Inserisci una formula…";
+
+/* Class = "NSMenuItem"; title = "Shift Right"; ObjectID = "g9Y-GM-gdh"; */
+"g9Y-GM-gdh.title" = "Aumenta il rientro";
+
+/* Class = "NSMenuItem"; title = "Shift Left"; ObjectID = "Jzs-tR-jkL"; */
+"Jzs-tR-jkL.title" = "Riduci il rientro";

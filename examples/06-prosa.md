@@ -1,7 +1,7 @@
 # Controllo di prosa
 
-Dal menu **Formato › Highlight Prose Issues**, o accendendolo per tutti i
-nuovi documenti in **Preferenze › Rendering › Scrittura**.
+Dal menu **Vista › Evidenzia i problemi di prosa**, o accendendolo per tutti i
+nuovi documenti in **Preferenze › Resa grafica › Scrittura**.
 
 Sottolinea sei categorie con colori diversi, e mette il conteggio nel
 sottotitolo della finestra. Non corregge niente: segnala e basta.
