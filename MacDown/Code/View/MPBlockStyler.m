@@ -67,6 +67,41 @@
 }
 
 
+/** The words of a quoted line, without the `>` that introduces them.
+ *
+ * The parser reports the marker, two characters, and the bar has to be
+ * measured from something that is drawn: with the markers hidden a run of
+ * suppressed glyphs at the head of a line is folded into the fragment above
+ * it, and a bar measured from the `>` lands one row too high.
+ *
+ * Measuring from the text also puts the bar right when the markers are
+ * showing, since it is the row that matters and not the column.
+ */
+- (NSRange)quotedTextOnLineOf:(NSRange)marker
+{
+    NSString *text = self.textView.string;
+    if (NSMaxRange(marker) > text.length)
+        return marker;
+
+    NSRange line = [text lineRangeForRange:NSMakeRange(marker.location, 0)];
+    NSUInteger end = NSMaxRange(line);
+    while (end > line.location)
+    {
+        unichar c = [text characterAtIndex:end - 1];
+        if (c != '\n' && c != '\r')
+            break;
+        end--;
+    }
+
+    NSUInteger start = NSMaxRange(marker);
+    if (start < end && [text characterAtIndex:start] == ' ')
+        start++;
+    if (start >= end)
+        return marker;
+    return NSMakeRange(start, end - start);
+}
+
+
 #pragma mark - Applying
 
 - (void)clear
@@ -139,7 +174,8 @@
                             range:range];
 
             if (blocks[b].type == pmh_BLOCKQUOTE)
-                [quotes addObject:[NSValue valueWithRange:range]];
+                [quotes addObject:[NSValue valueWithRange:
+                    [self quotedTextOnLineOf:range]]];
         }
     }
 

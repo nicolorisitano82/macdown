@@ -228,6 +228,98 @@
     return YES;
 }
 
+/** The hashes at the front of a heading, and any at the back.
+ *
+ * ATX only — `# Titolo`. A setext heading is underlined on the line below,
+ * and suppressing a whole line's glyphs leaves the line itself behind: the
+ * marks go, the empty row does not, and a gap under every such heading
+ * would be worse than the two equals signs it replaced.
+ *
+ * The space after the hashes goes with them. Hiding `##` but keeping its
+ * space would indent the heading by one character for no reason anybody
+ * could see.
+ */
+- (BOOL)headingEnds:(NSRange)range
+               text:(NSString *)text
+            opening:(NSRange *)opening
+            closing:(NSRange *)closing
+{
+    if (!range.length || [text characterAtIndex:range.location] != '#')
+        return NO;
+
+    NSUInteger head = 0;
+    while (head < range.length
+           && [text characterAtIndex:range.location + head] == '#')
+        head++;
+    if (head > 6)
+        return NO;
+    while (range.location + head < NSMaxRange(range)
+           && [text characterAtIndex:range.location + head] == ' ')
+        head++;
+    if (head >= range.length)
+        return NO;      // Hashes and nothing else.
+
+    // The optional closing run, with the spaces that separate it from the
+    // words: `# Titolo #` is a heading called Titolo, not `Titolo #`.
+    NSUInteger tail = 0;
+    while (tail < range.length - head
+           && [text characterAtIndex:NSMaxRange(range) - 1 - tail] == '#')
+        tail++;
+    if (tail)
+    {
+        while (tail < range.length - head
+               && [text characterAtIndex:NSMaxRange(range) - 1 - tail] == ' ')
+            tail++;
+    }
+    if (head + tail >= range.length)
+        return NO;
+
+    *opening = NSMakeRange(range.location, head);
+    *closing = NSMakeRange(NSMaxRange(range) - tail, tail);
+    return YES;
+}
+
+/** Records one `>` at the head of a quoted line.
+ *
+ * The parser hands over the marker itself, two characters, not the
+ * quotation it introduces — so there is one of these per line already, and
+ * the line it sits on supplies the words it applies to.
+ *
+ * A construct per line rather than one for the whole quotation is right
+ * anyway: the marks are not a pair around the text, they are a prefix
+ * repeated down the side of it, and revealing, deleting and stepping over
+ * all work a construct at a time.
+ *
+ * With the marks gone a quotation reads as indented text with a rule beside
+ * it, which is what the block layout already draws.
+ */
+- (void)addQuoteMarker:(NSRange)marker text:(NSString *)text
+{
+    NSRange line = [text lineRangeForRange:NSMakeRange(marker.location, 0)];
+    NSUInteger end = NSMaxRange(line);
+    while (end > line.location)
+    {
+        unichar c = [text characterAtIndex:end - 1];
+        if (c != '\n' && c != '\r')
+            break;
+        end--;
+    }
+
+    // The space the marker is customarily followed by belongs with it.
+    NSUInteger head = NSMaxRange(marker);
+    if (head < end && [text characterAtIndex:head] == ' ')
+        head++;
+
+    // A line that is nothing but its marker keeps it: hiding it would leave
+    // a blank line with no hint of why it is there.
+    if (head >= end || marker.location < line.location)
+        return;
+
+    [self addConstruct:NSMakeRange(line.location, end - line.location)
+               opening:NSMakeRange(line.location, head - line.location)
+               closing:NSMakeRange(end, 0)];
+}
+
 - (void)updateWithElements:(pmh_element **)elements
 {
     NSString *text = self.textView.string;
@@ -280,6 +372,39 @@
 
     if (elements != NULL && length)
     {
+        NSCharacterSet *breaks = [NSCharacterSet newlineCharacterSet];
+        for (pmh_element_type type = pmh_H1; type <= pmh_H6; type++)
+        {
+            for (pmh_element *cursor = elements[type]; cursor != NULL;
+                 cursor = cursor->next)
+            {
+                if (cursor->end <= cursor->pos || cursor->end > length)
+                    continue;
+                NSRange range = NSMakeRange(cursor->pos,
+                                            cursor->end - cursor->pos);
+                while (range.length > 0
+                       && [breaks characterIsMember:
+                               [text characterAtIndex:NSMaxRange(range) - 1]])
+                    range.length--;
+
+                NSRange opening = NSMakeRange(0, 0);
+                NSRange closing = NSMakeRange(0, 0);
+                if ([self headingEnds:range text:text opening:&opening
+                              closing:&closing])
+                    [self addConstruct:range opening:opening closing:closing];
+            }
+        }
+
+        for (pmh_element *cursor = elements[pmh_BLOCKQUOTE]; cursor != NULL;
+             cursor = cursor->next)
+        {
+            if (cursor->end <= cursor->pos || cursor->end > length)
+                continue;
+            [self addQuoteMarker:NSMakeRange(cursor->pos,
+                                             cursor->end - cursor->pos)
+                            text:text];
+        }
+
         pmh_element_type types[] = {pmh_EMPH, pmh_STRONG, pmh_CODE,
                                     pmh_LINK};
         for (size_t t = 0; t < sizeof(types) / sizeof(types[0]); t++)

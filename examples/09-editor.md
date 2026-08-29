@@ -33,6 +33,17 @@ Il [link di riferimento][rif] è lasciato in chiaro di proposito: nascondere
 
 [rif]: https://example.org
 
+Spariscono anche i cancelletti dei titoli — guarda quelli di questo
+documento — e i segni di maggiore delle citazioni:
+
+> Questa citazione non mostra i suoi `>`. Resta rientrata, con la barra nel
+> margine a dire che è una citazione.
+
+Restano visibili, di proposito: i titoli scritti sottolineando con `===` o
+`---` (il segno sta sulla riga sotto, e nasconderlo lascerebbe la riga
+vuota), le immagini `![...](...)`, e i trattini degli elenchi, che sono
+informazione e non delimitatori.
+
 ## Rientra liste e citazioni nell'editor
 
 - Una voce di lista con abbastanza testo da andare a capo, per far vedere

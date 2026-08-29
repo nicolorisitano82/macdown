@@ -146,6 +146,44 @@ I link di riferimento — `[testo][rif]` con la definizione altrove — sono
 lasciati stare di proposito: nascondere `[rif]` toglie l'unico modo di
 sapere quale definizione stavi usando.
 
+### I titoli e le citazioni, fatti dopo *(fatti)*
+
+I cancelletti dei titoli ATX spariscono — il titolo è già più grande, non
+serve dirlo due volte — e con loro lo spazio che li segue, altrimenti il
+titolo resterebbe rientrato di un carattere per nessun motivo visibile.
+Sparisce anche la chiusura opzionale di `# Titolo #`.
+
+I `>` delle citazioni spariscono uno per riga, e quello che resta è testo
+rientrato con la barra nel margine: la fase 3 disegnava già la barra, e
+finalmente è lei a dire che è una citazione.
+
+**Due cose imparate qui.**
+
+*Il parser non riporta la citazione, riporta il marcatore.* Un elemento
+`pmh_BLOCKQUOTE` è lungo due caratteri: `> `. La citazione va ricostruita
+dalla riga su cui il marcatore si trova. Comodo, a conti fatti — un
+costrutto per riga è la forma giusta, perché i segni non sono una coppia
+attorno al testo ma un prefisso ripetuto lungo il fianco.
+
+*La stessa insidia dei glifi soppressi, terza volta.* Nascondere il `>`
+faceva saltare la barra una riga più su, esattamente come per la riga
+orizzontale: un blocco di glifi soppressi a inizio riga viene assorbito
+nel frammento precedente. La barra ora si misura dal testo citato, non dal
+marcatore. **Quando una regola di misura si rompe per la terza volta nello
+stesso modo, non è sfortuna: è che si sta misurando la cosa sbagliata.**
+
+### Quello che resta visibile, e perché
+
+- **I titoli setext.** Il marcatore è sulla riga sotto, e sopprimere i
+  glifi di una riga intera lascia la riga: i segni vanno via, la riga
+  vuota no. Un buco sotto ogni titolo sarebbe peggio dei segni.
+- **Le immagini.** `![diagramma](x.png)` ridotto a «diagramma» è
+  indistinguibile da una parola qualsiasi: il documento mentirebbe su cosa
+  contiene. La risposta onesta è disegnare l'immagine, che è una fase a sé.
+- **Barrato ed evidenza.** Il parser non li conosce — sono estensioni del
+  renderer — quindi servirebbe una scansione a parte, come per le tabelle.
+- **I punti elenco.** Il trattino è informazione, non un delimitatore.
+
 ---
 
 ## Fase 3 — L'impaginazione di blocco *(fatta)*
