@@ -315,12 +315,6 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
         return;
     }
 
-    // Assets are emitted as file:// links by the renderer; they have to
-    // arrive through the handler like everything else.
-    html = [html stringByReplacingOccurrencesOfString:@"file://"
-                                           withString:
-        [MPPreviewURLScheme stringByAppendingString:@"://"]];
-
     // A <base> so that a relative path in the document — an image beside it
     // — resolves against the document rather than against the file this is
     // written to.
@@ -328,10 +322,16 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
         ? baseUrl.path.stringByDeletingLastPathComponent : nil;
     if (directoryPath.length)
     {
-        NSURL *base = MPPreviewURLForPath(
-            [directoryPath stringByAppendingString:@"/"]);
+        NSURL *base = MPPreviewURLForPath(directoryPath);
+        // The trailing slash goes on here, after the URL is built, because
+        // standardising a path takes it off — and without it the browser
+        // reads the last component as a file rather than a folder, so an
+        // image beside the document is looked for one directory above it.
+        NSString *href = base.absoluteString;
+        if (![href hasSuffix:@"/"])
+            href = [href stringByAppendingString:@"/"];
         NSString *tag = [NSString stringWithFormat:@"<base href=\"%@\">",
-                         base.absoluteString];
+                         href];
         NSRange head = [html rangeOfString:@"<head>"];
         if (head.location != NSNotFound)
         {
@@ -1631,6 +1631,37 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
 }
 
 
+/** Rewrites the file:// links in rendered markup to the preview's scheme.
+ *
+ * The page has an ordinary origin of its own, and from there a file:// URL
+ * is refused. This used to happen only on the way to a full page load,
+ * which meant an image written as a file:// URL appeared when the document
+ * was opened and vanished at the next keystroke, when the body is replaced
+ * in place instead of the page being loaded again.
+ */
+- (NSString *)htmlByServingLocalFilesIn:(NSString *)html
+{
+    // Only where a link is declared. Replacing every `file://` in the markup
+    // rewrites the ones in the prose as well, and a document explaining what
+    // a file:// URL is would find its own words edited.
+    static NSRegularExpression *regex = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        regex = [NSRegularExpression regularExpressionWithPattern:
+            @"(\\b(?:src|href|poster|data-src)\\s*=\\s*[\"'])file://"
+                                                          options:
+            NSRegularExpressionCaseInsensitive error:NULL];
+    });
+    if (!regex)
+        return html;
+
+    NSString *template = [NSString stringWithFormat:@"$1%@://",
+                          MPPreviewURLScheme];
+    return [regex stringByReplacingMatchesInString:html options:0
+                                             range:NSMakeRange(0, html.length)
+                                      withTemplate:template];
+}
+
 - (void)renderer:(MPRenderer *)renderer didProduceHTMLOutput:(NSString *)html
 {
     if (self.alreadyRenderingInWeb)
@@ -1676,6 +1707,10 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
     //
     // The head is compared rather than assumed: it changes when a preference
     // adds or removes a stylesheet, and those renders still need a real load.
+    // Before the split, so that both roads out of here — a full load and a
+    // body replaced in place — carry the same links.
+    html = [self htmlByServingLocalFilesIn:html];
+
     NSString *head = MPHeadOfHTML(html);
     NSString *body = MPBodyOfHTML(html);
 
