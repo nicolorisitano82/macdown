@@ -28,9 +28,22 @@ BUNDLE_VERSION=$(get_bundle_version)
 # but old Xcodes don't have this.
 #GIT=$(xcrun -find git)
 
-# Run Script build phases that operate on product files of the target that defines them should use the value of this build setting [TARGET_BUILD_DIR]. But Run Script build phases that operate on product files of other targets should use “BUILT_PRODUCTS_DIR” instead.
-INFO_PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
+# Both of the places a product can be sitting by the time this runs. The
+# advice used to be to write to TARGET_BUILD_DIR alone, and under the
+# current build system that is not always the copy that ships: the app in
+# BUILT_PRODUCTS_DIR — the one that gets packaged — was left reporting the
+# placeholder version out of the source Info.plist.
+stamp() {
+    local plist="$1"
+    [ -f "$plist" ] || return 0
+    /usr/libexec/PlistBuddy -c "Add :CFBundleBuildVersion string $BUILD_VERSION" "$plist" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Set :CFBundleBuildVersion $BUILD_VERSION" "$plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $SHORT_VERSION" "$plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUNDLE_VERSION" "$plist"
+    echo "note: stamped $SHORT_VERSION ($BUNDLE_VERSION) into $plist"
+}
 
-/usr/libexec/PlistBuddy -c "Add :CFBundleBuildVersion string $BUILD_VERSION" "$INFO_PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :CFBundleBuildVersion $BUILD_VERSION" "$INFO_PLIST"
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $SHORT_VERSION" "$INFO_PLIST"
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUNDLE_VERSION" "$INFO_PLIST"
+stamp "${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
+if [ "${BUILT_PRODUCTS_DIR}" != "${TARGET_BUILD_DIR}" ]; then
+    stamp "${BUILT_PRODUCTS_DIR}/${INFOPLIST_PATH}"
+fi

@@ -1148,7 +1148,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "DEST=\"$SRCROOT/dist/$CONFIGURATION\"\n# Per configuration, so a Debug build cannot quietly replace the Release\n# one you thought you were running.\nmkdir -p \"$DEST\"\nrm -rf \"$DEST/$FULL_PRODUCT_NAME\"\ncp -R \"$BUILT_PRODUCTS_DIR/$FULL_PRODUCT_NAME\" \"$DEST/\"\necho \"note: copied $FULL_PRODUCT_NAME to dist/$CONFIGURATION\"\n";
+			shellScript = "DEST=\"$SRCROOT/dist/$CONFIGURATION\"\n# Per configuration, so a Debug build cannot quietly replace the Release\n# one you thought you were running.\nmkdir -p \"$DEST\"\nrm -rf \"$DEST/$FULL_PRODUCT_NAME\"\ncp -R \"$BUILT_PRODUCTS_DIR/$FULL_PRODUCT_NAME\" \"$DEST/\"\n# The version goes on here, at the very end, and by an explicit path.\n# Stamped earlier it does not survive: the build system writes the\n# Info.plist again after the script phases have run, and the app was\n# shipping as 0.1.\nPLIST=\"$DEST/$FULL_PRODUCT_NAME/Contents/Info.plist\"\nSHORT=$(\"$SRCROOT/Tools/short_version.sh\")\nBUNDLE=$(cd \"$SRCROOT\" && git rev-list --count HEAD)\nBUILD=$(cd \"$SRCROOT\" && git describe --tags --always --dirty=+)\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $SHORT\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUNDLE\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Add :CFBundleBuildVersion string $BUILD\" \"$PLIST\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Set :CFBundleBuildVersion $BUILD\" \"$PLIST\"\necho \"note: dist copy stamped $SHORT ($BUNDLE)\"\necho \"note: copied $FULL_PRODUCT_NAME to dist/$CONFIGURATION\"\n";
 		};
 		1E02F0A95AAEBCEF65493F5F /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
