@@ -10,7 +10,8 @@ Prova **File › Export** in HTML, PDF, Word ed EPUB e confronta.
 
 | Elemento | HTML | PDF | Word | EPUB |
 |---|:---:|:---:|:---:|:---:|
-| Testo e titoli | sì | sì | sì | sì |
+| Testo | sì | sì | sì | sì |
+| Titoli | ancore | solo aspetto | stili Word | sommario |
 | Tabelle | sì | sì | sì, vere | sì |
 | Codice | sì | sì | sì, monospazio | sì |
 | Diagrammi | sì | sì | sì, immagini | sì, immagini |
@@ -28,6 +29,11 @@ Prova **File › Export** in HTML, PDF, Word ed EPUB e confronta.
 
 Nel documento Word questa è una tabella vera, con bordi e intestazione
 ripetuta se spezza pagina — non righe di testo separate da tabulazioni.
+
+I titoli, dal canto loro, arrivano con gli stili Titolo 1…6 di Word: il
+riquadro di navigazione li elenca e un campo Sommario si costruisce da
+solo. L'aspetto è quello di qui, perché la formattazione resta diretta e
+lo stile serve a Word per capire la struttura, non per disegnarla.
 
 ## Del codice
 

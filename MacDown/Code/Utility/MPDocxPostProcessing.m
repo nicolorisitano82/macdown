@@ -351,6 +351,174 @@ NSData *MPDocxDataByRepairingLayout(NSData *docxData,
 @implementation MPDocxTable
 @end
 
+#pragma mark - Heading styles
+
+/// Where a `<w:p>` element starts, searching back from `index`.
+static NSUInteger MPParagraphStartBefore(NSString *xml, NSUInteger index)
+{
+    // Not just "<w:p", which is also how <w:pPr> and <w:pStyle> begin, and
+    // both of those sit between a paragraph's start and its text.
+    NSRange before = NSMakeRange(0, index);
+    NSRange plain = [xml rangeOfString:@"<w:p>" options:NSBackwardsSearch
+                                 range:before];
+    NSRange attributed = [xml rangeOfString:@"<w:p " options:NSBackwardsSearch
+                                      range:before];
+
+    if (plain.location == NSNotFound)
+        return attributed.location;
+    if (attributed.location == NSNotFound)
+        return plain.location;
+    return MAX(plain.location, attributed.location);
+}
+
+/** Removes one token and names the style of the paragraph it was in.
+ *
+ * Returns NO only when there is no token left to find, which is what ends
+ * the loop over a level.
+ */
+static BOOL MPStyleParagraphContaining(NSMutableString *xml, NSString *token,
+                                       NSUInteger level)
+{
+    NSRange hit = [xml rangeOfString:token];
+    if (hit.location == NSNotFound)
+        return NO;
+    [xml deleteCharactersInRange:hit];
+
+    NSUInteger start = MPParagraphStartBefore(xml, hit.location);
+    if (start == NSNotFound)
+        return YES;     // The token is gone either way.
+
+    NSRange rest = NSMakeRange(start, xml.length - start);
+    NSRange tagEnd = [xml rangeOfString:@">" options:0 range:rest];
+    if (tagEnd.location == NSNotFound)
+        return YES;
+
+    NSString *style = [NSString stringWithFormat:
+        @"<w:pStyle w:val=\"Heading%lu\"/>", (unsigned long)level];
+
+    // Properties the writer already gave the paragraph, or none at all. The
+    // style has to be the first thing inside them either way: the schema
+    // fixes the order of a paragraph's properties, and this one leads.
+    NSUInteger after = NSMaxRange(tagEnd);
+    NSRange properties = NSMakeRange(after, MIN((NSUInteger)8,
+                                                xml.length - after));
+    if ([[xml substringWithRange:properties] hasPrefix:@"<w:pPr>"])
+        [xml insertString:style atIndex:after + 7];
+    else
+        [xml insertString:[NSString stringWithFormat:@"<w:pPr>%@</w:pPr>",
+                           style] atIndex:after];
+    return YES;
+}
+
+/// The stylesheet AppKit never writes, holding the six heading styles.
+static NSString *MPHeadingStylesXML(void)
+{
+    NSMutableString *styles = [NSMutableString string];
+    [styles appendString:
+        @"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+        @"<w:styles xmlns:w=\"http://schemas.openxmlformats.org/"
+        @"wordprocessingml/2006/main\">"
+        @"<w:style w:type=\"paragraph\" w:default=\"1\" w:styleId=\"Normal\">"
+        @"<w:name w:val=\"Normal\"/><w:qFormat/></w:style>"];
+
+    for (NSUInteger level = 1; level <= 6; level++)
+    {
+        // The name is what marks these as Word's own built-in headings
+        // rather than six styles that happen to be called Heading; the
+        // outline level is what the navigation pane reads.
+        [styles appendFormat:
+            @"<w:style w:type=\"paragraph\" w:styleId=\"Heading%lu\">"
+            @"<w:name w:val=\"heading %lu\"/>"
+            @"<w:basedOn w:val=\"Normal\"/>"
+            @"<w:next w:val=\"Normal\"/>"
+            @"<w:uiPriority w:val=\"9\"/>"
+            @"<w:qFormat/>"
+            @"<w:pPr><w:outlineLvl w:val=\"%lu\"/></w:pPr>"
+            @"</w:style>",
+            (unsigned long)level, (unsigned long)level,
+            (unsigned long)(level - 1)];
+    }
+    [styles appendString:@"</w:styles>"];
+    return styles;
+}
+
+NSData *MPDocxDataByStylingHeadings(NSData *docxData, NSString *tokenPrefix)
+{
+    if (!tokenPrefix.length)
+        return docxData;
+
+    NSArray<MPZipEntry *> *entries = MPZipRead(docxData);
+    if (!entries)
+        return nil;
+
+    NSMutableString *xml =
+        [MPStringFromEntry(entries, @"word/document.xml") mutableCopy];
+    if (!xml)
+        return nil;
+
+    BOOL any = NO;
+    for (NSUInteger level = 1; level <= 6; level++)
+    {
+        NSString *token = [NSString stringWithFormat:@"%@%lu", tokenPrefix,
+                           (unsigned long)level];
+        while (MPStyleParagraphContaining(xml, token, level))
+            any = YES;
+    }
+    if (!any)
+        return docxData;
+
+    NSMutableString *rels =
+        [MPStringFromEntry(entries, @"word/_rels/document.xml.rels")
+            mutableCopy];
+    NSMutableString *types =
+        [MPStringFromEntry(entries, @"[Content_Types].xml") mutableCopy];
+    if (!rels || !types)
+        return nil;
+
+    NSRange relsClose = [rels rangeOfString:@"</Relationships>"];
+    NSRange typesClose = [types rangeOfString:@"</Types>"];
+    if (relsClose.location == NSNotFound || typesClose.location == NSNotFound)
+        return nil;
+
+    [rels replaceCharactersInRange:relsClose withString:
+        @"<Relationship Id=\"rIdStyles\" Type=\"http://schemas."
+        @"openxmlformats.org/officeDocument/2006/relationships/styles\" "
+        @"Target=\"styles.xml\"/></Relationships>"];
+    [types replaceCharactersInRange:typesClose withString:
+        @"<Override PartName=\"/word/styles.xml\" ContentType=\""
+        @"application/vnd.openxmlformats-officedocument.wordprocessingml."
+        @"styles+xml\"/></Types>"];
+
+    NSMutableArray<MPZipEntry *> *out = [NSMutableArray array];
+    for (MPZipEntry *e in entries)
+    {
+        if ([e.name isEqualToString:@"word/document.xml"])
+        {
+            [out addObject:MPStoredEntry(e.name,
+                [xml dataUsingEncoding:NSUTF8StringEncoding])];
+        }
+        else if ([e.name isEqualToString:@"word/_rels/document.xml.rels"])
+        {
+            [out addObject:MPStoredEntry(e.name,
+                [rels dataUsingEncoding:NSUTF8StringEncoding])];
+        }
+        else if ([e.name isEqualToString:@"[Content_Types].xml"])
+        {
+            [out addObject:MPStoredEntry(e.name,
+                [types dataUsingEncoding:NSUTF8StringEncoding])];
+        }
+        else
+        {
+            [out addObject:e];
+        }
+    }
+    [out addObject:MPStoredEntry(@"word/styles.xml",
+        [MPHeadingStylesXML() dataUsingEncoding:NSUTF8StringEncoding])];
+
+    return MPZipWrite(out);
+}
+
+
 NS_INLINE NSString *MPXMLEscaped(NSString *text)
 {
     NSMutableString *out = [text mutableCopy];

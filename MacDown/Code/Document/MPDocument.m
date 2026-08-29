@@ -2522,6 +2522,42 @@ NS_INLINE MPDocxTable *MPDocxTableFromHTML(NSString *html,
 }
 
 
+/// The prefix of the marks that tell the Word export where a heading was.
+static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
+
+/** Marks each heading with its level, for the Word export to find later.
+ *
+ * By the time AppKit has turned the page into a .docx a heading is just a
+ * paragraph in a larger, bolder face, indistinguishable from a line of text
+ * someone emphasised. Marking them here, while the markup still says which
+ * is which, is what lets the export give them Word's heading styles.
+ *
+ * The mark goes immediately before the heading's text and is taken out
+ * again on the other side, so it never reaches the page.
+ */
+- (NSString *)htmlByMarkingHeadingsIn:(NSString *)html
+{
+    NSRegularExpression *regex = [NSRegularExpression
+        regularExpressionWithPattern:@"<h([1-6])(\\s[^>]*)?>"
+                             options:NSRegularExpressionCaseInsensitive
+                               error:NULL];
+    NSArray<NSTextCheckingResult *> *matches =
+        [regex matchesInString:html options:0
+                         range:NSMakeRange(0, html.length)];
+
+    NSMutableString *result = [html mutableCopy];
+
+    // Back to front, so each insertion leaves the earlier ranges valid.
+    for (NSInteger i = (NSInteger)matches.count - 1; i >= 0; i--)
+    {
+        NSTextCheckingResult *match = matches[(NSUInteger)i];
+        NSString *level = [html substringWithRange:[match rangeAtIndex:1]];
+        [result insertString:[kMPDocxHeadingToken stringByAppendingString:level]
+                     atIndex:NSMaxRange(match.range)];
+    }
+    return result;
+}
+
 - (void)writeDocxToURL:(NSURL *)url
 {
     NSString *html = [self htmlForWordExport];
@@ -2539,6 +2575,10 @@ NS_INLINE MPDocxTable *MPDocxTableFromHTML(NSString *html,
 
     NSMutableArray<MPDocxTable *> *tables = [NSMutableArray array];
     html = [self html:html withTablesReplacedByPlaceholders:tables];
+
+    // After the tables, so that a heading inside one — which is a cell, not
+    // a section — never picks up a mark that its cell would then show.
+    html = [self htmlByMarkingHeadingsIn:html];
 
     NSData *htmlData = [html dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *readOptions = @{
@@ -2587,6 +2627,12 @@ NS_INLINE MPDocxTable *MPDocxTableFromHTML(NSString *html,
                                                 10.0);
     if (tabled)
         docx = tabled;
+
+    // The heading styles, without which Word's navigation pane stays empty
+    // and a table of contents field finds nothing to build from.
+    NSData *headed = MPDocxDataByStylingHeadings(docx, kMPDocxHeadingToken);
+    if (headed)
+        docx = headed;
 
     // Menlo ships with macOS and nowhere else, so on its own it leaves code
     // blocks proportional in Word on Windows. The font table gives Word a

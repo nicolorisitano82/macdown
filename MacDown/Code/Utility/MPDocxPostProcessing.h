@@ -53,6 +53,28 @@ NSData *MPDocxDataByRepairingLayout(NSData *docxData,
                                     NSString *codeShadingHex);
 
 
+/** Gives the headings the styles Word navigates by.
+ *
+ * AppKit's writer formats a heading directly — bigger, bold — and never says
+ * that it is one. Word's navigation pane, its outline view and any table of
+ * contents it builds all read the paragraph's outline level, which comes
+ * from its style, so to Word the document is one long stretch of text.
+ *
+ * The headings are found by the tokens the export planted in the HTML at the
+ * front of each one: `<prefix>` followed by the level. Each token is removed
+ * and its paragraph is given the matching Heading style, which this also
+ * writes into the file — AppKit's output has no stylesheet at all.
+ *
+ * The direct formatting is left alone, so nothing about the page changes:
+ * direct formatting wins over a style, and the style is there for what Word
+ * does with the document rather than for how it draws it.
+ *
+ * Returns the input unchanged when no token is found, nil if the archive
+ * cannot be read.
+ */
+NSData *MPDocxDataByStylingHeadings(NSData *docxData, NSString *tokenPrefix);
+
+
 /** A stretch of cell text sharing one set of run properties. */
 @interface MPDocxTextRun : NSObject
 @property (copy, nonatomic) NSString *text;
