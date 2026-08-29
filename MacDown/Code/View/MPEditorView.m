@@ -8,6 +8,7 @@
 
 #import "MPEditorView.h"
 #import "MPProseChecker.h"
+#import "MPMarkerHider.h"
 
 
 NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
@@ -262,6 +263,61 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
             [self updateContentGeometry];
         }];
     }
+}
+
+
+#pragma mark - Deleting a marker
+
+/** Removes the emphasis rather than half of its punctuation.
+ *
+ * Backspace over the last asterisk of `**bold**` used to leave `**bold*`,
+ * which is broken Markdown made out of characters that were invisible a
+ * moment earlier. What someone means by that keystroke is "stop this being
+ * bold", so the whole construct is replaced by what it contains — one edit,
+ * and one step to undo.
+ *
+ * Only when the markers are being hidden. With them visible, deleting one
+ * asterisk of a pair is ordinary text editing and none of this business.
+ */
+- (BOOL)removeConstructForDeletionAt:(NSUInteger)index
+{
+    NSRange construct = NSMakeRange(NSNotFound, 0);
+    NSUInteger marker = 0;
+    if (![self.markerHider construct:&construct markerLength:&marker
+               coveringMarkerAtIndex:index])
+        return NO;
+
+    NSRange inner = NSMakeRange(construct.location + marker,
+                                construct.length - 2 * marker);
+    if (inner.length == 0 || NSMaxRange(construct) > self.string.length)
+        return NO;
+
+    NSString *content = [self.string substringWithRange:inner];
+    if (![self shouldChangeTextInRange:construct replacementString:content])
+        return NO;
+
+    [self.textStorage replaceCharactersInRange:construct withString:content];
+    [self didChangeText];
+    self.selectedRange = NSMakeRange(construct.location + inner.length, 0);
+    return YES;
+}
+
+- (void)deleteBackward:(id)sender
+{
+    NSRange selection = self.selectedRange;
+    if (selection.length == 0 && selection.location > 0
+            && [self removeConstructForDeletionAt:selection.location - 1])
+        return;
+    [super deleteBackward:sender];
+}
+
+- (void)deleteForward:(id)sender
+{
+    NSRange selection = self.selectedRange;
+    if (selection.length == 0 && selection.location < self.string.length
+            && [self removeConstructForDeletionAt:selection.location])
+        return;
+    [super deleteForward:sender];
 }
 
 

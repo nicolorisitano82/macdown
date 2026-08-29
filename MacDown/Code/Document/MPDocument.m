@@ -742,6 +742,7 @@ static NSString * const kMPSelectionSource =
     self.semanticStyler =
         [[MPSemanticStyler alloc] initWithTextView:self.editor];
     self.markerHider = [[MPMarkerHider alloc] initWithTextView:self.editor];
+    self.editor.markerHider = self.markerHider;
     self.semanticStyler.themeStyles = self.highlighter.styles;
     __weak MPDocument *weakSelf = self;
     self.highlighter.elementsDidChange = ^(pmh_element **elements) {

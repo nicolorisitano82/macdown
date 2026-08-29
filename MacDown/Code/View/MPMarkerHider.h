@@ -39,4 +39,15 @@
 /// Reveals the markers around the caret and hides the rest. Cheap.
 - (void)selectionDidChange;
 
+/** The construct whose delimiter covers `index`, if one does.
+ *
+ * Lets the editor treat a marker as one thing when it is deleted: pressing
+ * backspace over the last asterisk of `**bold**` should leave `bold`, not
+ * `**bold*`. Returns the whole construct and the length of one delimiter,
+ * which is all that is needed to rebuild it without them.
+ */
+- (BOOL)construct:(NSRange *)outRange
+     markerLength:(NSUInteger *)outLength
+    coveringMarkerAtIndex:(NSUInteger)index;
+
 @end

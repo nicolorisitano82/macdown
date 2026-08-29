@@ -12,6 +12,8 @@
 @property (strong, nonatomic) NSMutableIndexSet *markers;
 /// The constructs themselves, so the caret can be placed inside one.
 @property (strong, nonatomic) NSMutableArray<NSValue *> *constructs;
+/// The delimiter length of each, in step with -constructs.
+@property (strong, nonatomic) NSMutableArray<NSNumber *> *markerLengths;
 /// The markers currently shown because the caret is in their construct.
 @property (strong, nonatomic) NSIndexSet *revealed;
 @end
@@ -27,6 +29,7 @@
     _textView = textView;
     _markers = [NSMutableIndexSet indexSet];
     _constructs = [NSMutableArray array];
+    _markerLengths = [NSMutableArray array];
     _revealed = [NSIndexSet indexSet];
     textView.layoutManager.delegate = self;
     return self;
@@ -91,6 +94,7 @@
     NSRange previous = NSMakeRange(0, length);
     [self.markers removeAllIndexes];
     [self.constructs removeAllObjects];
+    [self.markerLengths removeAllObjects];
 
     if (elements != NULL && length)
     {
@@ -118,6 +122,7 @@
                 [self.markers addIndexesInRange:
                     NSMakeRange(NSMaxRange(range) - marker, marker)];
                 [self.constructs addObject:[NSValue valueWithRange:range]];
+                [self.markerLengths addObject:@(marker)];
             }
         }
     }
@@ -193,6 +198,38 @@
                           actualCharacterRange:NULL];
     [manager invalidateLayoutForCharacterRange:range
                             actualCharacterRange:NULL];
+}
+
+
+- (BOOL)construct:(NSRange *)outRange
+     markerLength:(NSUInteger *)outLength
+    coveringMarkerAtIndex:(NSUInteger)index
+{
+    // Only while the markers are hidden. With them visible, deleting one
+    // asterisk of a pair is ordinary text editing and not this class's
+    // business.
+    if (!self.enabled || ![self.markers containsIndex:index])
+        return NO;
+
+    for (NSUInteger i = 0; i < self.constructs.count; i++)
+    {
+        NSRange range = self.constructs[i].rangeValue;
+        if (!NSLocationInRange(index, range))
+            continue;
+
+        NSUInteger marker = self.markerLengths[i].unsignedIntegerValue;
+        BOOL opening = index < range.location + marker;
+        BOOL closing = index >= NSMaxRange(range) - marker;
+        if (!opening && !closing)
+            continue;
+
+        if (outRange)
+            *outRange = range;
+        if (outLength)
+            *outLength = marker;
+        return YES;
+    }
+    return NO;
 }
 
 

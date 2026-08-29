@@ -8,6 +8,8 @@
 
 #import <Cocoa/Cocoa.h>
 
+@class MPMarkerHider;
+
 @interface MPEditorView : NSTextView
 
 @property BOOL scrollsPastEnd;
@@ -21,6 +23,12 @@
 
 /// Underlines words the prose checker flags. Off by default.
 @property BOOL proseHighlightsEnabled;
+
+/** Consulted when a deletion lands on a hidden marker.
+ *
+ * Weak: the hider is owned by the document, and holds this view.
+ */
+@property (weak, nonatomic) MPMarkerHider *markerHider;
 
 - (NSRect)contentRect;
 
