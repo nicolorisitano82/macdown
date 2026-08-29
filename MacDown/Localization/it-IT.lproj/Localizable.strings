@@ -167,3 +167,6 @@
 
 /* Prose checker subtitle */
 "nothing flagged" = "nessuna segnalazione";
+
+/* Table alignment */
+"Line up table columns in the editor" = "Allinea le colonne delle tabelle nell'editor";

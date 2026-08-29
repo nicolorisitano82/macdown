@@ -48,6 +48,23 @@ Il [link di riferimento][rif] è lasciato in chiaro di proposito: nascondere
 > La barra resta continua anche quando una riga va a capo da sola e non ha
 > un simbolo di citazione tutto suo.
 
+## Allinea le colonne delle tabelle
+
+| Trimestre | Ricavi | Margine |
+|:---|---:|:---:|
+| Q1 | 12400 | 18,2% |
+| Secondo trimestre | 15900 | 21,7% |
+| Q3 | 141 | 19,4% |
+
+Le barre si allineano anche se le celle hanno lunghezze diverse. Nel file
+restano esattamente i caratteri che vedi in un editor di testo: non viene
+aggiunto nemmeno uno spazio. Aggiungi una parola lunga a una cella e la
+colonna si allarga da sola quando ti fermi a scrivere.
+
+Con il cursore dentro una cella che contiene enfasi i marcatori
+ricompaiono, e quella riga si allarga finché non esci: è la stessa
+rivelazione dei marcatori, vista dal lato della larghezza.
+
 ## Incolla il testo formattato come markdown
 
 Copia un pezzo di pagina web — un titolo, un elenco, una tabella — e

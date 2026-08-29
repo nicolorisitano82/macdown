@@ -33,6 +33,7 @@
 #import "MPSemanticStyler.h"
 #import "MPMarkerHider.h"
 #import "MPBlockStyler.h"
+#import "MPTableAligner.h"
 #import "MPMathEditorController.h"
 #import "MPSidebarController.h"
 #import "MPEpubExport.h"
@@ -79,7 +80,9 @@ NS_INLINE NSSet *MPEditorPreferencesToObserve()
             @"editorWidthLimited", @"editorMaximumWidth", @"editorLineSpacing",
             @"editorOnRight", @"editorStyleName", @"editorShowWordCount",
             @"editorScrollsPastEnd", @"editorProseHighlights",
-            @"editorSemanticStyling", @"editorHideMarkers", @"editorBlockLayout", nil
+            @"editorSemanticStyling", @"editorHideMarkers",
+            @"editorBlockLayout", @"editorPasteAsMarkdown",
+            @"editorAlignTables", nil
         ];
     });
     return keys;
@@ -205,6 +208,7 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (strong) MPSemanticStyler *semanticStyler;
 @property (strong) MPMarkerHider *markerHider;
 @property (strong) MPBlockStyler *blockStyler;
+@property (strong) MPTableAligner *tableAligner;
 @property (strong) MPRenderer *renderer;
 @property CGFloat previousSplitRatio;
 @property BOOL manualRender;
@@ -746,12 +750,17 @@ static NSString * const kMPSelectionSource =
     self.markerHider = [[MPMarkerHider alloc] initWithTextView:self.editor];
     self.editor.markerHider = self.markerHider;
     self.blockStyler = [[MPBlockStyler alloc] initWithTextView:self.editor];
+    self.tableAligner = [[MPTableAligner alloc] initWithTextView:self.editor];
+    self.tableAligner.markerHider = self.markerHider;
     self.semanticStyler.themeStyles = self.highlighter.styles;
     __weak MPDocument *weakSelf = self;
     self.highlighter.elementsDidChange = ^(pmh_element **elements) {
         [weakSelf.semanticStyler applyToElements:elements];
         [weakSelf.markerHider updateWithElements:elements];
         [weakSelf.blockStyler applyToElements:elements];
+        // Last: it measures what the others have decided the text looks
+        // like, so it has to run once they have decided it.
+        [weakSelf.tableAligner align];
     };
     self.renderer = [[MPRenderer alloc] init];
     self.renderer.dataSource = self;
@@ -3359,6 +3368,12 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
 
     if (!changedKey || [changedKey isEqualToString:@"editorPasteAsMarkdown"])
         self.editor.pastesAsMarkdown = self.preferences.editorPasteAsMarkdown;
+
+    if (!changedKey || [changedKey isEqualToString:@"editorAlignTables"])
+    {
+        self.tableAligner.enabled = self.preferences.editorAlignTables;
+        [self.highlighter parseAndHighlightNow];
+    }
 
     if (!changedKey || [changedKey isEqualToString:@"editorHideMarkers"]
             || [changedKey isEqualToString:@"editorBlockLayout"]

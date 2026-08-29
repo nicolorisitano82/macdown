@@ -4,8 +4,8 @@ Una roadmap per arrivare a un editor che mostra quello che il testo
 significa, senza smettere di essere un editor di markdown.
 
 Il punto di partenza non è zero, e a questo punto non è nemmeno la fine:
-tutte e cinque le fasi qui sotto sono fatte e segnate come tali. Quello
-che resta è scritto in fondo, sotto «Dove andare da qui».
+tutte le fasi qui sotto sono fatte e segnate come tali. Quello che resta
+è scritto in fondo, sotto «Dove andare da qui».
 
 ---
 
@@ -275,15 +275,62 @@ d'uscita, e la voce di menu non c'era — è stata aggiunta.
 
 ---
 
+## Fase 5 — Le tabelle *(fatta)*
+
+Le colonne si allineano mentre scrivi, senza contare le barre.
+
+### Perché non riscrivere il file
+
+È quello che fanno tutti: si riempiono le celle di spazi finché le barre
+non tornano. Funziona una volta e poi ti combatte — riscrive righe che non
+hai toccato, a timer, mentre ci hai dentro il cursore. E viola il principio
+da cui parte tutto: **il documento è la stringa che hai scritto**.
+
+Qui si riempie il *disegno*. Ogni cella viene misurata, ogni colonna prende
+la larghezza della sua cella più larga, e la differenza va nella crenatura
+del carattere che precede la barra — `NSKernAttributeName`, che allarga
+l'avanzamento del carattere su cui è messo. Le barre si allineano, il file
+ha esattamente i caratteri che hai battuto.
+
+Non tabulazioni: le tabulazioni vogliono i tab, e la sorgente ha le barre.
+E la crenatura va nel text storage, dove può influenzare l'impaginazione —
+un attributo temporaneo non cambierebbe niente, come nella fase 1.
+
+### Le tre cose che non erano ovvie
+
+*Misurare il testo scritto è la misura sbagliata.* Una cella che dice
+`**totale**` è disegnata quattro caratteri più stretta di com'è scritta,
+perché i marcatori sono nascosti. Una colonna misurata sulla sorgente
+verrebbe allargata a una larghezza che nessuno occupa. Si misura una copia
+staccata da cui i marcatori nascosti sono stati tolti.
+
+*Togliere un attributo da un intervallo lo sporca comunque.* Un
+`removeAttribute:` sull'intero documento a ogni parse fa reimpaginare tutto
+ogni volta che smetti di battere, per una tabella che magari non c'è. Si
+enumera prima dove la crenatura è davvero, e si toglie solo lì.
+
+*La tabella va trovata a mano.* Il parser non conosce le tabelle — sono
+un'estensione del renderer, non del linguaggio che analizza. È una
+scansione per righe: una riga con delle barre diventa una tabella solo
+quando la riga sotto è fatta di trattini. I blocchi recintati si saltano
+tenendo conto delle recinzioni mentre si scorre, perché nemmeno quelli il
+parser li segna.
+
+### Quello che si vede e va spiegato
+
+Con il cursore dentro una cella che contiene enfasi, i marcatori
+ricompaiono e quella riga diventa più larga finché non esci. È la stessa
+rivelazione della fase 2 vista dal lato della larghezza: coerente, e
+l'alternativa — riallineare tutta la tabella a ogni movimento del cursore
+— muoverebbe molto di più.
+
+---
+
 ## Dove andare da qui
 
-Le cinque fasi coprono il testo. Quello che resta è fuori dal testo, ed è
-in ordine di rapporto fra guadagno e rischio:
+Le fasi coprono il testo e le tabelle. Quello che resta smetterebbe di
+essere testo, ed è in ordine di rapporto fra guadagno e rischio:
 
-- **Le tabelle.** Vederle allineate mentre le si scrive, invece di
-  contare le barre verticali. Il modello è lo stesso — larghezze
-  calcolate, sorgente intatta — ma la resa vera vuole tabulazioni
-  personalizzate per colonna.
 - **Le immagini in linea.** Un `![](…)` che mostra l'immagine.
   Tecnicamente è un allegato in un `NSTextAttachment`, cioè il primo
   posto in cui il testo dell'editor smetterebbe di essere solo testo:
