@@ -272,9 +272,10 @@
     <span class="eyebrow">A fork of <b>MacDown</b>, for <b>macOS&nbsp;26</b></span>
     <h1>Markdown, with the&nbsp;parts that were&nbsp;missing.</h1>
     <p class="lede">
-      MacDown is a fine editor that stopped short in two places: diagrams
-      that did not draw, and exports that fell apart the moment someone else
-      opened them. This fork finishes both, and brings the window up to
+      MacDown is a fine editor that stopped short in three
+      places: an editor that showed you the punctuation, diagrams that did
+      not draw, and exports that fell apart the moment someone else opened
+      them. This fork finishes all three, and brings the window up to
       macOS&nbsp;26.
     </p>
     <div class="actions">
@@ -288,8 +289,9 @@
     </p>
 
     <figure class="shot">
-      <img src="assets/hero.png" alt="MacDown with a Markdown document on the left and its rendered preview on the right, showing a mermaid flowchart and a table.">
-      <figcaption>A mermaid flowchart and a Markdown table, drawn live in the preview.</figcaption>
+      <img src="assets/hero.png" alt="MacDown with a document on the left and its rendered preview on the right. In the editor the headings carry no hashes, the emphasis no asterisks, the table columns line up and the quotation has a rule down its margin.">
+      <figcaption>The editor on the left is Markdown — every character of it. It is
+      just no longer showing you the punctuation.</figcaption>
     </figure>
   </div>
 </header>
@@ -303,6 +305,38 @@
     </p>
 
     <div class="ba">
+
+      <div class="ba-row">
+        <div class="ba-cell ba-before">
+          <p class="ba-label">Before</p>
+          <p><strong>The editor showed you the punctuation.</strong>
+          Hashes in front of every heading, asterisks around every bold
+          word, columns of a table wherever the words happened to leave
+          them. The rendered document was the other pane's business.</p>
+        </div>
+        <div class="ba-cell ba-after">
+          <p class="ba-label">Now</p>
+          <p>The markers disappear until the caret reaches them, lists and
+          quotations are laid out, and table columns line up as you type —
+          by padding the drawing, never the file. What you save is the
+          string you typed, to the character.</p>
+        </div>
+      </div>
+
+      <div class="ba-row">
+        <div class="ba-cell ba-before">
+          <p class="ba-label">Before</p>
+          <p><strong>Pasting from a browser gave you plain text.</strong>
+          A heading copied out of a web page arrived as a line that used to
+          be one.</p>
+        </div>
+        <div class="ba-cell ba-after">
+          <p class="ba-label">Now</p>
+          <p>It arrives as Markdown: headings, nested lists, links, images,
+          fenced code with its language, quotations and tables.
+          <kbd>⌘⇧V</kbd> still pastes exactly what was copied.</p>
+        </div>
+      </div>
 
       <div class="ba-row">
         <div class="ba-cell ba-before">
@@ -329,7 +363,7 @@
         </div>
         <div class="ba-cell ba-after">
           <p class="ba-label">Now</p>
-          <p><strong>Mermaid 11.13</strong>, with the diagram types the 8.x
+          <p><strong>Mermaid 11.17</strong>, with the diagram types the 8.x
           line never had, redrawn on every edit and themed to match the
           system appearance.</p>
         </div>
@@ -537,33 +571,43 @@ pod install</pre>
       <div class="task">
         <span class="effort">Large</span>
         <div>
-          <h3>Move the preview to WKWebView</h3>
-          <p>It still runs on WebKit's legacy <code>WebView</code>,
-          deprecated since macOS 10.14. Word count, scroll syncing, the
-          MathJax bridge and printing all reach into the page synchronously,
-          and the modern API is asynchronous — so each has to be rewritten.
-          It is the largest thing left, and everything else gets easier
-          afterwards.</p>
+          <h3>Draw the images and the diagrams in the editor</h3>
+          <p>The editor draws everything the text means; an
+          <code>![](…)</code> is where that stops. It is also where the
+          editor's contents would stop being only text, so an image has to
+          be drawn rather than inserted — and a diagram is already rendered
+          once, in the preview, which nobody wants to do twice.</p>
         </div>
       </div>
       <div class="task">
         <span class="effort">Medium</span>
         <div>
-          <h3>Make maths survive an EPUB export</h3>
-          <p>Scripts are stripped from the package, quite rightly, so TeX is
-          left visible as its source. The fix is the one already used for
-          diagrams: take the SVG MathJax has drawn in the preview and inline
-          it.</p>
+          <h3>Give the exported PDF its structure</h3>
+          <p>A Word export now carries the heading styles, so Word's
+          navigation pane works and a table of contents builds itself. The
+          PDF carries neither bookmarks nor link annotations: its headings
+          are appearance and nothing else.</p>
         </div>
       </div>
       <div class="task">
         <span class="effort">Medium</span>
         <div>
-          <h3>Decide what language the prose checker speaks</h3>
-          <p>Its categories are named in English even while flagging Italian.
-          Translating them means choosing whether the names follow the
-          application's language or the document's — and the second needs to
-          know what language a document is in.</p>
+          <h3>Translate what has been added</h3>
+          <p>The project ships twenty-six languages. Everything added here
+          exists in two of them, English and Italian, and the rest fall back
+          to English — for menu items and preference labels alike. Each
+          language is one strings file.</p>
+        </div>
+      </div>
+      <div class="task">
+        <span class="effort">Medium</span>
+        <div>
+          <h3>Test what has been written</h3>
+          <p>The suite covers the parts inherited from upstream. The marker
+          hiding, the block layout, the table alignment, the HTML-to-Markdown
+          converter and the EPUB and Word writers have no tests at all, and
+          the converter — which meets whatever a browser puts on the
+          pasteboard — is the one that most needs them.</p>
         </div>
       </div>
       <div class="task">

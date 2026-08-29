@@ -5,8 +5,9 @@ A Markdown editor for macOS, released under the MIT License.
 This is a fork of [MacDown](https://github.com/MacDownApp/macdown) by
 Tzu-ping Chung, who took the idea from [Chen Luo](https://twitter.com/chenluois)’s
 [Mou](http://mouapp.com). It has been brought up to macOS 26 and extended,
-mostly around the two things the original left thin: diagrams, and getting a
-document out of the app in a shape someone else can open.
+around the three things the original left thin: an editor that showed you
+the punctuation rather than what it meant, diagrams that did not draw, and
+getting a document out of the app in a shape someone else can open.
 
 ## Screenshot
 
@@ -16,7 +17,7 @@ document out of the app in a shape someone else can open.
 
 ### Diagrams
 
-* **Mermaid 11.13**, up from the 8.4.3 the original shipped. Flowcharts,
+* **Mermaid 11.17**, up from the 8.4.3 the original shipped. Flowcharts,
   sequence diagrams, gantt charts, state and class diagrams, and the newer
   types 8.x never had.
 * **Graphviz works.** Its bundled script used to replace the whole page body
@@ -44,6 +45,33 @@ document out of the app in a shape someone else can open.
   rather than shipping the source and a library and hoping the reader runs
   JavaScript.
 
+### An editor that draws the Markdown
+
+The editor stops showing you the markup and starts drawing what it means.
+None of it touches the file: what you save is the string you typed, to the
+character.
+
+* **The markers disappear** until the caret reaches them — emphasis, bold,
+  inline code, links, the hashes on a heading and the `>` on a quotation.
+  They collapse the moment a construct is finished, and come back the
+  moment you work on it.
+* **Blocks are laid out**: lists get a hanging indent, quotations get a
+  rule down the margin, headings get room above them, and three dashes are
+  drawn as a line across the page.
+* **Table columns line up as you type**, by padding the drawing rather than
+  the file. No editor command rewrites your table, and no whitespace is
+  added behind your back.
+* **⌘B and ⌘I act on the word under the caret** when nothing is selected,
+  and take the markup off again if it is already there.
+* **Pasting formatted text produces Markdown** — headings, nested lists,
+  links, images, fenced code with its language, quotations, tables. ⌘⇧V
+  pastes exactly what was copied.
+* Deleting at the start of a heading's text demotes it to a paragraph; at
+  the start of a quoted line it unquotes the line.
+
+Every one of these can be switched off in **Preferences › Rendering ›
+Writing**.
+
 ### Writing
 
 * **A prose checker**: qualifiers, weasel words, hedging, wordiness, passive
@@ -63,6 +91,11 @@ document out of the app in a shape someone else can open.
 * **The preview has a dark mode**, and follows the system.
 * **Typing no longer makes the preview flash.** It used to reload the whole
   page on every keystroke.
+* **The two panes point at the same place.** Put the caret in a paragraph
+  and a rule marks it in the preview; select in the preview and a rule
+  marks it in the editor's margin.
+* A **new application icon**, and no Touch Bar: the strip is gone from the
+  hardware, and every command it carried is on the menu and the toolbar.
 
 ## Installing
 
