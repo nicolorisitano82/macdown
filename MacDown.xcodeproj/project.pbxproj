@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D0C1E00300000000000000C1 /* MPMarkerHider.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1E00100000000000000C1 /* MPMarkerHider.m */; };
 		D0C1C00300000000000000A1 /* MPSemanticStyler.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1C00100000000000000A1 /* MPSemanticStyler.m */; };
 		D0C1B00300000000000000A1 /* MPPlugInsWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1B00100000000000000A1 /* MPPlugInsWindowController.m */; };
 		1F002A23195B3DAE008B8D93 /* MPRenderer.m in Sources */ = {isa = PBXBuildFile; fileRef = 1F002A22195B3DAE008B8D93 /* MPRenderer.m */; };
@@ -156,6 +157,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D0C1E00100000000000000C1 /* MPMarkerHider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkerHider.m; sourceTree = "<group>"; };
+		D0C1E00200000000000000C1 /* MPMarkerHider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMarkerHider.h; sourceTree = "<group>"; };
 		D0C1C00100000000000000A1 /* MPSemanticStyler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPSemanticStyler.m; sourceTree = "<group>"; };
 		D0C1C00200000000000000A1 /* MPSemanticStyler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPSemanticStyler.h; sourceTree = "<group>"; };
 		D0C1B00100000000000000A1 /* MPPlugInsWindowController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MPPlugInsWindowController.m; path = Code/Application/MPPlugInsWindowController.m; sourceTree = "<group>"; };
@@ -684,6 +687,8 @@
 				1F33F29F1A3B4B660001C849 /* MPDocumentSplitView.h */,
 				1F33F2A01A3B4B660001C849 /* MPDocumentSplitView.m */,
 				1F396E6419B0EA17000D3EFC /* MPEditorView.h */,
+				D0C1E00200000000000000C1 /* MPMarkerHider.h */,
+				D0C1E00100000000000000C1 /* MPMarkerHider.m */,
 				D0C1C00200000000000000A1 /* MPSemanticStyler.h */,
 				D0C1C00100000000000000A1 /* MPSemanticStyler.m */,
 				1F396E6519B0EA17000D3EFC /* MPEditorView.m */,
@@ -1254,6 +1259,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0C1E00300000000000000C1 /* MPMarkerHider.m in Sources */,
 				D0C1C00300000000000000A1 /* MPSemanticStyler.m in Sources */,
 				1F396E6619B0EA17000D3EFC /* MPEditorView.m in Sources */,
 				1F0D9D7A194AC7F7008E1856 /* MPMarkdownPreferencesViewController.m in Sources */,

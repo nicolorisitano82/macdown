@@ -31,6 +31,7 @@
 #import "MPPreviewSchemeHandler.h"
 #import "MPProseChecker.h"
 #import "MPSemanticStyler.h"
+#import "MPMarkerHider.h"
 #import "MPMathEditorController.h"
 #import "MPSidebarController.h"
 #import "MPEpubExport.h"
@@ -77,7 +78,7 @@ NS_INLINE NSSet *MPEditorPreferencesToObserve()
             @"editorWidthLimited", @"editorMaximumWidth", @"editorLineSpacing",
             @"editorOnRight", @"editorStyleName", @"editorShowWordCount",
             @"editorScrollsPastEnd", @"editorProseHighlights",
-            @"editorSemanticStyling", nil
+            @"editorSemanticStyling", @"editorHideMarkers", nil
         ];
     });
     return keys;
@@ -201,6 +202,7 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (strong, nonatomic) NSSplitView *outerSplitView;
 @property (strong) HGMarkdownHighlighter *highlighter;
 @property (strong) MPSemanticStyler *semanticStyler;
+@property (strong) MPMarkerHider *markerHider;
 @property (strong) MPRenderer *renderer;
 @property CGFloat previousSplitRatio;
 @property BOOL manualRender;
@@ -739,10 +741,12 @@ static NSString * const kMPSelectionSource =
     // the element list it caches is exactly the semantic model needed here.
     self.semanticStyler =
         [[MPSemanticStyler alloc] initWithTextView:self.editor];
+    self.markerHider = [[MPMarkerHider alloc] initWithTextView:self.editor];
     self.semanticStyler.themeStyles = self.highlighter.styles;
     __weak MPDocument *weakSelf = self;
     self.highlighter.elementsDidChange = ^(pmh_element **elements) {
         [weakSelf.semanticStyler applyToElements:elements];
+        [weakSelf.markerHider updateWithElements:elements];
     };
     self.renderer = [[MPRenderer alloc] init];
     self.renderer.dataSource = self;
@@ -1069,6 +1073,7 @@ static NSString * const kMPSelectionSource =
  */
 - (void)textViewDidChangeSelection:(NSNotification *)notification
 {
+    [self.markerHider selectionDidChange];
     if (notification.object != self.editor)
         return;
     [self markPreviewAtSelection];
@@ -3274,6 +3279,9 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
             self.editorPaddingBottom.constant = 0.0;
         }
     }
+
+    if (!changedKey || [changedKey isEqualToString:@"editorHideMarkers"])
+        self.markerHider.enabled = self.preferences.editorHideMarkers;
 
     if (!changedKey || [changedKey isEqualToString:@"editorSemanticStyling"]
             || [changedKey isEqualToString:@"editorBaseFontInfo"]

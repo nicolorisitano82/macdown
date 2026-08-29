@@ -380,6 +380,9 @@ static const CGFloat kMPNoteWidth = 400.0;
         [self checkboxWithTitle:NSLocalizedString(
             @"Scale headings with the editor font", @"Preference")
                             key:@"editorSemanticStyling"],
+        [self checkboxWithTitle:NSLocalizedString(
+            @"Hide the Markdown markers until the caret reaches them",
+            @"Preference") key:@"editorHideMarkers"],
         [self noteWithText:NSLocalizedString(
             @"Editor themes state heading sizes in points, chosen for the "
             @"default body size. This keeps their proportions at any size. "

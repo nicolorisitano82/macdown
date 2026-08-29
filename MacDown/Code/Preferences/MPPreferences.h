@@ -75,6 +75,8 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 /// Whether the editor sets headings larger, emphasis italic and so on,
 /// instead of showing the source in one uniform face.
 @property (assign) BOOL editorSemanticStyling;
+/// Whether the editor hides the Markdown markers until the caret arrives.
+@property (assign) BOOL editorHideMarkers;
 /// Identifiers of plug-ins the user has switched off. Absent means enabled,
 /// so a newly dropped-in plug-in works without being turned on first.
 @property (copy) NSArray<NSString *> *disabledPlugIns;
