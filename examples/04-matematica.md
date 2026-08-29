@@ -21,12 +21,8 @@ $$
 $$
 
 $$
-\begin{pmatrix}
-a & b \\
-c & d
-\end{pmatrix}
-\begin{pmatrix} x \\ y \end{pmatrix}
-=
+\begin{pmatrix} a & b \\ c & d \end{pmatrix}
+\begin{pmatrix} x \\ y \end{pmatrix} =
 \begin{pmatrix} ax + by \\ cx + dy \end{pmatrix}
 $$
 

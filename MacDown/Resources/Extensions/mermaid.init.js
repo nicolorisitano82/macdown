@@ -86,8 +86,18 @@
 
     configure();
 
+    // The export harvests what the preview has drawn, and mermaid draws
+    // asynchronously: without waiting, an export taken right after a load
+    // finds code blocks where the diagrams will be.
+    var outstanding = blocks.length;
+    function oneFinished() {
+      outstanding--;
+      if (outstanding <= 0 && window.MacDownHarvest)
+        MacDownHarvest();
+    }
+
     for (var i = 0; i < blocks.length; i++) {
-      renderOne(blocks[i], "d" + i);
+      renderOne(blocks[i], "d" + i, oneFinished);
     }
   }
 
@@ -95,11 +105,18 @@
   // while you are typing one it is malformed most of the time. Since mermaid
   // 10 the failure arrives as a rejected promise rather than a throw, so both
   // paths end up in the same handler.
-  function renderOne(block, stateKey) {
+  function renderOne(block, stateKey, done) {
+    function finished() {
+      if (typeof done === "function")
+        done();
+    }
+
     var source = block.innerText || block.textContent;
     var holder = containerFor(block);
-    if (!holder)
+    if (!holder) {
+      finished();
       return;
+    }
 
     var id = "macdown-mermaid-" + (counter++);
 
@@ -111,6 +128,7 @@
       var svg = holder.querySelector("svg");
       if (svg && window.MacDownMakeZoomable)
         MacDownMakeZoomable(holder, svg, stateKey, GANTT_LAYOUT_WIDTH);
+      finished();
     }
 
     function failed(e) {
@@ -122,6 +140,7 @@
       var orphan = document.getElementById(id);
       if (orphan && orphan.parentNode)
         orphan.parentNode.removeChild(orphan);
+      finished();
     }
 
     try {

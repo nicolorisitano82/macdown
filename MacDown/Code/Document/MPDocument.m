@@ -1908,8 +1908,10 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
  * be. MathJax has already drawn it in the preview, so what is exported is
  * that drawing.
  *
- * MathJax normalises the delimiters while it works, so by the time this runs
- * every formula is \( \) or \[ \] whatever the document used.
+ * Most formulas arrive already normalised to \( \) and \[ \], but not all:
+ * a display block the Markdown parser had to fight over keeps its $$. Both
+ * forms are matched, and $$ has to precede $ or the longer one is read as
+ * two empty ones.
  */
 - (NSString *)htmlByInliningFormulasIn:(NSString *)html asImages:(BOOL)asImages
 {
@@ -1919,8 +1921,14 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
 
     // Non-greedy, and the two forms in one alternation so that the matches
     // come back in document order — the order MathJax typeset them in.
-    static NSString * const pattern =
-        @"\\\\\\[[\\s\\S]*?\\\\\\]|\\\\\\([\\s\\S]*?\\\\\\)";
+    NSMutableArray<NSString *> *forms = [NSMutableArray arrayWithArray:@[
+        @"\\\\\\[[\\s\\S]*?\\\\\\]",
+        @"\\\\\\([\\s\\S]*?\\\\\\)",
+        @"\\$\\$[\\s\\S]*?\\$\\$",
+    ]];
+    if (self.preferences.htmlMathJaxInlineDollar)
+        [forms addObject:@"\\$[^\\$\\n]+?\\$"];
+    NSString *pattern = [forms componentsJoinedByString:@"|"];
     NSRegularExpression *regex =
         [NSRegularExpression regularExpressionWithPattern:pattern options:0
                                                     error:NULL];
@@ -1934,8 +1942,13 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
     static NSRegularExpression *scriptRegex = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
+        // Code as well as scripts. A document that writes about the
+        // delimiters puts them in backticks, and a match running from one
+        // to the next swallows the prose between — which MathJax never
+        // typeset, because it skips code too.
         scriptRegex = [NSRegularExpression regularExpressionWithPattern:
-            @"<script[\\s\\S]*?</script>"
+            @"<script[\\s\\S]*?</script>|<code[\\s\\S]*?</code>"
+            @"|<pre[\\s\\S]*?</pre>"
             options:NSRegularExpressionCaseInsensitive error:NULL];
     });
     NSArray<NSTextCheckingResult *> *scripts =
@@ -2016,7 +2029,9 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
     // layout engines. Both lists are in document order, so the nth fence is
     // the nth diagram.
     static NSString * const pattern =
-        @"<div><pre[^>]*><code class=\"language-"
+        // The div carries a data-src attribute since the renderer learned to
+        // report source positions, so it can no longer be matched literally.
+        @"<div[^>]*><pre[^>]*><code class=\"language-"
         @"(?:mermaid|dot|neato|fdp|circo|twopi|osage)\">[\\s\\S]*?"
         @"</code></pre></div>";
     NSRegularExpression *regex =
@@ -3369,7 +3384,6 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
     NSString *js = [NSString stringWithFormat:
         @"document.documentElement.style.paddingTop = '%.0fpx';", overlap];
     [self.preview evaluateJavaScript:js completionHandler:nil];
-
 }
 
 

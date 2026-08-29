@@ -69,13 +69,21 @@
     if (typeof Viz === "undefined")
       return;
 
+    var drew = false;
+
     for (var e = 0; e < ENGINES.length; e++) {
       var engine = ENGINES[e];
       var blocks = document.querySelectorAll("code.language-" + engine);
       for (var i = 0; i < blocks.length; i++) {
         renderOne(blocks[i], engine, engine + i);
+        drew = true;
       }
     }
+
+    // Same reason as mermaid: an export reads what the preview has drawn,
+    // and until this point it had not been told anything was drawn.
+    if (drew && window.MacDownHarvest)
+      MacDownHarvest();
   }
 
   // MacDown calls this after refreshing the preview, since the refresh
