@@ -84,6 +84,86 @@ NSString *(^MPFileNameHasExtensionProcessor(NSString *ext))(NSString *path)
     return block;
 }
 
+/// UTF-8 bytes for one UTF-16 unit, or for the pair it opens.
+NS_INLINE NSUInteger MPUTF8LengthOfUnit(unichar unit, unichar next,
+                                        BOOL *consumedPair)
+{
+    if (consumedPair)
+        *consumedPair = NO;
+    if (unit < 0x80)
+        return 1;
+    if (unit < 0x800)
+        return 2;
+    // A surrogate pair is one character in four bytes; on its own a stray
+    // surrogate is not, and three bytes is what an encoder writes for the
+    // replacement it becomes.
+    if (unit >= 0xD800 && unit <= 0xDBFF && next >= 0xDC00 && next <= 0xDFFF)
+    {
+        if (consumedPair)
+            *consumedPair = YES;
+        return 4;
+    }
+    return 3;
+}
+
+NSUInteger MPUTF8ByteOffsetForCharacterIndex(NSString *string,
+                                             NSUInteger index)
+{
+    NSUInteger length = string.length;
+    if (index > length)
+        index = length;
+    if (!index)
+        return 0;
+
+    CFStringInlineBuffer buffer;
+    CFStringInitInlineBuffer((__bridge CFStringRef)string, &buffer,
+                             CFRangeMake(0, (CFIndex)index));
+
+    NSUInteger bytes = 0;
+    for (NSUInteger i = 0; i < index; i++)
+    {
+        unichar unit = CFStringGetCharacterFromInlineBuffer(&buffer,
+                                                            (CFIndex)i);
+        unichar next = (i + 1 < index)
+            ? CFStringGetCharacterFromInlineBuffer(&buffer, (CFIndex)(i + 1))
+            : 0;
+        BOOL pair = NO;
+        bytes += MPUTF8LengthOfUnit(unit, next, &pair);
+        if (pair)
+            i++;
+    }
+    return bytes;
+}
+
+NSUInteger MPCharacterIndexForUTF8ByteOffset(NSString *string,
+                                             NSUInteger offset)
+{
+    NSUInteger length = string.length;
+    if (!offset || !length)
+        return 0;
+
+    CFStringInlineBuffer buffer;
+    CFStringInitInlineBuffer((__bridge CFStringRef)string, &buffer,
+                             CFRangeMake(0, (CFIndex)length));
+
+    NSUInteger bytes = 0;
+    for (NSUInteger i = 0; i < length; i++)
+    {
+        if (bytes >= offset)
+            return i;
+        unichar unit = CFStringGetCharacterFromInlineBuffer(&buffer,
+                                                            (CFIndex)i);
+        unichar next = (i + 1 < length)
+            ? CFStringGetCharacterFromInlineBuffer(&buffer, (CFIndex)(i + 1))
+            : 0;
+        BOOL pair = NO;
+        bytes += MPUTF8LengthOfUnit(unit, next, &pair);
+        if (pair)
+            i++;
+    }
+    return length;
+}
+
 BOOL MPCharacterIsWhitespace(unichar character)
 {
     static NSCharacterSet *whitespaces = nil;

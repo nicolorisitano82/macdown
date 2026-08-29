@@ -1117,9 +1117,14 @@ static NSString * const kMPSelectionSource =
 
 - (void)markPreviewAtSelection
 {
+    // In bytes, because that is what the blocks in the page are labelled
+    // with. The caret's own index counts UTF-16 units, and the two are the
+    // same number only while the document stays ASCII.
+    NSUInteger offset = MPUTF8ByteOffsetForCharacterIndex(
+        self.editor.string ?: @"", self.editor.selectedRange.location);
     NSString *js = [NSString stringWithFormat:
         @"if (window.MacDownMarkHere) MacDownMarkHere(%lu);",
-        (unsigned long)self.editor.selectedRange.location];
+        (unsigned long)offset];
     [self.preview evaluateJavaScript:js completionHandler:nil];
 }
 
@@ -1363,19 +1368,24 @@ static NSString * const kMPSelectionSource =
         if (![body isKindOfClass:[NSDictionary class]])
             return;
 
-        NSInteger begin = [body[@"begin"] integerValue];
-        NSInteger end = [body[@"end"] integerValue];
-        NSUInteger length = self.editor.textStorage.length;
-        if (begin < 0 || (NSUInteger)begin > length)
-            return;
-        // The last block reports no end, since nothing follows it.
-        if (end < 0 || (NSUInteger)end > length)
-            end = (NSInteger)length;
-        if (end <= begin)
+        NSInteger beginByte = [body[@"begin"] integerValue];
+        NSInteger endByte = [body[@"end"] integerValue];
+        if (beginByte < 0)
             return;
 
-        self.editor.activeSourceRange =
-            NSMakeRange((NSUInteger)begin, (NSUInteger)(end - begin));
+        // Back from bytes to the units the text view counts in, the same
+        // conversion -markPreviewAtSelection makes in the other direction.
+        NSString *text = self.editor.string ?: @"";
+        NSUInteger length = self.editor.textStorage.length;
+        NSUInteger begin = MPCharacterIndexForUTF8ByteOffset(
+            text, (NSUInteger)beginByte);
+        // The last block reports no end, since nothing follows it.
+        NSUInteger end = endByte < 0 ? length
+            : MPCharacterIndexForUTF8ByteOffset(text, (NSUInteger)endByte);
+        if (begin > length || end > length || end <= begin)
+            return;
+
+        self.editor.activeSourceRange = NSMakeRange(begin, end - begin);
         return;
     }
 

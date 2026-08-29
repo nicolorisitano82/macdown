@@ -25,6 +25,27 @@ NSArray *MPListEntriesForDirectory(
 // Block factory for MPListEntriesForDirectory
 NSString *(^MPFileNameHasExtensionProcessor(NSString *ext))(NSString *path);
 
+/** Where `index` falls once the string is written out as UTF-8.
+ *
+ * The renderer records, for each block it produces, the byte offset it came
+ * from — the file is UTF-8, so those are byte offsets. A text view counts in
+ * UTF-16 units instead, and the two agree only while the text stays ASCII.
+ * In Italian they part company at the first accent and never meet again: a
+ * few dozen characters in, everything the preview is told is off by one
+ * block, and further down by two.
+ */
+NSUInteger MPUTF8ByteOffsetForCharacterIndex(NSString *string,
+                                             NSUInteger index);
+
+/** The other way: a byte offset in the UTF-8 form back to a character index.
+ *
+ * Both are defined on character boundaries. An index between the halves of
+ * a surrogate pair is not one — a text view never puts the caret there —
+ * and neither function promises anything about it.
+ */
+NSUInteger MPCharacterIndexForUTF8ByteOffset(NSString *string,
+                                             NSUInteger offset);
+
 BOOL MPCharacterIsWhitespace(unichar character);
 BOOL MPCharacterIsNewline(unichar character);
 BOOL MPStringIsNewline(NSString *str);
