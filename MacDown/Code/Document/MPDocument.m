@@ -227,6 +227,8 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property BOOL copying;
 @property BOOL printing;
 @property BOOL shouldHandleBoundsChange;
+/// True while the preview is moving because we told it to.
+@property (assign) BOOL previewScrollIsOurs;
 @property BOOL isPreviewReady;
 @property (strong) NSURL *currentBaseUrl;
 @property CGFloat lastPreviewScrollTop;
@@ -380,8 +382,92 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
         return;
     NSString *js = [NSString stringWithFormat:
         @"window.scrollTo(0, %.2f);", top];
+
+    // Claimed before the page moves and released a little after, because the
+    // scroll event that follows arrives from the page on its own schedule.
+    self.previewScrollIsOurs = YES;
     [self.preview evaluateJavaScript:js completionHandler:nil];
     self.previewScrollTop = top;
+
+    __weak MPDocument *weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                                 (int64_t)(0.25 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        weakSelf.previewScrollIsOurs = NO;
+    });
+}
+
+/** Puts the editor where the preview is, from the block at the top of it.
+ *
+ * The other direction interpolates between headings, because that is all it
+ * has. This one has the offset each block was rendered from, so it can put
+ * the editor on the same words rather than at the same fraction of a
+ * different height — and the fraction of the way down that block is carried
+ * across too, so a long paragraph scrolls smoothly rather than in jumps.
+ */
+- (void)scrollEditorToPreviewBlock:(NSDictionary *)block
+{
+    if (![block isKindOfClass:[NSDictionary class]])
+        return;
+
+    NSScrollView *scrollView = self.editor.enclosingScrollView;
+    NSLayoutManager *manager = self.editor.layoutManager;
+    NSTextContainer *container = self.editor.textContainer;
+    if (!scrollView || !manager || !container)
+        return;
+
+    NSString *text = self.editor.string ?: @"";
+    NSInteger srcByte = [block[@"src"] integerValue];
+    NSInteger nextByte = [block[@"next"] integerValue];
+    if (srcByte < 0)
+        return;
+
+    NSUInteger begin = MPCharacterIndexForUTF8ByteOffset(text,
+                                                         (NSUInteger)srcByte);
+    NSUInteger end = nextByte < 0 ? text.length
+        : MPCharacterIndexForUTF8ByteOffset(text, (NSUInteger)nextByte);
+    if (begin > text.length)
+        return;
+
+    CGFloat top = [self editorTopForCharacterIndex:begin];
+    if (end > begin && end <= text.length)
+    {
+        CGFloat next = [self editorTopForCharacterIndex:end];
+        double within = [block[@"within"] doubleValue];
+        top += (next - top) * MAX(0.0, MIN(1.0, within));
+    }
+
+    NSClipView *clip = scrollView.contentView;
+    CGFloat lowest = MAX(0.0, NSHeight(scrollView.documentView.bounds)
+                              - NSHeight(clip.bounds));
+    top = MAX(0.0, MIN(top, lowest));
+    if (fabs(top - NSMinY(clip.bounds)) < 1.0)
+        return;
+
+    // The editor is being moved on the preview's behalf, so its own bounds
+    // change must not be read as the reader scrolling the editor.
+    BOOL wasHandling = self.shouldHandleBoundsChange;
+    self.shouldHandleBoundsChange = NO;
+    [clip scrollToPoint:NSMakePoint(NSMinX(clip.bounds), top)];
+    [scrollView reflectScrolledClipView:clip];
+    self.shouldHandleBoundsChange = wasHandling;
+}
+
+/// Where in the editor's document a character sits, top of its line.
+- (CGFloat)editorTopForCharacterIndex:(NSUInteger)index
+{
+    NSLayoutManager *manager = self.editor.layoutManager;
+    NSTextContainer *container = self.editor.textContainer;
+    NSUInteger length = self.editor.string.length;
+    if (!length)
+        return 0.0;
+
+    NSRange glyphs = [manager glyphRangeForCharacterRange:
+        NSMakeRange(MIN(index, length ? length - 1 : 0), 1)
+                                     actualCharacterRange:NULL];
+    NSRect rect = [manager boundingRectForGlyphRange:glyphs
+                                     inTextContainer:container];
+    return rect.origin.y + self.editor.textContainerInset.height;
 }
 
 /** Loads rendered markup into the preview.
@@ -664,12 +750,28 @@ static NSString * const kMPSelectionMessage = @"macdownSelection";
 static NSString * const kMPScrollReporterSource =
     @"(function(){"
     @"var pending=false;"
+    // The block the top of the window is showing, and the one after it, so
+    // that the editor can be put at the same place in the source rather than
+    // at the same fraction of a different height.
+    @"window.MacDownTopBlock=function(){"
+    @"var all=document.querySelectorAll('[data-src]');"
+    @"var y=window.scrollY,best=null,next=null;"
+    @"for(var i=0;i<all.length;i++){"
+    @"var r=all[i].getBoundingClientRect();"
+    @"if(r.top+y<=y+1){best=all[i];next=all[i+1]||null;}else break;}"
+    @"if(!best)return null;"
+    @"var b=best.getBoundingClientRect();"
+    @"var top=b.top+y,h=Math.max(b.height,1);"
+    @"return {src:parseInt(best.getAttribute('data-src'),10),"
+    @"next:next?parseInt(next.getAttribute('data-src'),10):-1,"
+    @"within:Math.max(0,Math.min(1,(y-top)/h))};};"
     @"function report(){"
     @"pending=false;"
     @"try{window.webkit.messageHandlers.macdownScroll.postMessage({"
     @"top:window.scrollY,"
     @"height:document.documentElement.scrollHeight,"
-    @"viewport:window.innerHeight});}catch(e){}}"
+    @"viewport:window.innerHeight,"
+    @"block:MacDownTopBlock()});}catch(e){}}"
     @"function schedule(){if(!pending){pending=true;"
     @"requestAnimationFrame(report);}}"
     @"window.addEventListener('scroll',schedule,{passive:true});"
@@ -1440,6 +1542,14 @@ static NSString * const kMPSelectionSource =
         self.lastPreviewScrollTop = self.previewScrollTop;
         self.previewContentHeight = [body[@"height"] doubleValue];
         self.previewViewportHeight = [body[@"viewport"] doubleValue];
+
+        // A report caused by our own scrolling would send the editor after
+        // the preview that the editor had just moved, and the two would
+        // chase each other down the document.
+        if (self.previewScrollIsOurs)
+            return;
+        if (self.preferences.editorSyncScrolling)
+            [self scrollEditorToPreviewBlock:body[@"block"]];
         return;
     }
 
