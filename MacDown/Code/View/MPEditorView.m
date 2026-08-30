@@ -10,6 +10,7 @@
 #import "MPProseChecker.h"
 #import "MPMarkerHider.h"
 #import "MPMarkdownFromRichText.h"
+#import "MPTableSource.h"
 
 
 NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
@@ -21,6 +22,7 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 
 
 @interface MPEditorView ()
+@property (assign, nonatomic) NSUInteger tableActionIndex;
 @property (assign, nonatomic) NSRange lastDrawnActiveRange;
 
 @property NSRect contentRect;
@@ -128,6 +130,7 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     [self registerForDraggedTypes:[NSArray arrayWithObjects: NSDragPboard, nil]];
     [super awakeFromNib];
     [self disableTextSubstitutions];
+    _tableMenuEnabled = YES;
 }
 
 - (void)setActiveSourceRange:(NSRange)range
@@ -572,6 +575,223 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     self.selectedRange = NSMakeRange(rest, 0);
     return YES;
 }
+
+#pragma mark - Table commands
+
+/** The table commands, on the menu the right button opens.
+ *
+ * Seven separate insert commands is what a table looks like from the
+ * outside: above, below, at the end, at the start, here. From the inside
+ * they are four, because the menu already knows which cell was clicked —
+ * "at the end" is "below" pressed on the last row. What the shorter list
+ * leaves room for is what was missing: taking a row or a column out again,
+ * and setting a column's alignment, which is the one piece of table syntax
+ * nobody remembers.
+ *
+ * Two more appear only when they apply: giving a table its separator row,
+ * and repairing one whose dashes are not hyphens.
+ */
+- (NSMenu *)menuForEvent:(NSEvent *)event
+{
+    NSMenu *menu = [super menuForEvent:event];
+    if (!self.tableMenuEnabled || !menu)
+        return menu;
+
+    NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    NSUInteger index = [self characterIndexForInsertionAtPoint:point];
+    if (index == NSNotFound || index > self.string.length)
+        return menu;
+
+    MPTableSource *table = [MPTableSource tableCoveringIndex:index
+                                                      inText:self.string];
+    if (!table)
+        return menu;
+
+    self.tableActionIndex = index;
+
+    NSMutableArray<NSMenuItem *> *items = [NSMutableArray array];
+    NSUInteger row = [table rowContainingIndex:index];
+    BOOL onSeparator = (row != NSNotFound && row == table.separatorRow);
+
+    void (^add)(NSString *, SEL) = ^(NSString *title, SEL action) {
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title
+                                                      action:action
+                                               keyEquivalent:@""];
+        item.target = self;
+        [items addObject:item];
+    };
+
+    if (table.separatorIsBroken)
+    {
+        add(NSLocalizedString(@"Repair the Separator Row",
+                              @"Table menu: rewrite a mangled |---| row"),
+            @selector(repairTableSeparator:));
+        [items addObject:[NSMenuItem separatorItem]];
+    }
+    else if (table.separatorRow == NSNotFound)
+    {
+        add(NSLocalizedString(@"Make This a Table",
+                              @"Table menu: add the missing |---| row"),
+            @selector(addTableHeaderRow:));
+        [items addObject:[NSMenuItem separatorItem]];
+    }
+
+    add(NSLocalizedString(@"Insert Row Above", @"Table menu"),
+        @selector(insertTableRowAbove:));
+    add(NSLocalizedString(@"Insert Row Below", @"Table menu"),
+        @selector(insertTableRowBelow:));
+    add(NSLocalizedString(@"Insert Column to the Left", @"Table menu"),
+        @selector(insertTableColumnLeft:));
+    add(NSLocalizedString(@"Insert Column to the Right", @"Table menu"),
+        @selector(insertTableColumnRight:));
+
+    [items addObject:[NSMenuItem separatorItem]];
+    if (!onSeparator && table.rowCount > 2)
+        add(NSLocalizedString(@"Delete Row", @"Table menu"),
+            @selector(deleteTableRow:));
+    if (table.columnCount > 1)
+        add(NSLocalizedString(@"Delete Column", @"Table menu"),
+            @selector(deleteTableColumn:));
+
+    NSMenuItem *align = [[NSMenuItem alloc]
+        initWithTitle:NSLocalizedString(@"Align Column", @"Table menu")
+               action:NULL keyEquivalent:@""];
+    NSMenu *alignments = [[NSMenu alloc] init];
+    NSArray *titles = @[NSLocalizedString(@"Default", @"Table column alignment"),
+                        NSLocalizedString(@"Left", @"Table column alignment"),
+                        NSLocalizedString(@"Center", @"Table column alignment"),
+                        NSLocalizedString(@"Right", @"Table column alignment")];
+    NSUInteger column = [table columnContainingIndex:index];
+    MPTableAlignment current = column == NSNotFound
+        ? MPTableAlignmentNone : [table alignmentOfColumn:column];
+    for (NSUInteger i = 0; i < titles.count; i++)
+    {
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:titles[i]
+            action:@selector(alignTableColumn:) keyEquivalent:@""];
+        item.target = self;
+        item.tag = (NSInteger)i;
+        item.state = (current == (MPTableAlignment)i)
+            ? NSControlStateValueOn : NSControlStateValueOff;
+        [alignments addItem:item];
+    }
+    align.submenu = alignments;
+    [items addObject:[NSMenuItem separatorItem]];
+    [items addObject:align];
+    [items addObject:[NSMenuItem separatorItem]];
+
+    for (NSUInteger i = 0; i < items.count; i++)
+        [menu insertItem:items[i] atIndex:(NSInteger)i];
+    return menu;
+}
+
+/// Runs one edit: the table is read again, so a stale menu cannot misfire.
+- (void)applyTableEdit:(NSString *(^)(MPTableSource *, NSUInteger row,
+                                      NSUInteger column, NSUInteger *caret))edit
+{
+    NSUInteger index = self.tableActionIndex;
+    if (index > self.string.length)
+        return;
+    MPTableSource *table = [MPTableSource tableCoveringIndex:index
+                                                      inText:self.string];
+    if (!table)
+        return;
+
+    NSUInteger row = [table rowContainingIndex:index];
+    NSUInteger column = [table columnContainingIndex:index];
+    if (row == NSNotFound)
+        row = 0;
+    if (column == NSNotFound)
+        column = 0;
+
+    NSUInteger caret = table.range.location;
+    NSString *replacement = edit(table, row, column, &caret);
+    if (!replacement)
+        return;
+    if (![self shouldChangeTextInRange:table.range
+                     replacementString:replacement])
+        return;
+
+    [self.textStorage replaceCharactersInRange:table.range
+                                    withString:replacement];
+    [self didChangeText];
+    self.selectedRange = NSMakeRange(MIN(caret, self.string.length), 0);
+}
+
+- (IBAction)insertTableRowAbove:(id)sender
+{
+    [self applyTableEdit:^NSString *(MPTableSource *t, NSUInteger row,
+                                     NSUInteger column, NSUInteger *caret) {
+        return [t textByInsertingRowAt:row caret:caret];
+    }];
+}
+
+- (IBAction)insertTableRowBelow:(id)sender
+{
+    [self applyTableEdit:^NSString *(MPTableSource *t, NSUInteger row,
+                                     NSUInteger column, NSUInteger *caret) {
+        return [t textByInsertingRowAt:row + 1 caret:caret];
+    }];
+}
+
+- (IBAction)insertTableColumnLeft:(id)sender
+{
+    [self applyTableEdit:^NSString *(MPTableSource *t, NSUInteger row,
+                                     NSUInteger column, NSUInteger *caret) {
+        return [t textByInsertingColumnAt:column caret:caret];
+    }];
+}
+
+- (IBAction)insertTableColumnRight:(id)sender
+{
+    [self applyTableEdit:^NSString *(MPTableSource *t, NSUInteger row,
+                                     NSUInteger column, NSUInteger *caret) {
+        return [t textByInsertingColumnAt:column + 1 caret:caret];
+    }];
+}
+
+- (IBAction)deleteTableRow:(id)sender
+{
+    [self applyTableEdit:^NSString *(MPTableSource *t, NSUInteger row,
+                                     NSUInteger column, NSUInteger *caret) {
+        return [t textByDeletingRow:row caret:caret];
+    }];
+}
+
+- (IBAction)deleteTableColumn:(id)sender
+{
+    [self applyTableEdit:^NSString *(MPTableSource *t, NSUInteger row,
+                                     NSUInteger column, NSUInteger *caret) {
+        return [t textByDeletingColumn:column caret:caret];
+    }];
+}
+
+- (IBAction)alignTableColumn:(id)sender
+{
+    MPTableAlignment alignment =
+        (MPTableAlignment)[(NSMenuItem *)sender tag];
+    [self applyTableEdit:^NSString *(MPTableSource *t, NSUInteger row,
+                                     NSUInteger column, NSUInteger *caret) {
+        return [t textBySettingAlignment:alignment forColumn:column
+                                   caret:caret];
+    }];
+}
+
+- (IBAction)addTableHeaderRow:(id)sender
+{
+    [self applyTableEdit:^NSString *(MPTableSource *t, NSUInteger row,
+                                     NSUInteger column, NSUInteger *caret) {
+        return [t textByAddingSeparatorRowWithCaret:caret];
+    }];
+}
+
+- (IBAction)repairTableSeparator:(id)sender
+{
+    [self applyTableEdit:^NSString *(MPTableSource *t, NSUInteger row,
+                                     NSUInteger column, NSUInteger *caret) {
+        return [t textByRepairingSeparatorRowWithCaret:caret];
+    }];
+}
+
 
 #pragma mark - Pasting
 

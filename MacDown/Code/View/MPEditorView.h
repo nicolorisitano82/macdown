@@ -48,6 +48,9 @@
 
 - (NSRect)contentRect;
 
+/// Whether the right-click menu offers the table commands. On by default.
+@property (assign, nonatomic) BOOL tableMenuEnabled;
+
 /// Recomputes the prose underlines. Cheap enough to call on every edit: it
 /// only touches the layout manager's temporary attributes, never the text.
 - (void)updateProseHighlights;

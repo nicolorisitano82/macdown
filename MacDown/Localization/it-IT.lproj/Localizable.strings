@@ -170,3 +170,18 @@
 
 /* Table alignment */
 "Line up table columns in the editor" = "Allinea le colonne delle tabelle nell'editor";
+
+/* Table context menu */
+"Insert Row Above" = "Inserisci riga sopra";
+"Insert Row Below" = "Inserisci riga sotto";
+"Insert Column to the Left" = "Inserisci colonna a sinistra";
+"Insert Column to the Right" = "Inserisci colonna a destra";
+"Delete Row" = "Elimina riga";
+"Delete Column" = "Elimina colonna";
+"Align Column" = "Allinea colonna";
+"Default" = "Predefinito";
+"Left" = "A sinistra";
+"Center" = "Al centro";
+"Right" = "A destra";
+"Make This a Table" = "Rendi questa una tabella";
+"Repair the Separator Row" = "Ripara la riga dei separatori";
