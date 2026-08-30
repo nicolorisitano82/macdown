@@ -430,7 +430,9 @@ static void
 rndr_table(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
 {
     if (ob->size) hoedown_buffer_putc(ob, '\n');
-    HOEDOWN_BUFPUTSL(ob, "<table>\n");
+    HOEDOWN_BUFPUTSL(ob, "<table");
+    hoedown_html_put_src(ob, data);
+    HOEDOWN_BUFPUTSL(ob, ">\n");
     hoedown_buffer_put(ob, content->data, content->size);
     HOEDOWN_BUFPUTSL(ob, "</table>\n");
 }
@@ -456,7 +458,9 @@ rndr_table_body(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown
 static void
 rndr_tablerow(hoedown_buffer *ob, const hoedown_buffer *content, const hoedown_renderer_data *data)
 {
-	HOEDOWN_BUFPUTSL(ob, "<tr>\n");
+	HOEDOWN_BUFPUTSL(ob, "<tr");
+	hoedown_html_put_src(ob, data);
+	HOEDOWN_BUFPUTSL(ob, ">\n");
 	if (content) hoedown_buffer_put(ob, content->data, content->size);
 	HOEDOWN_BUFPUTSL(ob, "</tr>\n");
 }

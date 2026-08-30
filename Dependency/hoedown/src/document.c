@@ -127,6 +127,10 @@ struct hoedown_document {
 	/* Depth of parse_block recursion. Positions are only reported at the
 	 * outermost level; see hoedown_renderer_data. */
 	int src_depth;
+	/* Where the block being parsed starts, in normalised offsets. A table
+	 * knows where each of its rows begins relative to its own start, and
+	 * needs this to turn that into a position in the file. */
+	size_t src_block_norm;
 
 	hoedown_renderer md;
 	hoedown_renderer_data data;
@@ -2432,6 +2436,14 @@ parse_table(
 				break;
 			}
 
+			/* Each row reports where it starts. A table is one block to
+			 * the parser but many lines to whoever is reading it, and a
+			 * scroll that only knows where the table begins has nothing
+			 * to go on between there and the end of it. */
+			if (doc->src_depth == 1)
+				doc->data.src_begin = hoedown_src_offset(
+					doc, doc->src_block_norm + row_start) + 1;
+
 			parse_table_row(
 				body_work,
 				doc,
@@ -2443,6 +2455,12 @@ parse_table(
 
 			i++;
 		}
+
+		/* The table's own callback wants the table's start, not the last
+		 * row's. */
+		if (doc->src_depth == 1)
+			doc->data.src_begin = hoedown_src_offset(
+				doc, doc->src_block_norm) + 1;
 
         if (doc->md.table_header)
             doc->md.table_header(work, header_work, &doc->data);
@@ -2490,8 +2508,10 @@ parse_block(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t siz
 		end = size - beg;
 
 		/* Biased by one: see hoedown_renderer_data. */
-		if (doc->src_depth == 1)
+		if (doc->src_depth == 1) {
 			doc->data.src_begin = hoedown_src_offset(doc, beg) + 1;
+			doc->src_block_norm = beg;
+		}
 
 		if (is_atxheader(doc, txt_data, end))
 			beg += parse_atxheader(ob, doc, txt_data, end);

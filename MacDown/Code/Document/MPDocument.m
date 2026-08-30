@@ -227,8 +227,18 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property BOOL copying;
 @property BOOL printing;
 @property BOOL shouldHandleBoundsChange;
-/// True while the preview is moving because we told it to.
-@property (assign) BOOL previewScrollIsOurs;
+/** When each side was last moved by the reader.
+ *
+ * One notion instead of two flags. Two panes that scroll each other will
+ * chase one another down the document unless something decides which of
+ * them is being driven, and a flag set around the moment of scrolling does
+ * not do it: the bounds change arrives after the flag has been put back.
+ *
+ * Whichever side the reader touched last owns the scrolling until a moment
+ * after they stop, and the other side only follows.
+ */
+@property (assign) NSTimeInterval previewDrivenAt;
+@property (assign) NSTimeInterval editorDrivenAt;
 @property BOOL isPreviewReady;
 @property (strong) NSURL *currentBaseUrl;
 @property CGFloat lastPreviewScrollTop;
@@ -383,18 +393,8 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     NSString *js = [NSString stringWithFormat:
         @"window.scrollTo(0, %.2f);", top];
 
-    // Claimed before the page moves and released a little after, because the
-    // scroll event that follows arrives from the page on its own schedule.
-    self.previewScrollIsOurs = YES;
     [self.preview evaluateJavaScript:js completionHandler:nil];
     self.previewScrollTop = top;
-
-    __weak MPDocument *weakSelf = self;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
-                                 (int64_t)(0.25 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        weakSelf.previewScrollIsOurs = NO;
-    });
 }
 
 /** Puts the editor where the preview is, from the block at the top of it.
@@ -444,13 +444,46 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     if (fabs(top - NSMinY(clip.bounds)) < 1.0)
         return;
 
-    // The editor is being moved on the preview's behalf, so its own bounds
-    // change must not be read as the reader scrolling the editor.
-    BOOL wasHandling = self.shouldHandleBoundsChange;
-    self.shouldHandleBoundsChange = NO;
+    // No flag around this: the bounds change it causes arrives later, and
+    // -editorBoundsDidChange: turns it away by seeing that the preview is
+    // the side being driven.
     [clip scrollToPoint:NSMakePoint(NSMinX(clip.bounds), top)];
     [scrollView reflectScrolledClipView:clip];
-    self.shouldHandleBoundsChange = wasHandling;
+}
+
+/** Puts the preview where the editor is, by the offset at the top of it.
+ *
+ * The mirror of the other direction, and on the same data. What it replaces
+ * interpolated between the nearest headings above and below, which is as
+ * close as the editor alone can get — and on a document of long tables the
+ * two panes ended a whole section apart, because a table that is four lines
+ * of source and twelve lines of editor is one compact block in the preview.
+ *
+ * Returns NO when the page has no blocks to go by, so the caller can fall
+ * back to the old way.
+ */
+- (BOOL)scrollPreviewToEditorTop
+{
+    NSClipView *clip = self.editor.enclosingScrollView.contentView;
+    NSLayoutManager *manager = self.editor.layoutManager;
+    NSTextContainer *container = self.editor.textContainer;
+    NSString *text = self.editor.string ?: @"";
+    if (!clip || !manager || !container || !text.length || !self.isPreviewReady)
+        return NO;
+
+    CGFloat y = NSMinY(clip.bounds) - self.editor.textContainerInset.height;
+    NSUInteger glyph = [manager glyphIndexForPoint:NSMakePoint(0, MAX(0.0, y))
+                                   inTextContainer:container];
+    NSUInteger character = [manager characterIndexForGlyphAtIndex:glyph];
+    if (character > text.length)
+        return NO;
+
+    NSUInteger byte = MPUTF8ByteOffsetForCharacterIndex(text, character);
+    NSString *js = [NSString stringWithFormat:
+        @"if (window.MacDownScrollToSource) MacDownScrollToSource(%lu);",
+        (unsigned long)byte];
+    [self.preview evaluateJavaScript:js completionHandler:nil];
+    return YES;
 }
 
 /// Where in the editor's document a character sits, top of its line.
@@ -735,6 +768,9 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 
 /** Names the page uses to talk back to us. */
 static NSString * const kMPScrollMessage = @"macdownScroll";
+
+/// How long the side the reader touched keeps the scrolling to itself.
+static const NSTimeInterval kMPScrollHandover = 0.4;
 static NSString * const kMPMathJaxMessage = @"macdownMathJax";
 static NSString * const kMPDiagramsMessage = @"macdownDiagrams";
 static NSString * const kMPSelectionMessage = @"macdownSelection";
@@ -759,12 +795,30 @@ static NSString * const kMPScrollReporterSource =
     @"for(var i=0;i<all.length;i++){"
     @"var r=all[i].getBoundingClientRect();"
     @"if(r.top+y<=y+1){best=all[i];next=all[i+1]||null;}else break;}"
+    // At the very top nothing is above the fold; the first block is the
+    // answer, and the editor goes to the top with it.
+    @"if(!best){best=all[0];next=all[1]||null;}"
     @"if(!best)return null;"
     @"var b=best.getBoundingClientRect();"
     @"var top=b.top+y,h=Math.max(b.height,1);"
     @"return {src:parseInt(best.getAttribute('data-src'),10),"
     @"next:next?parseInt(next.getAttribute('data-src'),10):-1,"
     @"within:Math.max(0,Math.min(1,(y-top)/h))};};"
+    // The other direction, on the same data: put the window on the block a
+    // source offset came from, interpolating inside it the same way.
+    @"window.MacDownScrollToSource=function(src){"
+    @"var all=document.querySelectorAll('[data-src]');"
+    @"var best=null,next=null;"
+    @"for(var i=0;i<all.length;i++){"
+    @"var v=parseInt(all[i].getAttribute('data-src'),10);"
+    @"if(v<=src){best=all[i];next=all[i+1]||null;}else break;}"
+    @"if(!best){window.scrollTo(0,0);return;}"
+    @"var b=best.getBoundingClientRect();"
+    @"var top=b.top+window.scrollY,h=Math.max(b.height,1);"
+    @"var bs=parseInt(best.getAttribute('data-src'),10);"
+    @"var ns=next?parseInt(next.getAttribute('data-src'),10):bs+1;"
+    @"var f=ns>bs?Math.max(0,Math.min(1,(src-bs)/(ns-bs))):0;"
+    @"window.scrollTo(0,top+f*h);};"
     @"function report(){"
     @"pending=false;"
     @"try{window.webkit.messageHandlers.macdownScroll.postMessage({"
@@ -1546,10 +1600,15 @@ static NSString * const kMPSelectionSource =
         // A report caused by our own scrolling would send the editor after
         // the preview that the editor had just moved, and the two would
         // chase each other down the document.
-        if (self.previewScrollIsOurs)
+        if (!self.preferences.editorSyncScrolling)
             return;
-        if (self.preferences.editorSyncScrolling)
-            [self scrollEditorToPreviewBlock:body[@"block"]];
+        // The editor is the one being driven: this report is the preview
+        // arriving where the editor sent it.
+        NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+        if (now - self.editorDrivenAt < kMPScrollHandover)
+            return;
+        self.previewDrivenAt = now;
+        [self scrollEditorToPreviewBlock:body[@"block"]];
         return;
     }
 
@@ -2043,13 +2102,22 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
 
     if (self.preferences.editorSyncScrolling)
     {
+        // The preview is the one being driven: this bounds change is the
+        // editor arriving where the preview sent it.
+        NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+        if (now - self.previewDrivenAt < kMPScrollHandover)
+            return;
+        self.editorDrivenAt = now;
+
         @synchronized(self) {
             self.shouldHandleBoundsChange = NO;
-            if(!_inLiveScroll){
-                [self updateHeaderLocations];
+            if (![self scrollPreviewToEditorTop])
+            {
+                // No blocks to go by — a page that has not finished loading.
+                if (!_inLiveScroll)
+                    [self updateHeaderLocations];
+                [self syncScrollers];
             }
-            
-            [self syncScrollers];
             self.shouldHandleBoundsChange = YES;
         }
     }
