@@ -41,6 +41,14 @@ typedef NS_ENUM(NSUInteger, MPTableAlignment) {
 + (instancetype)tableCoveringIndex:(NSUInteger)index
                             inText:(NSString *)text;
 
+/** An empty table, header row included, ready to be typed into.
+ *
+ * `rows` counts the rows you will put data in; the header and the separator
+ * come on top of it, since a table without them is not one.
+ */
++ (NSString *)emptyTableWithRows:(NSUInteger)rows
+                         columns:(NSUInteger)columns;
+
 /// The lines the table occupies, without the break that ends the last one.
 @property (readonly, nonatomic) NSRange range;
 

@@ -210,6 +210,40 @@ static NSString *const kTable =
                    (NSUInteger)NSNotFound);
 }
 
+/// A file that ends on the table's last row, with no break after it.
+- (void)testATableAtTheEndOfTheFile
+{
+    NSString *text = @"| a | b |\n|---|---|\n| 1 | 2 |";
+    MPTableSource *t = [self tableAtWord:@"1" in:text];
+    XCTAssertEqual(t.rowCount, (NSUInteger)3, @"l'ultima riga contata una volta");
+    XCTAssertEqual([t rowContainingIndex:[text rangeOfString:@"1"].location],
+                   (NSUInteger)2);
+}
+
+/// What the toolbar's command produces has to read back as what was asked for.
+- (void)testTheEmptyTableItBuildsReadsBackTheSameSize
+{
+    for (NSUInteger rows = 1; rows <= 4; rows++)
+    {
+        for (NSUInteger columns = 1; columns <= 4; columns++)
+        {
+            NSString *text = [MPTableSource emptyTableWithRows:rows
+                                                       columns:columns];
+            MPTableSource *back = [MPTableSource tableCoveringIndex:2
+                                                             inText:text];
+            XCTAssertNotNil(back);
+            XCTAssertEqual(back.columnCount, columns,
+                           @"%lu x %lu", (unsigned long)rows,
+                           (unsigned long)columns);
+            // The header and its separator sit on top of the rows asked for.
+            XCTAssertEqual(back.rowCount, rows + 2,
+                           @"%lu x %lu", (unsigned long)rows,
+                           (unsigned long)columns);
+            XCTAssertEqual(back.separatorRow, (NSUInteger)1);
+        }
+    }
+}
+
 /// Escaped bars are content, not cell boundaries.
 - (void)testAnEscapedBarDoesNotSplitACell
 {

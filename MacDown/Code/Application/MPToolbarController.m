@@ -75,6 +75,7 @@
         [self toolbarItemWithIdentifier:@"code" label:NSLocalizedString(@"Inline Code", @"Inline code toolbar button") icon:@"ToolbarIconInlineCode" action:@selector(toggleInlineCode:)],
         [self toolbarItemWithIdentifier:@"link" label:NSLocalizedString(@"Link", @"Link toolbar button") icon:@"ToolbarIconLink" action:@selector(toggleLink:)],
         [self toolbarItemWithIdentifier:@"image" label:NSLocalizedString(@"Image", @"Image toolbar button") icon:@"ToolbarIconImage" action:@selector(toggleImage:)],
+        [self toolbarItemWithIdentifier:@"table" label:NSLocalizedString(@"Table", @"Insert table toolbar button") icon:@"tablecells" action:@selector(insertTable:)],
         [self toolbarItemWithIdentifier:@"copy-html" label:NSLocalizedString(@"Copy HTML", @"Copy HTML toolbar button") icon:@"ToolbarIconCopyHTML" action:@selector(copyHtml:)],
         [self toolbarItemWithIdentifier:@"comment" label:NSLocalizedString(@"Comment", @"Comment toolbar button") icon:@"ToolbarIconComment" action:@selector(toggleComment:)],
         [self toolbarItemWithIdentifier:@"highlight" label:NSLocalizedString(@"Highlight", @"Highlight toolbar button") icon:@"ToolbarIconHighlight" action:@selector(toggleHighlight:)],
@@ -203,7 +204,15 @@
     toolbarItem.paletteLabel = label;
     toolbarItem.toolTip = label;
 
+    // A system symbol when the asset catalogue has no icon of that name:
+    // a command added later does not need a drawing of its own, and a
+    // symbol sits with the rest of the toolbar better than one would.
     NSImage *itemImage = [NSImage imageNamed:iconImageName];
+    if (!itemImage)
+    {
+        itemImage = [NSImage imageWithSystemSymbolName:iconImageName
+                              accessibilityDescription:label];
+    }
     itemImage.template = YES;
 
     // No custom view on purpose. An item that carries its own NSButton is
@@ -236,7 +245,15 @@
     toolbarItem.paletteLabel = label;
     toolbarItem.toolTip = label;
 
+    // A system symbol when the asset catalogue has no icon of that name:
+    // a command added later does not need a drawing of its own, and a
+    // symbol sits with the rest of the toolbar better than one would.
     NSImage *itemImage = [NSImage imageNamed:iconImageName];
+    if (!itemImage)
+    {
+        itemImage = [NSImage imageWithSystemSymbolName:iconImageName
+                              accessibilityDescription:label];
+    }
     itemImage.template = YES;
     toolbarItem.image = itemImage;
     toolbarItem.bordered = YES;

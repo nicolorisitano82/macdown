@@ -191,10 +191,14 @@ static MPTableAlignment MPAlignmentOfSpec(NSString *spec)
     table.lineBars = [NSMutableArray array];
     table.separatorRow = NSNotFound;
 
+    // Advanced by the line *including* its terminator, and stopped at the end
+    // of the last one. Stepping by the trimmed line instead left the cursor
+    // on the final line when the file ended without a break, and the row was
+    // counted twice.
     NSUInteger cursor = first.location;
-    while (cursor <= NSMaxRange(last) && cursor < text.length + 1)
+    while (cursor < NSMaxRange(last))
     {
-        NSRange line = MPLineBody(text, MIN(cursor, text.length - 1));
+        NSRange line = MPLineBody(text, cursor);
         if (line.location > NSMaxRange(last))
             break;
         [table.lineRanges addObject:[NSValue valueWithRange:line]];
@@ -210,16 +214,41 @@ static MPTableAlignment MPAlignmentOfSpec(NSString *spec)
         }
         [table.rows addObject:MPCellsInLine(text, line)];
 
-        NSUInteger next = NSMaxRange(line);
-        while (next < text.length && ([text characterAtIndex:next] == '\r'
-                                      || [text characterAtIndex:next] == '\n'))
-            next++;
+        NSUInteger next = NSMaxRange([text lineRangeForRange:
+            NSMakeRange(cursor, 0)]);
         if (next <= cursor)
             break;
         cursor = next;
     }
 
     return table.rows.count ? table : nil;
+}
+
+
++ (NSString *)emptyTableWithRows:(NSUInteger)rows columns:(NSUInteger)columns
+{
+    NSUInteger cols = MAX(columns, (NSUInteger)1);
+    NSUInteger body = MAX(rows, (NSUInteger)1);
+
+    MPTableSource *table = [[MPTableSource alloc] init];
+    table.range = NSMakeRange(0, 0);
+    table.rows = [NSMutableArray array];
+    table.alignments = [NSMutableArray array];
+    table.lineRanges = [NSMutableArray array];
+    table.lineBars = [NSMutableArray array];
+    table.separatorRow = 1;
+
+    for (NSUInteger c = 0; c < cols; c++)
+        [table.alignments addObject:@(MPTableAlignmentNone)];
+    for (NSUInteger r = 0; r < body + 2; r++)
+    {
+        NSMutableArray<NSString *> *row = [NSMutableArray array];
+        for (NSUInteger c = 0; c < cols; c++)
+            [row addObject:@""];
+        [table.rows addObject:row];
+    }
+
+    return [table serialiseWithCaretRow:0 column:0 caret:NULL];
 }
 
 

@@ -185,3 +185,12 @@
 "Right" = "A destra";
 "Make This a Table" = "Rendi questa una tabella";
 "Repair the Separator Row" = "Ripara la riga dei separatori";
+
+/* Insert table */
+"Table" = "Tabella";
+"Insert a table" = "Inserisci una tabella";
+"A header row is added above the rows you ask for." = "Una riga di intestazione viene aggiunta sopra le righe che chiedi.";
+"Insert" = "Inserisci";
+"Cancel" = "Annulla";
+"Rows:" = "Righe:";
+"Columns:" = "Colonne:";

@@ -34,6 +34,7 @@
 #import "MPMarkerHider.h"
 #import "MPBlockStyler.h"
 #import "MPTableAligner.h"
+#import "MPTableSource.h"
 #import "MPMathEditorController.h"
 #import "MPSidebarController.h"
 #import "MPEpubExport.h"
@@ -281,6 +282,86 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
         }
     };
 }
+
+
+/** The two numbers the table sheet asks for, and the controls that take them.
+ *
+ * A stepper beside each field, because a table is three or four of something
+ * and nobody wants to type that; the field is there for the fifth time, when
+ * it is twelve.
+ */
+@interface MPTableSizeAccessory : NSView
+@property (strong, nonatomic) NSTextField *rowsField;
+@property (strong, nonatomic) NSTextField *columnsField;
+@property (readonly, nonatomic) NSUInteger rows;
+@property (readonly, nonatomic) NSUInteger columns;
+@end
+
+@implementation MPTableSizeAccessory
+
+- (instancetype)initWithRows:(NSUInteger)rows columns:(NSUInteger)columns
+{
+    self = [super initWithFrame:NSMakeRect(0, 0, 264, 58)];
+    if (!self)
+        return nil;
+
+    NSArray *labels = @[NSLocalizedString(@"Rows:", @"Table size sheet"),
+                        NSLocalizedString(@"Columns:", @"Table size sheet")];
+    NSArray *values = @[@(rows), @(columns)];
+    NSMutableArray *fields = [NSMutableArray array];
+
+    for (NSUInteger i = 0; i < 2; i++)
+    {
+        CGFloat y = i ? 2.0 : 30.0;
+
+        NSTextField *label = [NSTextField labelWithString:labels[i]];
+        label.alignment = NSTextAlignmentRight;
+        label.frame = NSMakeRect(0, y + 2, 78, 18);
+        [self addSubview:label];
+
+        NSTextField *field = [NSTextField textFieldWithString:
+            [values[i] stringValue]];
+        field.frame = NSMakeRect(86, y, 56, 22);
+        field.alignment = NSTextAlignmentRight;
+        [self addSubview:field];
+        [fields addObject:field];
+
+        NSStepper *stepper = [[NSStepper alloc] initWithFrame:
+            NSMakeRect(146, y, 17, 22)];
+        stepper.minValue = 1;
+        stepper.maxValue = 50;
+        stepper.increment = 1;
+        stepper.valueWraps = NO;
+        stepper.integerValue = [values[i] integerValue];
+        stepper.target = self;
+        stepper.action = @selector(stepped:);
+        stepper.tag = (NSInteger)i;
+        [self addSubview:stepper];
+    }
+
+    _rowsField = fields[0];
+    _columnsField = fields[1];
+    return self;
+}
+
+- (void)stepped:(NSStepper *)stepper
+{
+    NSTextField *field = stepper.tag == 0 ? self.rowsField : self.columnsField;
+    field.integerValue = stepper.integerValue;
+}
+
+/// Clamped rather than refused: a sheet that scolds you for typing 0 is worse
+/// than one that reads it as 1.
+- (NSUInteger)numberFrom:(NSTextField *)field
+{
+    NSInteger value = field.integerValue;
+    return (NSUInteger)MIN(MAX(value, (NSInteger)1), (NSInteger)50);
+}
+
+- (NSUInteger)rows { return [self numberFrom:self.rowsField]; }
+- (NSUInteger)columns { return [self numberFrom:self.columnsField]; }
+
+@end
 
 
 @implementation MPDocument
@@ -2980,6 +3061,97 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
         @"Cancel", @"Large inline image confirmation")];
 
     return [alert runModal] == NSAlertFirstButtonReturn;
+}
+
+
+
+/** Puts an empty table in, the size you asked for.
+ *
+ * The header row and its separator come on top of the number of rows asked
+ * for: those two are what make it a table rather than lines with bars in
+ * them, and counting them would be asking the reader to know that.
+ */
+- (IBAction)insertTable:(id)sender
+{
+    static NSUInteger lastRows = 3;
+    static NSUInteger lastColumns = 3;
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Insert a table",
+                                          @"Table size sheet title");
+    alert.informativeText = NSLocalizedString(
+        @"A header row is added above the rows you ask for.",
+        @"Table size sheet explanation");
+    [alert addButtonWithTitle:NSLocalizedString(@"Insert",
+                                                @"Table size sheet button")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Cancel",
+                                                @"Table size sheet button")];
+
+    MPTableSizeAccessory *accessory =
+        [[MPTableSizeAccessory alloc] initWithRows:lastRows
+                                           columns:lastColumns];
+    alert.accessoryView = accessory;
+
+    NSWindow *window = self.windowForSheet;
+    void (^insert)(NSModalResponse) = ^(NSModalResponse response) {
+        if (response != NSAlertFirstButtonReturn)
+            return;
+        lastRows = accessory.rows;
+        lastColumns = accessory.columns;
+        [self insertTableWithRows:lastRows columns:lastColumns];
+    };
+
+    if (window)
+    {
+        [alert beginSheetModalForWindow:window completionHandler:insert];
+        // The number is what the sheet is for, so it is what is ready to type.
+        [window makeFirstResponder:accessory.rowsField];
+    }
+    else
+    {
+        insert([alert runModal]);
+    }
+}
+
+- (void)insertTableWithRows:(NSUInteger)rows columns:(NSUInteger)columns
+{
+    NSString *table = [MPTableSource emptyTableWithRows:rows columns:columns];
+    if (!table.length)
+        return;
+
+    // On lines of its own: a table that starts halfway through a paragraph is
+    // not a table, and the blank line after it keeps the next one out.
+    NSRange selection = self.editor.selectedRange;
+    NSString *text = self.editor.string;
+    NSMutableString *insertion = [NSMutableString string];
+
+    NSRange line = [text lineRangeForRange:NSMakeRange(selection.location, 0)];
+    BOOL atLineStart = selection.location == line.location;
+    if (!atLineStart)
+        [insertion appendString:@"\n"];
+    if (selection.location > 0)
+    {
+        // A blank line above, unless there already is one.
+        NSUInteger before = atLineStart ? selection.location
+                                        : NSMaxRange(line);
+        NSString *above = [text substringToIndex:MIN(before, text.length)];
+        if (![above hasSuffix:@"\n\n"])
+            [insertion appendString:@"\n"];
+    }
+
+    NSUInteger caret = insertion.length + 2;    // Inside the first cell.
+    [insertion appendString:table];
+    [insertion appendString:@"\n"];
+
+    if (![self.editor shouldChangeTextInRange:selection
+                            replacementString:insertion])
+        return;
+    [self.editor.textStorage replaceCharactersInRange:selection
+                                           withString:insertion];
+    [self.editor didChangeText];
+    self.editor.selectedRange =
+        NSMakeRange(MIN(selection.location + caret, self.editor.string.length),
+                    0);
 }
 
 - (IBAction)toggleImage:(id)sender
