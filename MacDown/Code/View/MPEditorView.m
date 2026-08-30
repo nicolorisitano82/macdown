@@ -99,11 +99,10 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
  * in any HTML the document carries. Capitalising the first word of a line
  * rewrites `git` and `npm` in a document about them.
  *
- * The document already asks for these to be off when it sets the editor
- * up. Something puts them back — typing `---` in a released build produced
- * an em dash — and the mechanism is not yet pinned down; setting them from
- * the view, last of all as it takes focus, is the position nothing later
- * can undo.
+ * The document asks for these to be off when it sets the editor up, and
+ * that is where the real fix is: it used to hand over a text-checking mask
+ * that turned them back on. This is the belt to that pair of braces —
+ * whatever else touches the view, the last word is taken as it gains focus.
  */
 - (void)disableTextSubstitutions
 {

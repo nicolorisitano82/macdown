@@ -57,13 +57,24 @@ NS_INLINE NSDictionary *MPEditorKeysToObserve()
     static NSDictionary *keys = nil;
     static dispatch_once_t token;
     dispatch_once(&token, ^{
+        // Every check except the four that rewrite what was typed. The mask
+        // and the switches below are two views of one state, and a
+        // dictionary hands them over in whatever order it likes: asking for
+        // every type turns the switches back on, so `---` became an em
+        // dash — which is not a horizontal rule, not the underline of a
+        // setext heading, and not a table's separator row.
+        NSTextCheckingTypes rewriting =
+            NSTextCheckingTypeDash | NSTextCheckingTypeQuote
+            | NSTextCheckingTypeReplacement | NSTextCheckingTypeCorrection;
+
         keys = @{@"automaticDashSubstitutionEnabled": @NO,
                  @"automaticDataDetectionEnabled": @NO,
                  @"automaticQuoteSubstitutionEnabled": @NO,
                  @"automaticSpellingCorrectionEnabled": @NO,
                  @"automaticTextReplacementEnabled": @NO,
                  @"continuousSpellCheckingEnabled": @NO,
-                 @"enabledTextCheckingTypes": @(NSTextCheckingAllTypes),
+                 @"enabledTextCheckingTypes":
+                     @(NSTextCheckingAllTypes & ~rewriting),
                  @"grammarCheckingEnabled": @NO};
     });
     return keys;
