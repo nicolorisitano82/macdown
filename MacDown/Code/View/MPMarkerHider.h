@@ -56,22 +56,12 @@
  * `**bold*`. Returns the whole construct and the length of one delimiter,
  * which is all that is needed to rebuild it without them.
  */
-/** Whether the character at `index` is a delimiter, drawn or not.
- *
- * For measuring rather than for moving. A column is laid out once, from
- * the parse, and the caret wanders through it afterwards: widths worked
- * out from what happens to be revealed at that moment would shift the
- * table every time the caret entered a cell. So this counts every marker,
- * and a cell measures the same wherever the caret is.
- */
-- (BOOL)isSkippableMarkerAtIndex:(NSUInteger)index;
-
 /** Whether the character at `index` is a marker that is not being drawn.
  *
- * This is the one the caret and the delete keys go by. A marker you can
- * see is a character like any other: it is a place the caret stops and
- * backspace over it means what it says. One that is not drawn should
- * behave as though it were not between the caret and the text.
+ * What the caret and the delete keys go by. A marker you can see is a
+ * character like any other: it is a place the caret stops and backspace
+ * over it means what it says. One that is not drawn should behave as
+ * though it were not between the caret and the text.
  */
 - (BOOL)isHiddenMarkerAtIndex:(NSUInteger)index;
 

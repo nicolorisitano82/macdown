@@ -58,9 +58,10 @@ character.
 * **Blocks are laid out**: lists get a hanging indent, quotations get a
   rule down the margin, headings get room above them, and three dashes are
   drawn as a line across the page.
-* **Table columns line up as you type**, by padding the drawing rather than
-  the file. No editor command rewrites your table, and no whitespace is
-  added behind your back.
+* **Tables are edited by command**, not by hand: right-click one for rows
+  and columns, a column's alignment, or a repair of its dashes row. The
+  editor shows the source; the columns are drawn in the preview, which has
+  the room for them. Click a cell there and the caret goes to that cell.
 * **⌘B and ⌘I act on the word under the caret** when nothing is selected,
   and take the markup off again if it is already there.
 * **Pasting formatted text produces Markdown** — headings, nested lists,

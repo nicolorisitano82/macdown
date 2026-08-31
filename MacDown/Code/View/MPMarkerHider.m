@@ -554,11 +554,6 @@
 }
 
 
-- (BOOL)isSkippableMarkerAtIndex:(NSUInteger)index
-{
-    return self.enabled && [self.markers containsIndex:index];
-}
-
 - (BOOL)isHiddenMarkerAtIndex:(NSUInteger)index
 {
     return self.enabled && [self.markers containsIndex:index]

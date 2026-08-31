@@ -82,7 +82,6 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 /// Whether pasting formatted text writes the Markdown that means the same.
 @property (assign) BOOL editorPasteAsMarkdown;
 /// Whether a pipe table's columns are drawn lined up, source untouched.
-@property (assign) BOOL editorAlignTables;
 /// Identifiers of plug-ins the user has switched off. Absent means enabled,
 /// so a newly dropped-in plug-in works without being turned on first.
 @property (copy) NSArray<NSString *> *disabledPlugIns;

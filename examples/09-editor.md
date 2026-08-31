@@ -59,7 +59,7 @@ informazione e non delimitatori.
 > La barra resta continua anche quando una riga va a capo da sola e non ha
 > un simbolo di citazione tutto suo.
 
-## Allinea le colonne delle tabelle
+## Le tabelle
 
 | Trimestre | Ricavi | Margine |
 |:---|---:|:---:|
@@ -67,14 +67,14 @@ informazione e non delimitatori.
 | Secondo trimestre | 15900 | 21,7% |
 | Q3 | 141 | 19,4% |
 
-Le barre si allineano anche se le celle hanno lunghezze diverse. Nel file
-restano esattamente i caratteri che vedi in un editor di testo: non viene
-aggiunto nemmeno uno spazio. Aggiungi una parola lunga a una cella e la
-colonna si allarga da sola quando ti fermi a scrivere.
+Nell'editor la tabella resta la sorgente che hai scritto, barre comprese:
+la resa a colonne è compito dell'anteprima, che ha lo spazio e i mezzi per
+farla bene. Quello che l'editor mette a disposizione sono i comandi —
+tasto destro sopra una tabella per aggiungere e togliere righe e colonne,
+cambiare l'allineamento di una colonna, riparare la riga dei trattini.
 
-Con il cursore dentro una cella che contiene enfasi i marcatori
-ricompaiono, e quella riga si allarga finché non esci: è la stessa
-rivelazione dei marcatori, vista dal lato della larghezza.
+E se clicchi una cella nell'anteprima, il cursore va in quella cella nel
+testo.
 
 ## Incolla il testo formattato come markdown
 

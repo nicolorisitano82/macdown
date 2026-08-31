@@ -33,7 +33,6 @@
 #import "MPSemanticStyler.h"
 #import "MPMarkerHider.h"
 #import "MPBlockStyler.h"
-#import "MPTableAligner.h"
 #import "MPTableSource.h"
 #import "MPMathEditorController.h"
 #import "MPSidebarController.h"
@@ -93,8 +92,7 @@ NS_INLINE NSSet *MPEditorPreferencesToObserve()
             @"editorOnRight", @"editorStyleName", @"editorShowWordCount",
             @"editorScrollsPastEnd", @"editorProseHighlights",
             @"editorSemanticStyling", @"editorHideMarkers",
-            @"editorBlockLayout", @"editorPasteAsMarkdown",
-            @"editorAlignTables", nil
+            @"editorBlockLayout", @"editorPasteAsMarkdown", nil
         ];
     });
     return keys;
@@ -220,7 +218,6 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (strong) MPSemanticStyler *semanticStyler;
 @property (strong) MPMarkerHider *markerHider;
 @property (strong) MPBlockStyler *blockStyler;
-@property (strong) MPTableAligner *tableAligner;
 @property (strong) MPRenderer *renderer;
 @property CGFloat previousSplitRatio;
 @property BOOL manualRender;
@@ -847,8 +844,15 @@ static NSString * const kMPSelectionSource =
     @"(function(){"
     @"var style=document.createElement('style');"
     @"style.textContent='"
-    @"[data-src]{position:relative}"
-    @".macdown-here::before{content:\"\";position:absolute;"
+    // Never on a table row. An absolutely positioned pseudo-element is
+    // still a child of the row, and a row lays its children out in cells:
+    // the browser makes an anonymous one to hold it, and the whole header
+    // shifts a column to the right. The row hangs its bar from its first
+    // cell instead, which is an ordinary block and takes one happily.
+    @"[data-src]:not(tr){position:relative}"
+    @"tr.macdown-here>:first-child{position:relative}"
+    @".macdown-here:not(tr)::before,"
+    @"tr.macdown-here>:first-child::before{content:\"\";position:absolute;"
     @"left:-14px;top:0;bottom:0;width:3px;border-radius:2px;"
     @"background:currentColor;opacity:0.35}"
     @"';"
@@ -869,6 +873,17 @@ static NSString * const kMPSelectionSource =
     @"if(!sel||!sel.anchorNode)return;"
     @"var node=sel.anchorNode;"
     @"if(node.nodeType===3)node=node.parentElement;"
+    // Which cell of its row, when the click landed in one. Only for a
+    // click that selects nothing: dragging across a table is someone
+    // copying out of the preview, and taking the focus away mid-drag
+    // would throw the selection they were making.
+    @"var cell=-1;"
+    @"if(sel.isCollapsed){"
+    @"var c=node;"
+    @"while(c&&c.tagName!=='TD'&&c.tagName!=='TH'&&c.tagName!=='TABLE')"
+    @"c=c.parentElement;"
+    @"if(c&&c.tagName!=='TABLE'&&c.parentElement)"
+    @"cell=Array.prototype.indexOf.call(c.parentElement.children,c);}"
     @"while(node&&!node.hasAttribute('data-src'))node=node.parentElement;"
     @"if(!node)return;"
     @"var all=blocks(),i=all.indexOf(node);"
@@ -876,7 +891,7 @@ static NSString * const kMPSelectionSource =
     @"var end=(i>=0&&i+1<all.length)"
     @"?parseInt(all[i+1].getAttribute('data-src'),10):-1;"
     @"window.webkit.messageHandlers.macdownSelection.postMessage("
-    @"{begin:begin,end:end});}"
+    @"{begin:begin,end:end,cell:cell});}"
     @"var pending=false;"
     @"document.addEventListener('selectionchange',function(){"
     @"if(pending)return;pending=true;"
@@ -998,17 +1013,12 @@ static NSString * const kMPSelectionSource =
     self.markerHider = [[MPMarkerHider alloc] initWithTextView:self.editor];
     self.editor.markerHider = self.markerHider;
     self.blockStyler = [[MPBlockStyler alloc] initWithTextView:self.editor];
-    self.tableAligner = [[MPTableAligner alloc] initWithTextView:self.editor];
-    self.tableAligner.markerHider = self.markerHider;
     self.semanticStyler.themeStyles = self.highlighter.styles;
     __weak MPDocument *weakSelf = self;
     self.highlighter.elementsDidChange = ^(pmh_element **elements) {
         [weakSelf.semanticStyler applyToElements:elements];
         [weakSelf.markerHider updateWithElements:elements];
         [weakSelf.blockStyler applyToElements:elements];
-        // Last: it measures what the others have decided the text looks
-        // like, so it has to run once they have decided it.
-        [weakSelf.tableAligner align];
     };
     self.renderer = [[MPRenderer alloc] init];
     self.renderer.dataSource = self;
@@ -1647,6 +1657,13 @@ static NSString * const kMPSelectionSource =
             return;
 
         self.editor.activeSourceRange = NSMakeRange(begin, end - begin);
+
+        // A click in a cell puts the caret in that cell. The block the
+        // click landed in is the table row, so its offset and the cell's
+        // position in the row are between them enough to find it.
+        NSInteger column = [body[@"cell"] integerValue];
+        if (column >= 0)
+            [self moveCaretToColumn:(NSUInteger)column inTableRowAt:begin];
         return;
     }
 
@@ -1657,6 +1674,26 @@ static NSString * const kMPSelectionSource =
         MPGetPreviewLoadingCompletionHandler(self)();
         return;
     }
+}
+
+
+/** Puts the caret in one cell of the table row that starts at `rowStart`.
+ *
+ * Where that cell is in the source is the table model's business; this
+ * only takes the answer to the editor.
+ */
+- (void)moveCaretToColumn:(NSUInteger)column inTableRowAt:(NSUInteger)rowStart
+{
+    NSString *text = self.editor.string ?: @"";
+    NSUInteger caret = [MPTableSource caretForColumn:column
+                                             inRowAt:rowStart
+                                              inText:text];
+    if (caret == NSNotFound || caret > self.editor.textStorage.length)
+        return;
+
+    self.editor.selectedRange = NSMakeRange(caret, 0);
+    [self.editor scrollRangeToVisible:NSMakeRange(caret, 0)];
+    [self.editor.window makeFirstResponder:self.editor];
 }
 
 
@@ -3774,12 +3811,6 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
 
     if (!changedKey || [changedKey isEqualToString:@"editorPasteAsMarkdown"])
         self.editor.pastesAsMarkdown = self.preferences.editorPasteAsMarkdown;
-
-    if (!changedKey || [changedKey isEqualToString:@"editorAlignTables"])
-    {
-        self.tableAligner.enabled = self.preferences.editorAlignTables;
-        [self.highlighter parseAndHighlightNow];
-    }
 
     if (!changedKey || [changedKey isEqualToString:@"editorHideMarkers"]
             || [changedKey isEqualToString:@"editorBlockLayout"]

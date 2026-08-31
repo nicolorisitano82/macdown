@@ -252,6 +252,77 @@ static MPTableAlignment MPAlignmentOfSpec(NSString *spec)
 }
 
 
+#pragma mark - Finding a cell
+
++ (NSUInteger)caretForColumn:(NSUInteger)column
+                     inRowAt:(NSUInteger)rowStart
+                      inText:(NSString *)text
+{
+    if (!text.length || rowStart >= text.length)
+        return NSNotFound;
+
+    NSRange line = [text lineRangeForRange:NSMakeRange(rowStart, 0)];
+    while (line.length > 0)
+    {
+        unichar last = [text characterAtIndex:NSMaxRange(line) - 1];
+        if (last != '\n' && last != '\r')
+            break;
+        line.length--;
+    }
+    if (!line.length)
+        return NSNotFound;
+
+    NSMutableArray<NSNumber *> *bars = [NSMutableArray array];
+    BOOL escaped = NO;
+    for (NSUInteger i = line.location; i < NSMaxRange(line); i++)
+    {
+        unichar c = [text characterAtIndex:i];
+        if (escaped)
+            escaped = NO;
+        else if (c == '\\')
+            escaped = YES;
+        else if (c == '|')
+            [bars addObject:@(i)];
+    }
+    if (!bars.count)
+        return NSNotFound;
+
+    NSMutableArray<NSValue *> *cells = [NSMutableArray array];
+    NSUInteger start = line.location;
+    for (NSNumber *bar in bars)
+    {
+        NSUInteger at = bar.unsignedIntegerValue;
+        [cells addObject:[NSValue valueWithRange:NSMakeRange(start,
+                                                             at - start)]];
+        start = at + 1;
+    }
+    [cells addObject:[NSValue valueWithRange:
+        NSMakeRange(start, NSMaxRange(line) - start)]];
+
+    // The bar that opens a row and the one that closes it are punctuation,
+    // not boundaries: `| a | b |` has two cells, and the empty pieces at
+    // either end would otherwise count as a third and a fourth.
+    NSCharacterSet *blank = [NSCharacterSet whitespaceCharacterSet];
+    NSString *(^body)(NSValue *) = ^(NSValue *value) {
+        return [[text substringWithRange:value.rangeValue]
+            stringByTrimmingCharactersInSet:blank];
+    };
+    if (cells.count > 1 && !body(cells.firstObject).length)
+        [cells removeObjectAtIndex:0];
+    if (cells.count > 1 && !body(cells.lastObject).length)
+        [cells removeLastObject];
+    if (column >= cells.count)
+        return NSNotFound;
+
+    NSRange cell = cells[column].rangeValue;
+    NSUInteger caret = cell.location;
+    while (caret < NSMaxRange(cell)
+           && [blank characterIsMember:[text characterAtIndex:caret]])
+        caret++;
+    return caret;
+}
+
+
 #pragma mark - Shape
 
 - (NSUInteger)rowCount

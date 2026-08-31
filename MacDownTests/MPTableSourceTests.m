@@ -252,4 +252,70 @@ static NSString *const kTable =
     XCTAssertEqual(t.columnCount, (NSUInteger)2);
 }
 
+#pragma mark - Finding a cell from the preview
+
+/// The preview names a cell by its place in the row; the source has to agree.
+- (void)testTheCaretLandsInTheCellThatWasClicked
+{
+    NSUInteger row = [kTable rangeOfString:@"| Q1"].location;
+    NSUInteger first = [MPTableSource caretForColumn:0 inRowAt:row
+                                             inText:kTable];
+    NSUInteger second = [MPTableSource caretForColumn:1 inRowAt:row
+                                              inText:kTable];
+    XCTAssertEqual(first, [kTable rangeOfString:@"Q1"].location);
+    XCTAssertEqual(second, [kTable rangeOfString:@"12400"].location);
+}
+
+- (void)testTheHeaderRowIsFoundTheSameWay
+{
+    NSUInteger row = [kTable rangeOfString:@"| Trimestre"].location;
+    XCTAssertEqual([MPTableSource caretForColumn:1 inRowAt:row inText:kTable],
+                   [kTable rangeOfString:@"Ricavi"].location);
+}
+
+/// Any character of the row will do: the preview reports where the row began.
+- (void)testTheRowIsFoundFromAnywhereInIt
+{
+    NSUInteger inside = [kTable rangeOfString:@"15900"].location;
+    XCTAssertEqual([MPTableSource caretForColumn:0 inRowAt:inside
+                                          inText:kTable],
+                   [kTable rangeOfString:@"Q2"].location);
+}
+
+- (void)testARowWithoutOuterBars
+{
+    NSString *text = @"a | b | c\n--- | --- | ---\n1 | 2 | 3\n";
+    NSUInteger row = [text rangeOfString:@"1 | 2"].location;
+    XCTAssertEqual([MPTableSource caretForColumn:2 inRowAt:row inText:text],
+                   [text rangeOfString:@"3"].location);
+}
+
+- (void)testAnEscapedBarIsNotACellBoundary
+{
+    NSString *text = @"| a\\|b | c |\n|---|---|\n| 1 | 2 |\n";
+    NSUInteger row = 0;
+    XCTAssertEqual([MPTableSource caretForColumn:1 inRowAt:row inText:text],
+                   [text rangeOfString:@"c"].location);
+}
+
+- (void)testAnEmptyCellStillHasAPlaceToStand
+{
+    NSString *text = @"| a |  | c |\n";
+    NSUInteger caret = [MPTableSource caretForColumn:1 inRowAt:0 inText:text];
+    XCTAssertNotEqual(caret, (NSUInteger)NSNotFound);
+    // Between the two bars that hold the empty cell.
+    XCTAssertTrue(caret > [text rangeOfString:@"a"].location);
+    XCTAssertTrue(caret < [text rangeOfString:@"c"].location);
+}
+
+- (void)testAColumnThatIsNotThereAnswersNothing
+{
+    NSUInteger row = [kTable rangeOfString:@"| Q1"].location;
+    XCTAssertEqual([MPTableSource caretForColumn:9 inRowAt:row inText:kTable],
+                   (NSUInteger)NSNotFound);
+    XCTAssertEqual([MPTableSource caretForColumn:0 inRowAt:0
+                                          inText:@"solo prosa\n"],
+                   (NSUInteger)NSNotFound);
+}
+
 @end

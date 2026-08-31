@@ -329,9 +329,12 @@ d'uscita, e la voce di menu non c'era — è stata aggiunta.
 
 ---
 
-## Fase 5 — Le tabelle *(fatta)*
+## Fase 5 — Le tabelle *(fatta, poi ridotta)*
 
-Le colonne si allineano mentre scrivi, senza contare le barre.
+I comandi per modificarle: tasto destro sopra una tabella per righe e
+colonne, allineamento, riparazione della riga dei trattini; e «crea
+tabella» nella barra degli strumenti. Sotto c'è `MPTableSource`, un
+modello testo-dentro-testo-fuori, che è la parte con i test.
 
 ### Perché non riscrivere il file
 
@@ -340,43 +343,76 @@ non tornano. Funziona una volta e poi ti combatte — riscrive righe che non
 hai toccato, a timer, mentre ci hai dentro il cursore. E viola il principio
 da cui parte tutto: **il documento è la stringa che hai scritto**.
 
-Qui si riempie il *disegno*. Ogni cella viene misurata, ogni colonna prende
-la larghezza della sua cella più larga, e la differenza va nella crenatura
-del carattere che precede la barra — `NSKernAttributeName`, che allarga
-l'avanzamento del carattere su cui è messo. Le barre si allineano, il file
-ha esattamente i caratteri che hai battuto.
+I comandi riscrivono la tabella solo quando glielo chiedi, e in un colpo
+solo: una sostituzione, un passo di annullamento.
 
-Non tabulazioni: le tabulazioni vogliono i tab, e la sorgente ha le barre.
-E la crenatura va nel text storage, dove può influenzare l'impaginazione —
-un attributo temporaneo non cambierebbe niente, come nella fase 1.
+### L'allineamento delle colonne, tolto
 
-### Le tre cose che non erano ovvie
+C'era anche una resa a colonne nell'editor: ogni cella misurata, ogni
+colonna larga quanto la sua cella più larga, la differenza messa nella
+crenatura del carattere prima della barra — `NSKernAttributeName`, che
+allarga l'avanzamento del carattere su cui è messo. Le barre si
+allineavano e il file restava carattere per carattere quello battuto.
 
-*Misurare il testo scritto è la misura sbagliata.* Una cella che dice
-`**totale**` è disegnata quattro caratteri più stretta di com'è scritta,
-perché i marcatori sono nascosti. Una colonna misurata sulla sorgente
-verrebbe allargata a una larghezza che nessuno occupa. Si misura una copia
-staccata da cui i marcatori nascosti sono stati tolti.
+Era ingegnoso e l'ha detto l'uso: **la riga dei trattini non si allarga**.
+`|---` seguito da una colonna larga lascia i tre trattini appiccicati e
+poi il vuoto, e a occhio quella riga sembra aver perso i trattini. La
+segnalazione è arrivata proprio così — «le tabelle nell'editor perdono i
+`---`» — e insieme la richiesta giusta: nell'editor la tabella sia la
+sorgente, la resa a colonne stia nell'anteprima, che ha lo spazio per
+farla.
 
-*Togliere un attributo da un intervallo lo sporca comunque.* Un
-`removeAttribute:` sull'intero documento a ogni parse fa reimpaginare tutto
-ogni volta che smetti di battere, per una tabella che magari non c'è. Si
-enumera prima dove la crenatura è davvero, e si toglie solo lì.
+Tolta. `MPTableAligner` non c'è più, e con lui la preferenza che lo
+accendeva e il predicato che serviva solo a misurarlo.
+
+**La lezione.** Una resa che copre il novanta per cento delle righe di una
+tabella e non la riga che ne dichiara la struttura non è una resa: è una
+resa e un'eccezione, e l'eccezione è proprio la riga che conta.
+
+### Quello che resta non ovvio
 
 *La tabella va trovata a mano.* Il parser non conosce le tabelle — sono
 un'estensione del renderer, non del linguaggio che analizza. È una
 scansione per righe: una riga con delle barre diventa una tabella solo
-quando la riga sotto è fatta di trattini. I blocchi recintati si saltano
-tenendo conto delle recinzioni mentre si scorre, perché nemmeno quelli il
-parser li segna.
+quando la riga sotto è fatta di trattini.
 
-### Quello che si vede e va spiegato
+*Le barre di apertura e chiusura non sono confini di cella.* `| a | b |`
+ha due celle, non quattro: i pezzi vuoti ai due capi vanno scartati. Vale
+per il modello e vale per il salto dall'anteprima al testo.
 
-Con il cursore dentro una cella che contiene enfasi, i marcatori
-ricompaiono e quella riga diventa più larga finché non esci. È la stessa
-rivelazione della fase 2 vista dal lato della larghezza: coerente, e
-l'alternativa — riallineare tutta la tabella a ogni movimento del cursore
-— muoverebbe molto di più.
+---
+
+## Dall'anteprima al testo — la cella cliccata
+
+Clicchi una cella nell'anteprima, il cursore va in quella cella
+nell'editor.
+
+Non è servito etichettare ogni cella nell'HTML. L'anteprima sa in che
+posizione della sua riga sta la cella cliccata, la riga porta già il suo
+offset di sorgente per la sincronizzazione dello scorrimento, e la
+sorgente ha le stesse celle nello stesso ordine con le barre in mezzo: si
+taglia la riga sulle barre non protette e si prende l'ennesimo pezzo.
+Niente da tenere in step quando la tabella cambia.
+
+Solo a selezione vuota. Trascinare dentro una tabella dell'anteprima è
+qualcuno che sta copiando, e portargli via il fuoco a metà del gesto gli
+butterebbe la selezione.
+
+### La cella fantasma
+
+Cercandola, ne è saltata fuori un'altra, introdotta con la
+sincronizzazione per righe della 0.13.1: **l'intestazione di ogni tabella
+nell'anteprima era spostata di una colonna** appena la barra «sei qui»
+finiva su una riga di tabella.
+
+La barra è uno `::before` in posizione assoluta. Su un paragrafo va bene;
+su un `<tr>` no — una riga dispone i propri figli in celle, quindi il
+browser ne fabbrica una anonima per contenerlo, e l'intestazione slitta a
+destra di una colonna. Ora la riga appende la barra alla sua prima cella,
+che è un blocco normale e la prende volentieri.
+
+**La lezione.** Uno pseudo-elemento non è gratis: è un figlio, e in una
+tabella i figli sono celle.
 
 ---
 

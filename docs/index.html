@@ -289,7 +289,7 @@
     </p>
 
     <figure class="shot">
-      <img src="assets/hero.png" alt="MacDown with a document on the left and its rendered preview on the right. In the editor the headings carry no hashes, the emphasis no asterisks, the table columns line up and the quotation has a rule down its margin.">
+      <img src="assets/hero.png" alt="MacDown with a document on the left and its rendered preview on the right. In the editor the headings carry no hashes, the emphasis no asterisks, and the quotation has a rule down its margin.">
       <figcaption>The editor on the left is Markdown — every character of it. It is
       just no longer showing you the punctuation.</figcaption>
     </figure>
@@ -311,15 +311,15 @@
           <p class="ba-label">Before</p>
           <p><strong>The editor showed you the punctuation.</strong>
           Hashes in front of every heading, asterisks around every bold
-          word, columns of a table wherever the words happened to leave
-          them. The rendered document was the other pane's business.</p>
+          word. The rendered document was the other pane's business, and
+          getting back to the line you were reading was your own.</p>
         </div>
         <div class="ba-cell ba-after">
           <p class="ba-label">Now</p>
           <p>The markers disappear until the caret reaches them, lists and
-          quotations are laid out, and table columns line up as you type —
-          by padding the drawing, never the file. What you save is the
-          string you typed, to the character.</p>
+          quotations are laid out, and the two panes follow one another —
+          click a table cell in the preview and the caret goes there. What
+          you save is the string you typed, to the character.</p>
         </div>
       </div>
 
@@ -603,8 +603,8 @@ pod install</pre>
         <span class="effort">Medium</span>
         <div>
           <h3>Test what has been written</h3>
-          <p>The suite covers the parts inherited from upstream. The marker
-          hiding, the block layout, the table alignment, the HTML-to-Markdown
+          <p>The suite covers the parts inherited from upstream, the table
+          model and the marker hiding. The block layout, the HTML-to-Markdown
           converter and the EPUB and Word writers have no tests at all, and
           the converter — which meets whatever a browser puts on the
           pasteboard — is the one that most needs them.</p>

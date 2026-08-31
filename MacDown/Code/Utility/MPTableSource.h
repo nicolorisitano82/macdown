@@ -49,6 +49,21 @@ typedef NS_ENUM(NSUInteger, MPTableAlignment) {
 + (NSString *)emptyTableWithRows:(NSUInteger)rows
                          columns:(NSUInteger)columns;
 
+/** Where the caret goes for one cell of the row beginning at `rowStart`.
+ *
+ * The preview names a cell by its position in its row, and the source has
+ * the same cells in the same order with bars between them — so the line is
+ * cut on its unescaped bars and the nth piece is the one wanted. Nothing
+ * has to label every cell, and nothing has to be kept in step when the
+ * table is edited.
+ *
+ * The answer is the first character the cell actually says, past the space
+ * that separates it from the bar. NSNotFound if that row has no such cell.
+ */
++ (NSUInteger)caretForColumn:(NSUInteger)column
+                    inRowAt:(NSUInteger)rowStart
+                     inText:(NSString *)text;
+
 /// The lines the table occupies, without the break that ends the last one.
 @property (readonly, nonatomic) NSRange range;
 

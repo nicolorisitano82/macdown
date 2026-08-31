@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		D0C1F00300000000000000D1 /* MPBlockStyler.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1F00100000000000000D1 /* MPBlockStyler.m */; };
-		60D3539A64D409613FC8971A /* MPTableAligner.m in Sources */ = {isa = PBXBuildFile; fileRef = F0296E52532773AD5AD9C385 /* MPTableAligner.m */; };
 		D0C1E00300000000000000C1 /* MPMarkerHider.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1E00100000000000000C1 /* MPMarkerHider.m */; };
 		D0C1C00300000000000000A1 /* MPSemanticStyler.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1C00100000000000000A1 /* MPSemanticStyler.m */; };
 		D0C1B00300000000000000A1 /* MPPlugInsWindowController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1B00100000000000000A1 /* MPPlugInsWindowController.m */; };
@@ -164,8 +163,6 @@
 
 /* Begin PBXFileReference section */
 		D0C1F00100000000000000D1 /* MPBlockStyler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPBlockStyler.m; sourceTree = "<group>"; };
-		52BA0B296AD4DC0C5BCD4D39 /* MPTableAligner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPTableAligner.h; sourceTree = "<group>"; };
-		F0296E52532773AD5AD9C385 /* MPTableAligner.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTableAligner.m; sourceTree = "<group>"; };
 		D0C1F00200000000000000D1 /* MPBlockStyler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPBlockStyler.h; sourceTree = "<group>"; };
 		D0C1E00100000000000000C1 /* MPMarkerHider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkerHider.m; sourceTree = "<group>"; };
 		D0C1E00200000000000000C1 /* MPMarkerHider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMarkerHider.h; sourceTree = "<group>"; };
@@ -709,8 +706,6 @@
 				1F396E6419B0EA17000D3EFC /* MPEditorView.h */,
 				D0C1F00200000000000000D1 /* MPBlockStyler.h */,
 				D0C1F00100000000000000D1 /* MPBlockStyler.m */,
-				52BA0B296AD4DC0C5BCD4D39 /* MPTableAligner.h */,
-				F0296E52532773AD5AD9C385 /* MPTableAligner.m */,
 				D0C1E00200000000000000C1 /* MPMarkerHider.h */,
 				D0C1E00100000000000000C1 /* MPMarkerHider.m */,
 				D0C1C00200000000000000A1 /* MPSemanticStyler.h */,
@@ -1286,7 +1281,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				D0C1F00300000000000000D1 /* MPBlockStyler.m in Sources */,
-				60D3539A64D409613FC8971A /* MPTableAligner.m in Sources */,
 				D0C1E00300000000000000C1 /* MPMarkerHider.m in Sources */,
 				D0C1C00300000000000000A1 /* MPSemanticStyler.m in Sources */,
 				1F396E6619B0EA17000D3EFC /* MPEditorView.m in Sources */,

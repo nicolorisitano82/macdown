@@ -51,7 +51,6 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
         @"editorPasteAsMarkdown": @YES,     // ⌘⇧V still pastes verbatim.
         @"editorHideMarkers": @YES,
         @"editorBlockLayout": @YES,
-        @"editorAlignTables": @YES,
     }];
 
     [self cleanupObsoleteAutosaveValues];
@@ -140,7 +139,6 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
 @dynamic editorHideMarkers;
 @dynamic editorBlockLayout;
 @dynamic editorPasteAsMarkdown;
-@dynamic editorAlignTables;
 @dynamic disabledPlugIns;
 @dynamic htmlCodeBlockAccessory;
 @dynamic htmlRendersTOC;
