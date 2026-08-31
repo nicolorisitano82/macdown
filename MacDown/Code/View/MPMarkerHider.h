@@ -56,27 +56,22 @@
  * `**bold*`. Returns the whole construct and the length of one delimiter,
  * which is all that is needed to rebuild it without them.
  */
-/** Whether the caret should step over the character at `index`.
+/** Whether the character at `index` is a delimiter, drawn or not.
  *
- * True for any marker while hiding is on, revealed or not. Keying it to
- * what is currently drawn sounds better and does nothing: approaching a
- * construct reveals it, so by the time the caret is next to a marker it is
- * visible again, and there is never a moment where one is both adjacent and
- * hidden.
- *
- * So the rule is the blunter one: with the markers hidden, a construct's
- * delimiters are not places the caret goes. It steps from outside the
- * construct to the start of its content. Deleting already treats the
- * construct as one thing, and this agrees with it.
+ * For measuring rather than for moving. A column is laid out once, from
+ * the parse, and the caret wanders through it afterwards: widths worked
+ * out from what happens to be revealed at that moment would shift the
+ * table every time the caret entered a cell. So this counts every marker,
+ * and a cell measures the same wherever the caret is.
  */
 - (BOOL)isSkippableMarkerAtIndex:(NSUInteger)index;
 
 /** Whether the character at `index` is a marker that is not being drawn.
  *
- * The difference from -isSkippableMarkerAtIndex: matters when deleting. A
- * marker you can see is a character like any other and backspace over it
- * means something; one that is not drawn should behave as though it were
- * not between the caret and the text.
+ * This is the one the caret and the delete keys go by. A marker you can
+ * see is a character like any other: it is a place the caret stops and
+ * backspace over it means what it says. One that is not drawn should
+ * behave as though it were not between the caret and the text.
  */
 - (BOOL)isHiddenMarkerAtIndex:(NSUInteger)index;
 

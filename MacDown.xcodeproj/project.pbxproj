@@ -78,6 +78,7 @@
 		1FF1420219A8987500CF8A6A /* JavaScriptCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FF1420119A8987500CF8A6A /* JavaScriptCore.framework */; };
 		1FF1420419A8A24800CF8A6A /* MPUtilityTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FF1420319A8A24800CF8A6A /* MPUtilityTests.m */; };
 		F55A342A5A01CEBCC9F68E3A /* MPTableSourceTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F097331E216 /* MPTableSourceTests.m */; };
+		F55A342A5A01CEBCC9F60001 /* MPMarkerHiderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310001 /* MPMarkerHiderTests.m */; };
 		1FF207631941CF22005B5654 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FF207621941CF22005B5654 /* WebKit.framework */; };
 		1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FFEB31819729F7C00B2254F /* MPAssetTests.m */; };
 		1FFEB31D19729FEF00B2254F /* test.css in Resources */ = {isa = PBXBuildFile; fileRef = 1FFEB31C19729FEF00B2254F /* test.css */; };
@@ -495,6 +496,7 @@
 		1FF1420119A8987500CF8A6A /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/System/Library/Frameworks/JavaScriptCore.framework; sourceTree = DEVELOPER_DIR; };
 		1FF1420319A8A24800CF8A6A /* MPUtilityTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUtilityTests.m; sourceTree = "<group>"; };
 		7DA2311453239F097331E216 /* MPTableSourceTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTableSourceTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310001 /* MPMarkerHiderTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkerHiderTests.m; sourceTree = "<group>"; };
 		1FF207621941CF22005B5654 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		1FFEB31819729F7C00B2254F /* MPAssetTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPAssetTests.m; sourceTree = "<group>"; };
 		1FFEB31A19729FD500B2254F /* test.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = test.js; sourceTree = "<group>"; };
@@ -905,6 +907,7 @@
 			children = (
 				1FF1420319A8A24800CF8A6A /* MPUtilityTests.m */,
 				7DA2311453239F097331E216 /* MPTableSourceTests.m */,
+				7DA2311453239F0973310001 /* MPMarkerHiderTests.m */,
 				1F25E1C21A50F4F10029371D /* MPColorTests.m */,
 				1FCDCA311944F96E00B1F966 /* MPPreferencesTests.m */,
 				1FFF301C1948A5320009AF24 /* MPStringLookupTests.m */,
@@ -1342,6 +1345,7 @@
 				1F51C9A5194565050015A96F /* MPPreferencesTests.m in Sources */,
 				1FF1420419A8A24800CF8A6A /* MPUtilityTests.m in Sources */,
 				F55A342A5A01CEBCC9F68E3A /* MPTableSourceTests.m in Sources */,
+				F55A342A5A01CEBCC9F60001 /* MPMarkerHiderTests.m in Sources */,
 				1FFEB3271972DAB400B2254F /* MPHTMLTabularizeTests.m in Sources */,
 				1F25E1C31A50F4F10029371D /* MPColorTests.m in Sources */,
 				1FFF301D1948A5320009AF24 /* MPStringLookupTests.m in Sources */,

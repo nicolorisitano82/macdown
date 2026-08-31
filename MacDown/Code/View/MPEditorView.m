@@ -209,6 +209,11 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         if (NSMaxRange(range) > self.textStorage.length)
             continue;
 
+        // With the caret on it the dashes are drawn again, and a line
+        // through them would be the rule and its own source at once.
+        if (![self.markerHider isHiddenMarkerAtIndex:range.location])
+            continue;
+
         // Measured from the line break that closes the rule, not from the
         // dashes. Their glyphs are suppressed, and a run of suppressed
         // glyphs at the head of a line is folded into the fragment above it
@@ -408,9 +413,12 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
  * moving nothing that anyone could see. It now crosses the whole run at
  * once, in either direction.
  *
- * Every marker, not only the ones currently out of sight: arriving next to
- * a construct reveals it, so a marker is never both adjacent and hidden.
- * With hiding on, delimiters are simply not places the caret stops.
+ * Only the ones actually out of sight. Arriving beside a construct reveals
+ * it, so in the ordinary case there is nothing here to skip and the caret
+ * walks the delimiters one at a time — which is right, because by then it
+ * can see them. What is left for this to do is the caret that is beside a
+ * hidden marker anyway: a second caret of a multiple selection, or the
+ * moment between an edit and the parse that follows it.
  */
 - (NSUInteger)positionSkippingHiddenMarkersFrom:(NSUInteger)position
                                         forward:(BOOL)forward
@@ -421,13 +429,13 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     if (forward)
     {
         while (result < length
-               && [self.markerHider isSkippableMarkerAtIndex:result])
+               && [self.markerHider isHiddenMarkerAtIndex:result])
             result++;
     }
     else
     {
         while (result > 0
-               && [self.markerHider isSkippableMarkerAtIndex:result - 1])
+               && [self.markerHider isHiddenMarkerAtIndex:result - 1])
             result--;
     }
     return result;
@@ -478,8 +486,10 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
  * and one step to undo. Over a link's tail it leaves the link's text, which
  * is the same idea.
  *
- * Only when the markers are being hidden. With them visible, deleting one
- * asterisk of a pair is ordinary text editing and none of this business.
+ * Only while the markers are hidden. Once the caret is on the construct
+ * they are drawn, and deleting one asterisk of a pair is ordinary text
+ * editing and none of this business — which is how a delimiter gets
+ * changed rather than only removed wholesale.
  */
 - (BOOL)removeConstructForDeletionAt:(NSUInteger)index
 {

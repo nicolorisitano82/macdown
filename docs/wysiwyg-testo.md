@@ -82,6 +82,10 @@ quindi non esiste un istante in cui il cursore è adiacente a un marcatore
 nascosto. La regola giusta è più rozza e funziona: con il nascondimento
 acceso i delimitatori non sono posizioni.
 
+> Questa premessa è rimasta falsa per mesi ai due bordi esterni, e il
+> ragionamento che ci stava sopra è caduto con lei. Vedi
+> *[Correzione — il bordo del costrutto](#correzione--il-bordo-del-costrutto)*.
+
 La seconda: la correzione a «cancellare un asterisco lascia l'altro» non
 è cancellare anche l'altro — resterebbe markup rotto dall'altro capo. È
 togliere l'enfasi: `**grassetto**` diventa `grassetto`. Quando una
@@ -262,6 +266,9 @@ Si poteva togliere perché nel frattempo la cancellazione non dipendeva più
 da cosa fosse visibile. **Quando una fase sembra richiedere codice nuovo,
 vale la pena guardare se una decisione precedente è diventata superflua.**
 
+> E poi è stata rimessa, perché il carattere in più per lato non serviva
+> alla cancellazione: serviva a *vedere*. Vedi sotto.
+
 ### ⌘B senza selezione
 
 Il toggle c'era già e sapeva anche togliere il markup; gli mancava solo
@@ -370,6 +377,63 @@ ricompaiono e quella riga diventa più larga finché non esci. È la stessa
 rivelazione della fase 2 vista dal lato della larghezza: coerente, e
 l'alternativa — riallineare tutta la tabella a ogni movimento del cursore
 — muoverebbe molto di più.
+
+---
+
+## Correzione — Il bordo del costrutto
+
+Segnalazione, in una riga: «se metto il cursore all'inizio della parola, e
+alla fine della parola, non compare il `_`, e così non posso cancellarlo o
+modificarlo».
+
+Ed era vero. Il ripristino guardava se il cursore era *strettamente
+dentro* il costrutto, `location > inizio && location < fine`. Ma un
+delimitatore nascosto non occupa spazio, quindi **l'inizio di `_pippo_` e
+l'inizio di `pippo` sono lo stesso punto sullo schermo**: chi clicca
+davanti alla parola atterra sul bordo, che non contava come dentro. Idem
+dall'altra parte. I due soli posti dove uno va per toccare un underscore
+erano i due posti dove restava invisibile.
+
+Il difetto vero però era un altro, e più vecchio: **due parti del codice
+credevano cose diverse**. La regola dello scavalcamento era scritta sulla
+premessa «avvicinandosi a un costrutto lo si rivela, quindi un marcatore
+non è mai insieme adiacente e nascosto» — premessa falsa ai bordi, dove il
+ripristino non arrivava. Ognuna delle due parti era difendibile da sola.
+
+La correzione è una disuguaglianza: `>=` e `<=`. Toccare basta.
+
+E le altre due parti sono state riportate in riga con essa:
+
+- **Il movimento** scavalca solo i marcatori *effettivamente* non
+  disegnati. Arrivando a fianco di un costrutto ora lo si rivela davvero,
+  quindi non c'è niente da scavalcare e il cursore cammina sui delimitatori
+  uno alla volta — che è giusto, perché a quel punto li si vede.
+- **La cancellazione** tratta il costrutto come una cosa sola solo finché
+  i marcatori sono nascosti. Con l'asterisco in vista, il backspace su di
+  esso è editing normale. È l'unico modo di *modificare* un delimitatore
+  invece di poterlo solo togliere in blocco — `_pippo_` che diventa
+  `__pippo__` senza cancellare niente.
+- **La riga orizzontale** non viene disegnata sui trattini rivelati:
+  altrimenti sarebbero il righello e il suo sorgente nello stesso punto.
+
+Il prezzo è il collasso al delimitatore di chiusura, che era la ragione
+per cui la regola stretta era stata scelta: ora un costrutto resta aperto
+finché il cursore non se ne va, invece di chiudersi appena si batte
+l'ultimo asterisco. È la sorpresa minore: **quello che è ancora sotto il
+cursore è ancora in scrittura.** È anche quello che fanno Typora e
+Obsidian.
+
+Il ripristino guarda inoltre *tutti* gli intervalli selezionati, non solo
+il primo: anche un secondo cursore è un posto dove qualcuno sta per
+scrivere.
+
+Undici test nuovi (`MPMarkerHiderTests`) fissano i bordi, perché è
+esattamente il genere di cosa che si rompe senza che nessuno se ne accorga
+finché non la usa.
+
+**La lezione.** Quando una regola è scritta sulla premessa che *un'altra*
+regola garantisce qualcosa, quella garanzia va verificata, non assunta —
+e se cade, non cade solo lei.
 
 ---
 

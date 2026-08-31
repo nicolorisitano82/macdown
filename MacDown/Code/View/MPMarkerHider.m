@@ -461,37 +461,54 @@
 
 /** The markers to show, because the caret is working on their construct.
  *
- * Strictly inside, not merely adjacent. Typing the closing `**` of a piece
- * of bold text puts the caret immediately after the construct, and that is
- * exactly the moment it should collapse and show as bold — so the edges do
- * not count as being in it.
+ * Touching one is enough; being strictly inside it was not.
  *
- * Nothing relies on the edges any more. Deleting a marker is handled from
- * the construct itself, whether it is drawn or not, and moving the caret
- * steps over the delimiters rather than landing on them.
+ * A hidden delimiter takes no width, so the front of `_pippo_` and the
+ * front of `pippo` are the same point on screen. A caret put there — by a
+ * click, by Home, by arriving from the line above — sits at the
+ * construct's edge while the reader believes it is at the start of the
+ * word, and with the edges excluded the underscores stayed invisible at
+ * precisely the two places someone goes to delete or change them. The same
+ * at the far end. So the edges count as being in it.
+ *
+ * What this costs is the collapse on the closing delimiter: a construct
+ * now stays open until the caret leaves it, rather than snapping shut the
+ * moment its last asterisk is typed. That is the smaller surprise — what
+ * is still under the caret is still being written.
+ *
+ * Every selected range, since a second caret is somewhere about to be
+ * typed in as well.
  */
 - (void)recomputeRevealed
 {
     NSMutableIndexSet *shown = [NSMutableIndexSet indexSet];
-    NSRange selection = self.textView.selectedRange;
+    NSArray<NSValue *> *selections = self.textView.selectedRanges;
 
     for (NSValue *value in self.constructs)
     {
         NSRange construct = value.rangeValue;
-        BOOL inside;
-        if (selection.length)
+        for (NSValue *selected in selections)
         {
-            // A selection that merely stops at the edge is not in it; one
-            // that covers any of it is.
-            inside = NSIntersectionRange(selection, construct).length > 0;
+            NSRange selection = selected.rangeValue;
+            BOOL touching;
+            if (selection.length)
+            {
+                // A selection that merely stops at the edge is not in it;
+                // one that covers any of it is.
+                touching =
+                    NSIntersectionRange(selection, construct).length > 0;
+            }
+            else
+            {
+                touching = selection.location >= construct.location
+                    && selection.location <= NSMaxRange(construct);
+            }
+            if (touching)
+            {
+                [shown addIndexesInRange:construct];
+                break;
+            }
         }
-        else
-        {
-            inside = selection.location > construct.location
-                && selection.location < NSMaxRange(construct);
-        }
-        if (inside)
-            [shown addIndexesInRange:construct];
     }
     self.revealed = shown;
 }
@@ -552,10 +569,11 @@
           content:(NSRange *)outContent
     coveringMarkerAtIndex:(NSUInteger)index
 {
-    // Only while the markers are hidden. With them visible, deleting one
+    // Only while this marker is hidden. Once it is drawn, deleting one
     // asterisk of a pair is ordinary text editing and not this class's
-    // business.
-    if (!self.enabled || ![self.markers containsIndex:index])
+    // business — and taking the whole construct away instead would remove
+    // characters the reader can see and did not aim at.
+    if (![self isHiddenMarkerAtIndex:index])
         return NO;
 
     for (NSUInteger i = 0; i < self.constructs.count; i++)
