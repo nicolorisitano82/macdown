@@ -162,4 +162,75 @@
                       (NSUInteger)NSNotFound);
 }
 
+/** Five screenshots written one per line are one paragraph, and one run.
+ *
+ * Replacing the whole run for the first marker took the others away with
+ * it, and they were then reported as pictures with nowhere to go — which
+ * is exactly what a reader saw who could see all five in their document.
+ */
+- (void)testSeveralPicturesInOneRun
+{
+    NSData *docx = [self docxFromHTML:
+        @"<p>MPIMGPLACEHOLDER0END\nMPIMGPLACEHOLDER1END\n"
+        @"MPIMGPLACEHOLDER2END</p>"];
+
+    NSMutableArray<MPDocxImage *> *images = [NSMutableArray array];
+    for (NSUInteger i = 0; i < 3; i++)
+    {
+        NSString *placeholder = [NSString stringWithFormat:
+            @"MPIMGPLACEHOLDER%luEND", (unsigned long)i];
+        MPDocxImage *image = [self imageWithPlaceholder:placeholder];
+        image.source = [NSString stringWithFormat:@"foto%lu.png",
+                        (unsigned long)i];
+        [images addObject:image];
+    }
+
+    NSMutableArray<NSString *> *unplaced = [NSMutableArray array];
+    NSData *out = MPDocxDataByEmbeddingImages(docx, images, unplaced);
+    XCTAssertEqualObjects(unplaced, @[]);
+
+    NSArray<NSString *> *names = [self namesIn:out];
+    for (NSUInteger i = 1; i <= 3; i++)
+    {
+        // Out of the macro: a comma inside its first argument would be read
+        // as the start of the message format.
+        NSString *name = [NSString stringWithFormat:@"word/media/image%lu.png",
+                          (unsigned long)i];
+        XCTAssertTrue([names containsObject:name], @"%@", name);
+    }
+
+    NSString *document = [self documentXMLIn:out];
+    XCTAssertEqual([document componentsSeparatedByString:@"<w:drawing>"].count,
+                   (NSUInteger)4, @"tre disegni");
+    XCTAssertEqual([document rangeOfString:@"MPIMGPLACEHOLDER"].location,
+                   (NSUInteger)NSNotFound);
+}
+
+/// The prose either side of an inline picture used to be deleted with the run.
+- (void)testTheTextAroundAPictureSurvives
+{
+    NSData *docx = [self docxFromHTML:
+        @"<p>Testo prima MPIMGPLACEHOLDER0END testo dopo.</p>"];
+    NSMutableArray<NSString *> *unplaced = [NSMutableArray array];
+    NSData *out = MPDocxDataByEmbeddingImages(
+        docx, @[[self imageWithPlaceholder:@"MPIMGPLACEHOLDER0END"]],
+        unplaced);
+
+    XCTAssertEqualObjects(unplaced, @[]);
+    NSString *document = [self documentXMLIn:out];
+    XCTAssertNotEqual([document rangeOfString:@"Testo prima"].location,
+                      (NSUInteger)NSNotFound, @"il testo prima resta");
+    XCTAssertNotEqual([document rangeOfString:@"testo dopo."].location,
+                      (NSUInteger)NSNotFound, @"e anche quello dopo");
+    XCTAssertNotEqual([document rangeOfString:@"<w:drawing>"].location,
+                      (NSUInteger)NSNotFound);
+
+    // In order: prose, picture, prose.
+    NSUInteger first = [document rangeOfString:@"Testo prima"].location;
+    NSUInteger picture = [document rangeOfString:@"<w:drawing>"].location;
+    NSUInteger last = [document rangeOfString:@"testo dopo."].location;
+    XCTAssertLessThan(first, picture);
+    XCTAssertLessThan(picture, last);
+}
+
 @end

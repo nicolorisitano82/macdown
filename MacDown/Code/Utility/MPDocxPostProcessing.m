@@ -56,7 +56,29 @@ static NSString *MPDrawingXML(NSString *relationshipId, NSUInteger index,
         relationshipId, cx, cy];
 }
 
-/// Replaces the run holding `token` with `replacement`.
+/** Puts `replacement` where `token` is, splitting the run around it.
+ *
+ * The run is not thrown away, which is what this used to do, and two
+ * separate things were lost by it.
+ *
+ * A run holds whatever text sits together with the same formatting, and
+ * that is more than one marker's worth. Markdown makes one paragraph out of
+ * consecutive lines, so five screenshots written one per line arrive as
+ * five markers in a single run: replacing the run for the first took the
+ * other four away with it, and they were then reported as pictures with
+ * nowhere to go. Measured, not supposed — AppKit writes
+ * `MPIMGPLACEHOLDER0END MPIMGPLACEHOLDER1END MPIMGPLACEHOLDER2END` into one
+ * `<w:t>`.
+ *
+ * The other loss was quieter and worse: `Testo prima ![](x.png) testo dopo`
+ * is one run too, so the prose on either side of an inline picture was
+ * deleted from the exported document without a word.
+ *
+ * So only the marker's own characters go, and the text around it is
+ * re-emitted in runs carrying the same markup the original had. A run with
+ * more than one `<w:t>` in it would have the first one duplicated; AppKit
+ * writes one, and the alternative is a parser.
+ */
 static BOOL MPReplaceRunContaining(NSMutableString *xml, NSString *token,
                                    NSString *replacement)
 {
@@ -64,11 +86,8 @@ static BOOL MPReplaceRunContaining(NSMutableString *xml, NSString *token,
     if (hit.location == NSNotFound)
         return NO;
 
-    // Widen to the enclosing <w:r> … </w:r>, so the placeholder's own
-    // formatting does not survive around the picture.
-    NSRange before = NSMakeRange(0, hit.location);
     NSRange open = [xml rangeOfString:@"<w:r>" options:NSBackwardsSearch
-                                range:before];
+                                range:NSMakeRange(0, hit.location)];
     NSUInteger tail = NSMaxRange(hit);
     NSRange close = [xml rangeOfString:@"</w:r>" options:0
                                  range:NSMakeRange(tail, xml.length - tail)];
@@ -77,7 +96,48 @@ static BOOL MPReplaceRunContaining(NSMutableString *xml, NSString *token,
 
     NSRange run = NSMakeRange(open.location,
                               NSMaxRange(close) - open.location);
-    [xml replaceCharactersInRange:run withString:replacement];
+    NSString *runXML = [xml substringWithRange:run];
+    NSUInteger tokenStart = hit.location - run.location;
+    NSUInteger tokenEnd = tokenStart + token.length;
+
+    // The text element the marker lies in: everything up to where its
+    // content begins is the run's own markup, and so is everything from
+    // where the content ends.
+    NSRange textOpen = [runXML rangeOfString:@"<w:t" options:NSBackwardsSearch
+                                       range:NSMakeRange(0, tokenStart)];
+    NSRange textClose = [runXML rangeOfString:@"</w:t>" options:0
+        range:NSMakeRange(tokenEnd, runXML.length - tokenEnd)];
+    if (textOpen.location == NSNotFound || textClose.location == NSNotFound)
+    {
+        // No text element to split; the run goes, as it always did.
+        [xml replaceCharactersInRange:run withString:replacement];
+        return YES;
+    }
+
+    NSRange gt = [runXML rangeOfString:@">" options:0
+        range:NSMakeRange(textOpen.location,
+                          tokenStart - textOpen.location)];
+    if (gt.location == NSNotFound)
+    {
+        [xml replaceCharactersInRange:run withString:replacement];
+        return YES;
+    }
+
+    NSString *head = [runXML substringToIndex:NSMaxRange(gt)];
+    NSString *foot = [runXML substringFromIndex:textClose.location];
+    NSString *before = [runXML substringWithRange:
+        NSMakeRange(NSMaxRange(gt), tokenStart - NSMaxRange(gt))];
+    NSString *after = [runXML substringWithRange:
+        NSMakeRange(tokenEnd, textClose.location - tokenEnd)];
+
+    NSMutableString *rebuilt = [NSMutableString string];
+    if (before.length)
+        [rebuilt appendFormat:@"%@%@%@", head, before, foot];
+    [rebuilt appendString:replacement];
+    if (after.length)
+        [rebuilt appendFormat:@"%@%@%@", head, after, foot];
+
+    [xml replaceCharactersInRange:run withString:rebuilt];
     return YES;
 }
 
