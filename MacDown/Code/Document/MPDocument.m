@@ -392,6 +392,163 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 @end
 
 
+/** What the link sheet asks for: where the link goes, and what it says.
+ *
+ * Two kinds of destination, because they are found in two different ways. A
+ * web address is typed or pasted; a file is looked for, and asking someone
+ * to type a path to a file they can see in the Finder is asking them to do
+ * the computer's work.
+ *
+ * This collects and validates nothing else: turning a chosen file into a
+ * link target is the document's business, since only the document knows
+ * where it is saved and therefore what the path should be relative to.
+ */
+@interface MPLinkAccessory : NSView
+@property (strong, nonatomic) NSTextField *targetField;
+@property (strong, nonatomic) NSTextField *textField;
+@property (strong, nonatomic) NSButton *webRadio;
+@property (strong, nonatomic) NSButton *fileRadio;
+@property (strong, nonatomic) NSButton *chooseButton;
+/// The file picked through the panel, and what was shown in the field for it.
+@property (strong, nonatomic) NSURL *chosenURL;
+@property (copy, nonatomic) NSString *shownForChosenURL;
+@end
+
+
+@implementation MPLinkAccessory
+
+- (instancetype)initWithText:(NSString *)text
+                     address:(NSString *)address
+                      toFile:(BOOL)toFile
+{
+    self = [super initWithFrame:NSMakeRect(0.0, 0.0, 380.0, 112.0)];
+    if (!self)
+        return nil;
+
+    NSTextField *kind = [NSTextField labelWithString:
+        NSLocalizedString(@"Link to:", @"Link sheet")];
+    kind.alignment = NSTextAlignmentRight;
+    kind.frame = NSMakeRect(0.0, 91.0, 78.0, 18.0);
+    [self addSubview:kind];
+
+    _webRadio = [NSButton radioButtonWithTitle:
+        NSLocalizedString(@"A web address", @"Link sheet")
+                                        target:self
+                                        action:@selector(kindChanged:)];
+    _webRadio.frame = NSMakeRect(84.0, 89.0, 240.0, 20.0);
+    [self addSubview:_webRadio];
+
+    _fileRadio = [NSButton radioButtonWithTitle:
+        NSLocalizedString(@"A file on this Mac", @"Link sheet")
+                                         target:self
+                                         action:@selector(kindChanged:)];
+    _fileRadio.frame = NSMakeRect(84.0, 67.0, 240.0, 20.0);
+    [self addSubview:_fileRadio];
+
+    _webRadio.state = toFile ? NSControlStateValueOff : NSControlStateValueOn;
+    _fileRadio.state = toFile ? NSControlStateValueOn : NSControlStateValueOff;
+
+    NSTextField *where = [NSTextField labelWithString:
+        NSLocalizedString(@"Address:", @"Link sheet")];
+    where.alignment = NSTextAlignmentRight;
+    where.frame = NSMakeRect(0.0, 43.0, 78.0, 18.0);
+    [self addSubview:where];
+
+    _targetField = [NSTextField textFieldWithString:address ?: @""];
+    _targetField.frame = NSMakeRect(86.0, 40.0, 200.0, 22.0);
+    [self addSubview:_targetField];
+
+    _chooseButton = [NSButton buttonWithTitle:
+        NSLocalizedString(@"Choose…", @"Link sheet") target:self
+                                       action:@selector(choose:)];
+    _chooseButton.frame = NSMakeRect(292.0, 38.0, 88.0, 24.0);
+    [self addSubview:_chooseButton];
+
+    NSTextField *says = [NSTextField labelWithString:
+        NSLocalizedString(@"Text:", @"Link sheet")];
+    says.alignment = NSTextAlignmentRight;
+    says.frame = NSMakeRect(0.0, 11.0, 78.0, 18.0);
+    [self addSubview:says];
+
+    _textField = [NSTextField textFieldWithString:text ?: @""];
+    _textField.frame = NSMakeRect(86.0, 8.0, 294.0, 22.0);
+    [self addSubview:_textField];
+
+    return self;
+}
+
+- (void)kindChanged:(NSButton *)sender
+{
+    // Choosing a file is the point of the file option, so offer it at once.
+    if (sender == self.fileRadio && !self.chosenURL)
+        [self choose:sender];
+}
+
+/** Runs the open panel modally, on top of the sheet.
+ *
+ * Modal rather than a sheet of its own: a sheet cannot present a sheet, and
+ * the alert this sits in already owns the window's.
+ */
+- (void)choose:(id)sender
+{
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    panel.canChooseFiles = YES;
+    panel.canChooseDirectories = NO;
+    panel.allowsMultipleSelection = NO;
+    panel.message = NSLocalizedString(@"Choose the file to link to",
+                                      @"Link sheet");
+
+    if ([panel runModal] != NSModalResponseOK || !panel.URL)
+        return;
+
+    self.chosenURL = panel.URL;
+    // The path as a person reads it. What actually goes in the document is
+    // worked out from the URL, since it has to be escaped and may have to
+    // be relative — but showing that here would be showing them `%20`.
+    self.shownForChosenURL = panel.URL.path;
+    self.targetField.stringValue = self.shownForChosenURL;
+    self.webRadio.state = NSControlStateValueOff;
+    self.fileRadio.state = NSControlStateValueOn;
+
+    if (!self.textField.stringValue.length)
+    {
+        self.textField.stringValue =
+            panel.URL.lastPathComponent.stringByDeletingPathExtension;
+    }
+}
+
+- (BOOL)usesFile
+{
+    return self.fileRadio.state == NSControlStateValueOn;
+}
+
+/// The file to link to, or nil if the field no longer describes it.
+- (NSURL *)fileToLink
+{
+    if (!self.usesFile || !self.chosenURL)
+        return nil;
+    // Edited by hand since it was chosen: then what is written wins, and
+    // the document takes the field at its word.
+    if (![self.targetField.stringValue isEqualToString:self.shownForChosenURL])
+        return nil;
+    return self.chosenURL;
+}
+
+- (NSString *)typedTarget
+{
+    return [self.targetField.stringValue stringByTrimmingCharactersInSet:
+        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+- (NSString *)linkText
+{
+    return [self.textField.stringValue stringByTrimmingCharactersInSet:
+        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+@end
+
+
 @implementation MPDocument
 
 #pragma mark - Talking to the page
@@ -3440,33 +3597,107 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
     [self.editor toggleForMarkupPrefix:@"<!--" suffix:@"-->"];
 }
 
+/** Asks where the link goes, then writes it.
+ *
+ * It used to put `[]()` in and leave the caret between the parentheses,
+ * which is fine if the address is already on the clipboard and a guessing
+ * game if it is not — and no help at all for a file, where the answer is a
+ * path nobody wants to type from memory.
+ *
+ * A selection that is already a link is taken off instead, so the button
+ * still undoes itself.
+ */
 - (IBAction)toggleLink:(id)sender
 {
-    BOOL inserted = [self.editor toggleForMarkupPrefix:@"[" suffix:@"]()"];
-    if (!inserted)
-        return;
-
-    NSRange selectedRange = self.editor.selectedRange;
-    NSUInteger location = selectedRange.location + selectedRange.length + 2;
-    selectedRange = NSMakeRange(location, 0);
-
-    NSPasteboard *pb = [NSPasteboard generalPasteboard];
-    NSString *url = [pb URLForType:NSPasteboardTypeString].absoluteString;
-    if (url)
+    NSRange selection = self.editor.selectedRange;
+    if (selection.length
+            && [self.editor substringInRange:selection
+                        isSurroundedByPrefix:@"[" suffix:@"]()"])
     {
-        [self.editor insertText:url replacementRange:selectedRange];
-        selectedRange.length = url.length;
+        [self.editor toggleForMarkupPrefix:@"[" suffix:@"]()"];
+        return;
     }
-    self.editor.selectedRange = selectedRange;
+
+    // Which kind was wanted last time. Someone linking to files is usually
+    // linking to several.
+    static BOOL lastWasFile = NO;
+
+    NSString *text = selection.length
+        ? [self.editor.string substringWithRange:selection] : @"";
+
+    // An address already on the clipboard is almost certainly the one, and
+    // this is the one place the old behaviour was genuinely useful.
+    NSString *pasted = nil;
+    if (!lastWasFile)
+    {
+        NSPasteboard *board = [NSPasteboard generalPasteboard];
+        pasted = [board URLForType:NSPasteboardTypeString].absoluteString;
+    }
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Insert a link", @"Link sheet");
+    alert.informativeText = NSLocalizedString(
+        @"A file inside this document's folder is linked by a relative path, "
+        @"so the two keep working when you move them together.",
+        @"Link sheet");
+    [alert addButtonWithTitle:NSLocalizedString(@"Insert", @"Link sheet")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Cancel", @"Link sheet")];
+
+    MPLinkAccessory *accessory =
+        [[MPLinkAccessory alloc] initWithText:text address:pasted
+                                       toFile:lastWasFile];
+    alert.accessoryView = accessory;
+
+    NSWindow *window = self.windowForSheet;
+    void (^insert)(NSModalResponse) = ^(NSModalResponse response) {
+        if (response != NSAlertFirstButtonReturn)
+            return;
+        lastWasFile = accessory.usesFile;
+        [self insertLinkFromAccessory:accessory replacing:selection];
+    };
+
+    if (window)
+    {
+        [alert beginSheetModalForWindow:window completionHandler:insert];
+        // The address is what the sheet is for; the text is usually already
+        // there, taken from the selection.
+        [window makeFirstResponder:accessory.targetField];
+    }
+    else
+    {
+        insert([alert runModal]);
+    }
 }
 
-/** Markdown link for an image being inserted into this document.
- *
- * Relative to the document's own folder when the image sits inside it, so
- * that moving the pair together keeps the link alive; absolute otherwise.
- * Percent-encoded either way, because an unescaped space ends the link
- * target and the rest of the path leaks into the page as text.
- */
+- (void)insertLinkFromAccessory:(MPLinkAccessory *)accessory
+                      replacing:(NSRange)selection
+{
+    NSURL *file = accessory.fileToLink;
+    NSString *target = file
+        ? MPMarkdownLinkTargetForFileURL(file, self.fileURL)
+        : accessory.typedTarget;
+    if (!target.length)
+        return;
+
+    // Nothing said, so the link says where it goes: a file by its name, an
+    // address by itself. Better than a pair of empty brackets.
+    NSString *text = accessory.linkText;
+    if (!text.length)
+    {
+        text = file ? file.lastPathComponent.stringByDeletingPathExtension
+                    : accessory.typedTarget;
+    }
+
+    NSString *markup = [NSString stringWithFormat:@"[%@](%@)", text, target];
+    if (NSMaxRange(selection) > self.editor.string.length)
+        selection = self.editor.selectedRange;
+
+    [self.editor insertText:markup replacementRange:selection];
+    self.editor.selectedRange =
+        NSMakeRange(selection.location + markup.length, 0);
+}
+
+
 /** MIME type for a data: URI built from an image file.
  *
  * Derived from the extension rather than from UTType, which would pull the
@@ -3498,33 +3729,6 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
 }
 
 
-NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
-{
-    NSString *path = imageURL.path;
-    NSString *directory = documentURL.URLByDeletingLastPathComponent.path;
-
-    if (directory.length)
-    {
-        NSString *prefix = [directory hasSuffix:@"/"]
-            ? directory : [directory stringByAppendingString:@"/"];
-        if ([path hasPrefix:prefix])
-            path = [path substringFromIndex:prefix.length];
-        else
-            path = nil;
-    }
-    else
-    {
-        path = nil;
-    }
-
-    if (!path)
-        return imageURL.absoluteString;
-
-    NSCharacterSet *allowed = [NSCharacterSet URLPathAllowedCharacterSet];
-    return [path stringByAddingPercentEncodingWithAllowedCharacters:allowed];
-}
-
-
 - (NSString *)dataURIForImageURL:(NSURL *)imageURL
 {
     NSError *error = nil;
@@ -3545,7 +3749,7 @@ NS_INLINE NSString *MPImageLinkForURL(NSURL *imageURL, NSURL *documentURL)
 {
     NSString *target = embedded
         ? [self dataURIForImageURL:imageURL]
-        : MPImageLinkForURL(imageURL, self.fileURL);
+        : MPMarkdownLinkTargetForFileURL(imageURL, self.fileURL);
     if (!target)
         return;
 

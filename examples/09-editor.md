@@ -104,7 +104,16 @@ Quando resta una lettera sola, il costrutto se ne va tutto insieme.
 
 Metti il cursore dentro una parola qualsiasi di questa riga e premi ⌘B:
 la parola diventa grassetta senza doverla selezionare. Premi di nuovo e
-torna com'era. Lo stesso vale per ⌘I, ⌘K e il codice in linea.
+torna com'era. Lo stesso vale per ⌘I e per il codice in linea.
+
+## ⌘K chiede dove va il link
+
+Il pulsante Link, e ⌘K, aprono un foglio: **un indirizzo web** che scrivi o
+incolli, oppure **un file su questo Mac** che scegli sfogliando. Se il file
+sta nella cartella del documento viene scritto come percorso relativo, così
+i due continuano a funzionare quando li spostate insieme; e gli spazi nel
+nome vengono protetti, perché uno spazio nudo chiude il link e il resto del
+percorso finisce nella pagina come testo.
 
 ## Le due insieme
 

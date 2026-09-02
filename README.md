@@ -67,6 +67,9 @@ character.
   and columns, a column's alignment, or a repair of its dashes row. The
   editor shows the source; the columns are drawn in the preview, which has
   the room for them. Click a cell there and the caret goes to that cell.
+* **⌘K asks where the link goes**: a web address you type or paste, or a
+  file you find by browsing. A file inside the document's folder is written
+  as a relative path, so the two keep working when you move them together.
 * **⌘B and ⌘I act on the word under the caret** when nothing is selected,
   and take the markup off again if it is already there.
 * **Pasting formatted text produces Markdown** — headings, nested lists,

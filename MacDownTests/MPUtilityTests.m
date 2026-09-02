@@ -104,4 +104,56 @@
     XCTAssertEqual(MPCharacterIndexForUTF8ByteOffset(@"", 5), (NSUInteger)0);
 }
 
+#pragma mark - Link targets
+
+/// A file beside the document is linked by name, so the pair can be moved.
+- (void)testAFileInsideTheDocumentFolderIsRelative
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+    NSURL *file = [NSURL fileURLWithPath:@"/Users/x/Note/allegati/piano.pdf"];
+    XCTAssertEqualObjects(
+        MPMarkdownLinkTargetForFileURL(file, document),
+        @"allegati/piano.pdf");
+}
+
+/// A space in the name ends the link target, so it has to be escaped.
+- (void)testSpacesAndAccentsAreEncoded
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+    NSURL *file = [NSURL fileURLWithPath:
+        @"/Users/x/Note/Screenshot 2026-09-02 alle 12.49.24.png"];
+    NSString *target = MPMarkdownLinkTargetForFileURL(file, document);
+
+    XCTAssertEqual([target rangeOfString:@" "].location,
+                   (NSUInteger)NSNotFound, @"nessuno spazio nudo");
+    XCTAssertEqualObjects(target,
+        @"Screenshot%202026-09-02%20alle%2012.49.24.png");
+}
+
+/// Outside the folder there is no relative path worth writing.
+- (void)testAFileElsewhereIsAbsolute
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+    NSURL *file = [NSURL fileURLWithPath:@"/Volumes/Disco/relazione.pdf"];
+    XCTAssertTrue([MPMarkdownLinkTargetForFileURL(file, document)
+        hasPrefix:@"file:///Volumes/Disco/"]);
+}
+
+/// An unsaved document has no folder, so nothing can be relative to it.
+- (void)testAnUnsavedDocumentGetsAnAbsoluteTarget
+{
+    NSURL *file = [NSURL fileURLWithPath:@"/Users/x/Note/piano.pdf"];
+    XCTAssertTrue([MPMarkdownLinkTargetForFileURL(file, nil)
+        hasPrefix:@"file://"]);
+}
+
+/// A folder that happens to share a prefix is not the document's folder.
+- (void)testASiblingFolderIsNotInsideIt
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+    NSURL *file = [NSURL fileURLWithPath:@"/Users/x/Notebook/piano.pdf"];
+    XCTAssertTrue([MPMarkdownLinkTargetForFileURL(file, document)
+        hasPrefix:@"file://"], @"Notebook non sta dentro Note");
+}
+
 @end

@@ -55,6 +55,16 @@ NSUInteger MPCharacterIndexForUTF8ByteOffset(NSString *string,
  */
 NSString *MPStringByUnescapingHTMLEntities(NSString *value);
 
+/** Markdown link target for a file being pointed at from this document.
+ *
+ * Relative to the document's own folder when the file sits inside it, so
+ * that moving the pair together keeps the link alive; absolute otherwise.
+ * Percent-encoded either way, because an unescaped space ends the link
+ * target and the rest of the path leaks into the page as text.
+ */
+NSString *MPMarkdownLinkTargetForFileURL(NSURL *fileURL,
+                                         NSURL *documentURL);
+
 BOOL MPCharacterIsWhitespace(unichar character);
 BOOL MPCharacterIsNewline(unichar character);
 BOOL MPStringIsNewline(NSString *str);
