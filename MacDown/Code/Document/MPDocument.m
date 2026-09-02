@@ -236,6 +236,20 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
  */
 @property (assign) NSTimeInterval previewDrivenAt;
 @property (assign) NSTimeInterval editorDrivenAt;
+/** When the last character was typed.
+ *
+ * Typing is the third thing that scrolls the editor, and neither side of
+ * the handover above accounts for it: the reader is not scrolling at all,
+ * the text view is, a line at a time, to keep the caret in sight. Sending
+ * the preview after it means both panes shuffling on every keystroke — and
+ * on every re-render in between, since the page is rebuilt as you write
+ * and comes back a different height.
+ */
+@property (assign) NSTimeInterval lastTypedAt;
+/// Where the editor stood when the current burst of typing began.
+@property (assign) CGFloat editorTopWhenTypingBegan;
+/// Whether a keystroke is recent enough that the panes should sit still.
+@property (nonatomic, readonly) BOOL isTyping;
 @property BOOL isPreviewReady;
 @property (strong) NSURL *currentBaseUrl;
 @property CGFloat lastPreviewScrollTop;
@@ -280,7 +294,11 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
         [weakObj adjustPreviewContentInsets];
         [weakObj refreshPreviewBackgroundColor];
         [weakObj harvestDiagramsFromPreview];
-        if (weakObj.preferences.editorSyncScrolling)
+        // While the reader is typing a refresh keeps the preview where it
+        // was, exactly as it does with the syncing switched off. The page
+        // is rebuilt on every pause in the writing, and a pane that jumps
+        // each time is worse than one that waits.
+        if (weakObj.preferences.editorSyncScrolling && !weakObj.isTyping)
         {
             [weakObj updateHeaderLocations];
             [weakObj syncScrollers];
@@ -768,6 +786,13 @@ static NSString * const kMPScrollMessage = @"macdownScroll";
 
 /// How long the side the reader touched keeps the scrolling to itself.
 static const NSTimeInterval kMPScrollHandover = 0.4;
+
+/** How long after a keystroke the two panes stay where they are.
+ *
+ * Long enough to cover the gap between words, so a sentence is one quiet
+ * stretch rather than a resync between every word.
+ */
+static const NSTimeInterval kMPTypingQuiet = 1.0;
 static NSString * const kMPMathJaxMessage = @"macdownMathJax";
 static NSString * const kMPDiagramsMessage = @"macdownDiagrams";
 static NSString * const kMPSelectionMessage = @"macdownSelection";
@@ -1612,6 +1637,10 @@ static NSString * const kMPSelectionSource =
         // chase each other down the document.
         if (!self.preferences.editorSyncScrolling)
             return;
+        // A report that arrived because the page was rebuilt under a
+        // reader who is writing, not because they scrolled it.
+        if (self.isTyping)
+            return;
         // The editor is the one being driven: this report is the preview
         // arriving where the editor sent it.
         NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
@@ -2084,8 +2113,62 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
 
 #pragma mark - Notification handler
 
+- (BOOL)isTyping
+{
+    return [NSDate timeIntervalSinceReferenceDate] - self.lastTypedAt
+        < kMPTypingQuiet;
+}
+
+/** Brings the panes back together once the writing stops.
+ *
+ * Without this they would simply drift: the editor follows the caret down
+ * the page all through a paragraph while the preview holds still, and
+ * nothing would put them back until the reader scrolled something
+ * themselves. Each keystroke arranges one of these and the earlier ones
+ * stand down, so a burst of typing costs a single alignment at its end.
+ *
+ * And only if the editor actually moved while they wrote. Typing into the
+ * middle of a page that stayed put leaves the preview already right, and
+ * someone who pauses to think between sentences should not be paid for it
+ * in a pane that jumps at every pause.
+ */
+- (void)resyncScrollingAfterTyping
+{
+    NSTimeInterval typed = self.lastTypedAt;
+    __weak MPDocument *weakSelf = self;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                                 (int64_t)(kMPTypingQuiet * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        MPDocument *document = weakSelf;
+        if (!document || document.lastTypedAt != typed)
+            return;     // A later keystroke owns the resync now.
+        if (!document.preferences.editorSyncScrolling)
+            return;
+
+        NSClipView *clip = document.editor.enclosingScrollView.contentView;
+        if (clip && fabs(NSMinY(clip.bounds)
+                         - document.editorTopWhenTypingBegan) < 1.0)
+            return;
+
+        @synchronized(document) {
+            document.shouldHandleBoundsChange = NO;
+            [document scrollPreviewToEditorTop];
+            document.shouldHandleBoundsChange = YES;
+        }
+    });
+}
+
 - (void)editorTextDidChange:(NSNotification *)notification
 {
+    if (!self.isTyping)
+    {
+        NSClipView *clip = self.editor.enclosingScrollView.contentView;
+        self.editorTopWhenTypingBegan = clip ? NSMinY(clip.bounds) : 0.0;
+    }
+    self.lastTypedAt = [NSDate timeIntervalSinceReferenceDate];
+    if (self.preferences.editorSyncScrolling)
+        [self resyncScrollingAfterTyping];
+
     if (self.editor.proseHighlightsEnabled)
         [self updateProseSummary];
 
@@ -2139,6 +2222,11 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
 
     if (self.preferences.editorSyncScrolling)
     {
+        // Nobody is scrolling: the text view is moving itself to keep the
+        // caret in view. The resync comes once the typing stops.
+        if (self.isTyping)
+            return;
+
         // The preview is the one being driven: this bounds change is the
         // editor arriving where the preview sent it.
         NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
