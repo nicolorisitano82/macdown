@@ -946,6 +946,14 @@ char_escape(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t off
 	size_t w;
 
 	if (size > 1) {
+		/* A backslash last on the line asks for a line break, which is
+		 * CommonMark's way of saying what two trailing spaces say — and the
+		 * one that survives an editor that trims them. */
+		if (data[1] == '\n' || (data[1] == '\r' && size > 2 && data[2] == '\n')) {
+			if (doc->md.linebreak && doc->md.linebreak(ob, &doc->data))
+				return (data[1] == '\r') ? 3 : 2;
+		}
+
 		if (data[1] == '\\' && (doc->ext_flags & HOEDOWN_EXT_MATH) &&
 			size > 2 && (data[2] == '(' || data[2] == '[')) {
 			const char *end = (data[2] == '[') ? "\\\\]" : "\\\\)";
@@ -1598,7 +1606,11 @@ prefix_oli(uint8_t *data, size_t size)
 	while (i < size && data[i] >= '0' && data[i] <= '9')
 		i++;
 
-	if (i + 1 >= size || data[i] != '.' || data[i + 1] != ' ')
+	/* Either delimiter. CommonMark takes `1.` and `1)` alike, and a
+	 * numbered list written with parentheses used to come out as a
+	 * paragraph with the numbers still in it. */
+	if (i + 1 >= size || (data[i] != '.' && data[i] != ')')
+			|| data[i + 1] != ' ')
 		return 0;
 
 	if (is_next_headerline(data + i, size - i))
@@ -1987,6 +1999,27 @@ parse_list(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size
 {
 	hoedown_buffer *work = 0;
 	size_t i = 0, j;
+	unsigned int start = 1;
+
+	/* The number written on the first item, before the items are parsed
+	 * away. A list beginning at five is numbered from five. */
+	if (flags & HOEDOWN_LIST_ORDERED) {
+		size_t k = 0;
+		while (k < 3 && k < size && data[k] == ' ')
+			k++;
+		if (k < size && data[k] >= '0' && data[k] <= '9') {
+			unsigned int value = 0;
+			size_t digits = 0;
+			while (k < size && data[k] >= '0' && data[k] <= '9'
+					&& digits < 9) {
+				value = value * 10 + (unsigned int)(data[k] - '0');
+				digits++;
+				k++;
+			}
+			if (digits)
+				start = value;
+		}
+	}
 
 	work = newbuf(doc, BUFFER_BLOCK);
 
@@ -1998,8 +2031,15 @@ parse_list(hoedown_buffer *ob, hoedown_document *doc, uint8_t *data, size_t size
 			break;
 	}
 
-	if (doc->md.list)
+	if (doc->md.list) {
+		/* Set beside the call, and put back after it: a nested list
+		 * parsed inside an item would otherwise leave its own number
+		 * behind for the list that contains it. */
+		unsigned int outer = doc->data.list_start;
+		doc->data.list_start = start;
 		doc->md.list(ob, work, flags, &doc->data);
+		doc->data.list_start = outer;
+	}
 	popbuf(doc, BUFFER_BLOCK);
 	return i;
 }

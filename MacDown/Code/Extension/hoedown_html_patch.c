@@ -108,7 +108,13 @@ void hoedown_patch_render_listitem(
         if (flags & HOEDOWN_LI_BLOCK)
             offset = 3;
 
-        // Do task list checkbox ([x] or [ ]).
+        // Do task list checkbox ([x], [X] or [ ]). Either case: GitHub
+        // takes both, and someone who holds shift for the X is not asking
+        // for a pair of brackets in the middle of their list.
+        int ticked = text->size >= offset + 3
+            && text->data[offset] == '['
+            && text->data[offset + 2] == ']'
+            && (text->data[offset + 1] == 'x' || text->data[offset + 1] == 'X');
         if (USE_TASK_LIST(state) && text->size >= 3)
         {
             if (strncmp((char *)(text->data + offset), "[ ]", 3) == 0)
@@ -121,7 +127,7 @@ void hoedown_patch_render_listitem(
                     HOEDOWN_BUFPUTSL(ob, "<input type=\"checkbox\">");
 				offset += 3;
             }
-            else if (strncmp((char *)(text->data + offset), "[x]", 3) == 0)
+            else if (ticked)
             {
                 HOEDOWN_BUFPUTSL(ob, "<li class=\"task-list-item\">");
                 hoedown_buffer_put(ob, text->data, offset);

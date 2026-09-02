@@ -106,6 +106,17 @@ struct hoedown_renderer_data {
 	 * blockquote or a list the original positions no longer exist.
 	 */
 	size_t src_begin;
+
+	/* The number an ordered list starts at.
+	 *
+	 * `5. quinta` is a list whose first item is the fifth, and CommonMark
+	 * writes that as `<ol start="5">`. The renderer's list callback takes
+	 * flags and no number, and its signature cannot grow without breaking
+	 * everything built on it — so the parser leaves the number here, the
+	 * same road the source offsets travel. One means the default and needs
+	 * saying no more than a `<ul>` does.
+	 */
+	unsigned int list_start;
 };
 typedef struct hoedown_renderer_data hoedown_renderer_data;
 

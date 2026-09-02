@@ -67,6 +67,10 @@ character.
   and columns, a column's alignment, or a repair of its dashes row. The
   editor shows the source; the columns are drawn in the preview, which has
   the room for them. Click a cell there and the caret goes to that cell.
+* **Closer to CommonMark and GitHub**: a hash with no space after it is a
+  hashtag and not a heading, `1)` numbers a list as `1.` does, a list that
+  starts at five is numbered from five, a backslash at the end of a line
+  breaks it, and a task marker is accepted in either case.
 * **⌘K asks where the link goes**: a web address you type or paste, or a
   file you find by browsing. A file inside the document's folder is written
   as a relative path, so the two keep working when you move them together.

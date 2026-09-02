@@ -150,6 +150,13 @@ NS_INLINE NSString *MPRectStringForAutosaveName(NSString *name)
         flags |= HOEDOWN_EXT_MATH;
     if (self.htmlMathJaxInlineDollar)
         flags |= HOEDOWN_EXT_MATH_EXPLICIT;
+
+    // Not a preference. CommonMark and GitHub both require the space after
+    // the hashes, and without it `#hashtag` at the start of a line is a
+    // level-one heading — which is never what anybody meant by writing a
+    // hashtag. The parser has always been able to do this; nothing turned
+    // it on.
+    flags |= HOEDOWN_EXT_SPACE_HEADERS;
     return flags;
 }
 
