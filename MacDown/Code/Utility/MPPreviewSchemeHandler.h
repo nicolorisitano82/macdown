@@ -12,6 +12,15 @@ extern NSString * const MPPreviewURLScheme;
 /// Wraps a filesystem path as a URL this handler will serve.
 NSURL *MPPreviewURLForPath(NSString *path);
 
+/** The file a preview URL stands for, or the URL unchanged.
+ *
+ * The scheme exists so the page has an ordinary origin, and it means
+ * nothing outside the page: a link followed out of the preview has to be
+ * handed on as the file it points at, or the system is asked to open a
+ * scheme no application has ever claimed.
+ */
+NSURL *MPFileURLFromPreviewURL(NSURL *url);
+
 /** Serves the preview and everything it asks for.
  *
  * The preview is a local page that pulls its stylesheet out of Application

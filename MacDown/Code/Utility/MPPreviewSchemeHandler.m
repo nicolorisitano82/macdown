@@ -23,6 +23,31 @@ NSURL *MPPreviewURLForPath(NSString *path)
     return components.URL;
 }
 
+NSURL *MPFileURLFromPreviewURL(NSURL *url)
+{
+    if (!url || ![url.scheme isEqualToString:MPPreviewURLScheme])
+        return url;
+
+    // -path, so the percent encoding the URL carries comes off: the file
+    // is `VERBALE 2026.md`, not `VERBALE%202026.md`.
+    NSString *path = url.path;
+    if (!path.length)
+        return url;
+
+    NSURL *file = [NSURL fileURLWithPath:path];
+    // A fragment survives the change of scheme — a link into a heading of
+    // another document is still a link into that heading.
+    if (url.fragment.length)
+    {
+        NSURLComponents *components =
+            [NSURLComponents componentsWithURL:file
+                       resolvingAgainstBaseURL:NO];
+        components.fragment = url.fragment;
+        file = components.URL ?: file;
+    }
+    return file;
+}
+
 @implementation MPPreviewSchemeHandler
 
 - (void)webView:(WKWebView *)webView

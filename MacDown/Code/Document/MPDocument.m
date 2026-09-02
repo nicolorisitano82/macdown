@@ -4798,8 +4798,28 @@ current file somewhere to enable this feature.", \
 @"preview navigation error information")
 
 
+/// Whether this is a file this application would open as a document.
+NS_INLINE BOOL MPIsMarkdownFileURL(NSURL *url)
+{
+    static NSSet *extensions = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        extensions = [NSSet setWithArray:@[@"md", @"markdown", @"mdown",
+                                           @"mkd", @"mkdn", @"text", @"txt"]];
+    });
+    return [extensions containsObject:url.pathExtension.lowercaseString];
+}
+
 - (void)openOrCreateFileForUrl:(NSURL *)url
 {
+    // Out of the preview's scheme and back into a file. The page is served
+    // over a scheme of its own so it has an ordinary origin, and a relative
+    // link in the document resolves against it — so a link to the file next
+    // door arrives here as `macdown-preview:///Users/…/nota.md`, and asking
+    // the system to open that gets "no application has been set to open the
+    // URL", which is true and useless.
+    url = MPFileURLFromPreviewURL(url);
+
     // Simply open the file if it is not local, or exists already.
     BOOL file = url.isFileURL;
     BOOL reachable = !file || [url checkResourceIsReachableAndReturnError:NULL];
@@ -4818,6 +4838,26 @@ current file somewhere to enable this feature.", \
     
     if (reachable)
     {
+        // A document this application can open, opened here. Handing a
+        // neighbouring note to the workspace opens it in whatever holds the
+        // extension — which may be another copy of MacDown, or another
+        // editor entirely, and either way is a second window in a second
+        // application for a link followed inside this one. Anything else
+        // does belong to the system.
+        if (file && MPIsMarkdownFileURL(url))
+        {
+            NSDocumentController *controller =
+                [NSDocumentController sharedDocumentController];
+            [controller openDocumentWithContentsOfURL:url display:YES
+                                    completionHandler:
+                ^(NSDocument *document, BOOL wasOpen, NSError *error) {
+                // Whatever stopped it, the system's own handler is a better
+                // answer than a dead click.
+                if (!document)
+                    [[NSWorkspace sharedWorkspace] openURL:url];
+            }];
+            return;
+        }
         [[NSWorkspace sharedWorkspace] openURL:url];
         return;
     }
