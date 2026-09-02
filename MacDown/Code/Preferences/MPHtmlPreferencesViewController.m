@@ -389,6 +389,9 @@ static const CGFloat kMPNoteWidth = 400.0;
         [self checkboxWithTitle:NSLocalizedString(
             @"Paste formatted text as Markdown", @"Preference")
                             key:@"editorPasteAsMarkdown"],
+        [self checkboxWithTitle:NSLocalizedString(
+            @"Fetch images from the network when exporting", @"Preference")
+                            key:@"exportFetchesRemoteImages"],
         [self noteWithText:NSLocalizedString(
             @"Editor themes state heading sizes in points, chosen for the "
             @"default body size. This keeps their proportions at any size. "

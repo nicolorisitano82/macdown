@@ -84,7 +84,8 @@ static BOOL MPReplaceRunContaining(NSMutableString *xml, NSString *token,
 
 /// Embeds PNGs into a .docx that AppKit wrote, in place of text placeholders.
 NSData *MPDocxDataByEmbeddingImages(NSData *docxData,
-                                    NSArray<MPDocxImage *> *images)
+                                    NSArray<MPDocxImage *> *images,
+                                    NSMutableArray<NSString *> *unplaced)
 {
     if (!images.count)
         return docxData;
@@ -117,7 +118,13 @@ NSData *MPDocxDataByEmbeddingImages(NSData *docxData,
 
         if (!MPReplaceRunContaining(document, image.placeholder,
                                     MPDrawingXML(relId, i, image.pointSize)))
-            continue;   // placeholder gone; skip rather than dangle a rel.
+        {
+            // The marker is not in the document. Skip rather than dangle a
+            // relationship — and say which picture, since this is one the
+            // reader will not find where they put it.
+            [unplaced addObject:image.source ?: image.placeholder];
+            continue;
+        }
 
         [newRels appendFormat:
             @"<Relationship Id=\"%@\" Type=\"http://schemas.openxmlformats"
@@ -538,6 +545,10 @@ NS_INLINE NSString *MPXMLEscaped(NSString *text)
 /// twips. Tables are laid out to fill it rather than to fit their content,
 /// which is what makes a two column table look deliberate.
 static const NSInteger kMPDocxContentWidthTwips = 9360;
+
+// Twips are twentieths of a point, so the same column in the unit the
+// picture sizing works in.
+const CGFloat MPDocxContentWidthPoints = 9360.0 / 20.0;
 
 static NSString *MPRunXML(MPDocxTextRun *run, NSString *bodyFamily,
                           NSString *monospaceFamily, CGFloat pointSize)

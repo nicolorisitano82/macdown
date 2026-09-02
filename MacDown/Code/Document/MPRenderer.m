@@ -384,13 +384,21 @@ NS_INLINE void MPFreeHTMLRenderer(hoedown_renderer *htmlRenderer)
 
 - (NSArray *)baseStylesheets
 {
+    NSMutableArray *stylesheets = [NSMutableArray array];
+
     NSString *defaultStyleName =
         MPStylePathForName([self.delegate rendererStyleName:self]);
-    if (!defaultStyleName)
-        return @[];
-    NSURL *defaultStyle = [NSURL fileURLWithPath:defaultStyleName];
-    NSMutableArray *stylesheets = [NSMutableArray array];
-    [stylesheets addObject:[MPStyleSheet CSSWithURL:defaultStyle]];
+    if (defaultStyleName)
+    {
+        NSURL *defaultStyle = [NSURL fileURLWithPath:defaultStyleName];
+        [stylesheets addObject:[MPStyleSheet CSSWithURL:defaultStyle]];
+    }
+
+    // After the chosen style, and part of every export that carries styles:
+    // a picture is never wider than what holds it, whatever the style the
+    // reader picked has to say about it.
+    [stylesheets addObject:
+        [MPStyleSheet CSSWithURL:MPExtensionURL(@"images", @"css")]];
     return stylesheets;
 }
 

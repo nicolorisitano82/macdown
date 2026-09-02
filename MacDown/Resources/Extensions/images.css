@@ -1,0 +1,15 @@
+/* What every preview style has to agree to, whatever else it says.
+ *
+ * Loaded after the chosen style so it wins. A picture wider than the pane
+ * is a horizontal scrollbar under the whole document, and a screenshot
+ * taken on a Retina display is routinely three thousand pixels across —
+ * so the constraint belongs to the application, not to each of the styles
+ * a reader might pick.
+ *
+ * height: auto goes with it: without it a picture given both a width and a
+ * height attribute keeps the height and comes out squashed.
+ */
+img {
+  max-width: 100%;
+  height: auto;
+}

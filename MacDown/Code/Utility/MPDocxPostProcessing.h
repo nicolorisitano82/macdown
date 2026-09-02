@@ -16,8 +16,14 @@
 @property (copy, nonatomic) NSString *placeholder;
 @property (copy, nonatomic) NSData *pngData;
 @property (assign, nonatomic) NSSize pointSize;
+/// What the document pointed at, so a failure can name it.
+@property (copy, nonatomic) NSString *source;
 
 @end
+
+
+/// The width of the text column in a .docx this writes, in points.
+extern const CGFloat MPDocxContentWidthPoints;
 
 
 /** Plants PNGs into a .docx that AppKit produced.
@@ -27,11 +33,17 @@
  * word/media part, no image relationship and no png content type. This adds
  * all three, and swaps each placeholder run for a DrawingML picture.
  *
+ * Pictures whose marker is not in the document have their `source` added to
+ * `unplaced`, if one is given. That list has to reach the reader: a picture
+ * that cannot be placed is a picture missing from their document, and the
+ * name of the file is what tells them which.
+ *
  * Returns the input unchanged when there is nothing to plant, and nil if the
  * archive cannot be read.
  */
 NSData *MPDocxDataByEmbeddingImages(NSData *docxData,
-                                    NSArray<MPDocxImage *> *images);
+                                    NSArray<MPDocxImage *> *images,
+                                    NSMutableArray<NSString *> *unplaced);
 
 
 /** Repairs what AppKit's Word writer leaves out of the layout.

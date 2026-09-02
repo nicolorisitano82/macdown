@@ -79,6 +79,16 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 @property (assign) BOOL editorHideMarkers;
 /// Whether lists are indented, quotations get a bar and headings get room.
 @property (assign) BOOL editorBlockLayout;
+
+/** Whether an export goes and gets the pictures kept on the web.
+ *
+ * A .docx and an EPUB are packages, so a picture they do not carry is a
+ * picture nobody sees. Fetching it means an export makes network requests,
+ * which is a thing some people will want to forbid — hence the switch,
+ * though it is on, because an export that quietly drops half the figures
+ * is the worse surprise.
+ */
+@property (assign) BOOL exportFetchesRemoteImages;
 /// Whether pasting formatted text writes the Markdown that means the same.
 @property (assign) BOOL editorPasteAsMarkdown;
 /// Whether a pipe table's columns are drawn lined up, source untouched.

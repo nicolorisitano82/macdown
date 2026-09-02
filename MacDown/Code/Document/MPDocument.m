@@ -38,6 +38,7 @@
 #import "MPSidebarController.h"
 #import "MPEpubExport.h"
 #import "MPDocxPostProcessing.h"
+#import "MPRemoteImageFetch.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -2593,6 +2594,17 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
     html = [self htmlByInliningDiagramsIn:html asImages:YES];
     html = [self htmlByInliningFormulasIn:html asImages:NO];
 
+    __weak MPDocument *weakSelf = self;
+    [self html:html withRemoteImagesFetched:^(NSString *ready,
+                                              NSArray<NSString *> *unreachable) {
+        [weakSelf writeEpubMarkup:ready toURL:url unreachable:unreachable];
+    }];
+}
+
+- (void)writeEpubMarkup:(NSString *)html
+                  toURL:(NSURL *)url
+            unreachable:(NSArray<NSString *> *)unreachable
+{
     NSURL *cssURL = [[NSBundle mainBundle] URLForResource:@"epub-export"
                                             withExtension:@"css"
                                              subdirectory:@"Extensions"];
@@ -2623,7 +2635,56 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
 
     NSError *error = nil;
     if (![epub writeToURL:url options:NSDataWritingAtomic error:&error])
+    {
         [self presentError:error];
+        return;
+    }
+
+    if (unreachable.count)
+    {
+        NSMutableArray<NSString *> *problems = [NSMutableArray array];
+        for (NSString *address in unreachable)
+        {
+            [problems addObject:MPExportImageProblem(address,
+                NSLocalizedString(@"could not be fetched",
+                                  @"Export image problem"))];
+        }
+        [self reportImageProblems:problems];
+    }
+}
+
+/** Says which pictures did not make it into a package, and what went wrong.
+ *
+ * One line each, naming the file. A count on its own — "5 of the images in
+ * this document are missing" — is a dead end: it says something is wrong
+ * and nothing about what, and the reader who can see the pictures in their
+ * document and in the preview has no way to tell which five or why. The
+ * address and the reason are the whole value of the message.
+ */
+- (void)reportImageProblems:(NSArray<NSString *> *)problems
+{
+    if (!problems.count)
+        return;
+
+    // Enough to show a pattern, not enough to fill the screen.
+    static const NSUInteger listed = 8;
+    NSArray<NSString *> *shown = problems.count > listed
+        ? [problems subarrayWithRange:NSMakeRange(0, listed)] : problems;
+    NSMutableString *body =
+        [[shown componentsJoinedByString:@"\n"] mutableCopy];
+    if (problems.count > shown.count)
+    {
+        [body appendFormat:NSLocalizedString(@"\n…and %lu more.",
+                                             @"Export partial images"),
+            (unsigned long)(problems.count - shown.count)];
+    }
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = [NSString stringWithFormat:NSLocalizedString(
+        @"%lu images are missing from the exported file",
+        @"Export partial images"), (unsigned long)problems.count];
+    alert.informativeText = body;
+    [alert runModal];
 }
 
 - (IBAction)exportDocx:(id)sender
@@ -2641,11 +2702,36 @@ NS_INLINE NSString *MPImageTagForSVG(NSString *svg, CGFloat scale)
     }];
 }
 
+/** One line of the report: what was pointed at, and what went wrong.
+ *
+ * The address is shortened from the middle. A data: URI is thousands of
+ * characters of base64 and would push everything else out of the dialog,
+ * while its first few characters say all anyone needs — which kind of
+ * picture it was meant to be.
+ */
+NS_INLINE NSString *MPExportImageProblem(NSString *source, NSString *reason)
+{
+    NSString *shown = source;
+    if (shown.length > 70)
+    {
+        shown = [NSString stringWithFormat:@"%@…%@",
+                 [shown substringToIndex:40],
+                 [shown substringFromIndex:shown.length - 20]];
+    }
+    return [NSString stringWithFormat:@"%@ — %@", shown, reason];
+}
+
 /** PNG bytes and page size for one image reachable from exported markup.
  *
  * Everything is re-encoded to PNG so the archive only has to declare one
  * image content type, and rendered at the source's own pixel size so nothing
  * is upscaled or thrown away.
+ *
+ * Never wider than the text column. A picture is declared at its natural
+ * size, and a screenshot two thousand points across would be declared two
+ * thousand points across — Word does not shrink it to fit, it runs it off
+ * the page. The pixels are kept and only the declared size comes down, so
+ * clamping makes the picture sharper rather than coarser.
  */
 NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
 {
@@ -2653,6 +2739,13 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
     NSSize points = image ? image.size : NSZeroSize;
     if (points.width <= 0.0 || points.height <= 0.0)
         return nil;
+
+    if (points.width > MPDocxContentWidthPoints)
+    {
+        points = NSMakeSize(MPDocxContentWidthPoints,
+                            points.height * MPDocxContentWidthPoints
+                                / points.width);
+    }
 
     NSInteger wide = 0;
     NSInteger high = 0;
@@ -2700,28 +2793,110 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
  *
  * Only data: URIs and local files. A remote image is left alone rather than
  * quietly turning an export into a network fetch.
+ *
+ * A local source is treated as a *path*, not parsed as a URL. `#` and `?`
+ * are ordinary characters in a file name, and reading them as a fragment
+ * or a query throws away everything after them — which is a picture
+ * silently missing from the exported document rather than an error anyone
+ * could act on. The percent-decoded name is tried as well, since a path
+ * that came from a URL carries `%20` where the file on disk has a space.
  */
 - (NSData *)imageDataForExportSource:(NSString *)source
+                              reason:(NSString **)reason
 {
+    if (reason)
+        *reason = nil;
+
     if ([source hasPrefix:@"data:"])
     {
         NSRange marker = [source rangeOfString:@";base64,"];
         if (marker.location == NSNotFound)
+        {
+            if (reason)
+                *reason = NSLocalizedString(@"not base64 data",
+                                            @"Export image problem");
             return nil;
+        }
         NSString *encoded = [source substringFromIndex:NSMaxRange(marker)];
-        return [[NSData alloc] initWithBase64EncodedString:encoded
+        NSData *data = [[NSData alloc] initWithBase64EncodedString:encoded
             options:NSDataBase64DecodingIgnoreUnknownCharacters];
+        if (!data.length && reason)
+        {
+            *reason = NSLocalizedString(@"the data could not be decoded",
+                                        @"Export image problem");
+        }
+        return data;
     }
 
-    NSURL *url = [NSURL URLWithString:source];
-    if (!url.scheme)
+    NSString *plain = MPStringByUnescapingHTMLEntities(source);
+    if ([plain hasPrefix:@"file://"])
+        plain = [plain substringFromIndex:7];
+    else if ([plain rangeOfString:@"://"].location != NSNotFound)
     {
-        NSURL *base = self.fileURL.URLByDeletingLastPathComponent;
-        url = base ? [NSURL URLWithString:source relativeToURL:base] : nil;
-    }
-    if (!url.isFileURL)
+        if (reason)
+        {
+            *reason = NSLocalizedString(@"could not be fetched",
+                                        @"Export image problem");
+        }
         return nil;
-    return [NSData dataWithContentsOfURL:url];
+    }
+    if (!plain.length)
+    {
+        if (reason)
+            *reason = NSLocalizedString(@"no address", @"Export image problem");
+        return nil;
+    }
+
+    if (!self.fileURL && ![plain hasPrefix:@"/"] && ![plain hasPrefix:@"~"])
+    {
+        if (reason)
+        {
+            *reason = NSLocalizedString(
+                @"the document has never been saved, so a relative path has "
+                @"nothing to be relative to", @"Export image problem");
+        }
+        return nil;
+    }
+
+    NSFileManager *files = [NSFileManager defaultManager];
+    NSURL *base = self.fileURL.URLByDeletingLastPathComponent;
+
+    for (NSString *path in @[plain, plain.stringByRemovingPercentEncoding ?: plain])
+    {
+        NSURL *url = nil;
+        if ([path hasPrefix:@"/"])
+            url = [NSURL fileURLWithPath:path];
+        else if ([path hasPrefix:@"~"])
+            url = [NSURL fileURLWithPath:path.stringByExpandingTildeInPath];
+        else if (base)
+            url = [NSURL fileURLWithPath:path relativeToURL:base];
+        if (!url)
+            continue;
+
+        NSString *resolved = url.URLByStandardizingPath.path;
+        if (!resolved || ![files fileExistsAtPath:resolved])
+            continue;
+
+        NSData *data = [NSData dataWithContentsOfFile:resolved];
+        if (data.length)
+            return data;
+        if (reason)
+        {
+            *reason = [NSString stringWithFormat:NSLocalizedString(
+                @"found at %@ but could not be read",
+                @"Export image problem"), resolved];
+        }
+        return nil;
+    }
+
+    if (reason)
+    {
+        NSString *where = base.path ?: NSLocalizedString(@"the document's folder",
+                                                         @"Export image problem");
+        *reason = [NSString stringWithFormat:NSLocalizedString(
+            @"not found, looked under %@", @"Export image problem"), where];
+    }
+    return nil;
 }
 
 /** Swaps every <img> for a plain-text marker, collecting the pictures.
@@ -2731,14 +2906,17 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
  */
 - (NSString *)html:(NSString *)html
     withImagesReplacedByPlaceholders:(NSMutableArray<MPDocxImage *> *)images
-                             skipped:(NSUInteger *)skipped
+                            problems:(NSMutableArray<NSString *> *)problems
 {
     NSRegularExpression *imgRegex = [NSRegularExpression
         regularExpressionWithPattern:@"<img[^>]*>"
                              options:NSRegularExpressionCaseInsensitive
                                error:NULL];
+    // Either quote. Only double ones come out of the renderer, but the
+    // diagrams and the formulas are spliced in as markup of their own.
     NSRegularExpression *srcRegex = [NSRegularExpression
-        regularExpressionWithPattern:@"src\\s*=\\s*\"([^\"]*)\""
+        regularExpressionWithPattern:
+            @"src\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)')"
                              options:NSRegularExpressionCaseInsensitive
                                error:NULL];
 
@@ -2747,7 +2925,6 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
                             range:NSMakeRange(0, html.length)];
 
     NSMutableString *result = [html mutableCopy];
-    NSUInteger lost = 0;
 
     // Back to front, so each replacement leaves the earlier ranges valid.
     for (NSInteger i = (NSInteger)matches.count - 1; i >= 0; i--)
@@ -2758,30 +2935,49 @@ NS_INLINE MPDocxImage *MPDocxImageFromData(NSData *data, NSString *placeholder)
         NSTextCheckingResult *src =
             [srcRegex firstMatchInString:tag options:0
                                    range:NSMakeRange(0, tag.length)];
-        MPDocxImage *image = nil;
+        NSString *source = nil;
         if (src)
         {
-            NSString *source = [tag substringWithRange:[src rangeAtIndex:1]];
-            NSString *placeholder = [NSString stringWithFormat:
-                @"MPIMGPLACEHOLDER%ld", (long)i];
-            image = MPDocxImageFromData(
-                [self imageDataForExportSource:source], placeholder);
+            NSRange quoted = [src rangeAtIndex:1];
+            if (quoted.location == NSNotFound)
+                quoted = [src rangeAtIndex:2];
+            if (quoted.location != NSNotFound)
+                source = [tag substringWithRange:quoted];
         }
 
-        if (image)
+        if (!source.length)
         {
-            [images addObject:image];
-            [result replaceCharactersInRange:tagRange
-                                 withString:image.placeholder];
+            [problems addObject:MPExportImageProblem(
+                tag, NSLocalizedString(@"the tag carries no src",
+                                       @"Export image problem"))];
+            continue;
         }
-        else
+
+        // Closed at both ends, so the marker for image 1 is not also found
+        // inside the marker for image 10.
+        NSString *placeholder = [NSString stringWithFormat:
+            @"MPIMGPLACEHOLDER%ldEND", (long)i];
+
+        NSString *reason = nil;
+        NSData *data = [self imageDataForExportSource:source reason:&reason];
+        MPDocxImage *image = MPDocxImageFromData(data, placeholder);
+        if (!image)
         {
-            lost++;
+            if (!reason)
+            {
+                reason = NSLocalizedString(
+                    @"read, but not usable as a picture",
+                    @"Export image problem");
+            }
+            [problems addObject:MPExportImageProblem(source, reason)];
+            continue;
         }
+
+        image.source = source;
+        [images addObject:image];
+        [result replaceCharactersInRange:tagRange
+                             withString:image.placeholder];
     }
-
-    if (skipped)
-        *skipped = lost;
     return result;
 }
 
@@ -3007,6 +3203,31 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
     return result;
 }
 
+/// The window an export's sheet belongs on, if the document has one.
+- (NSWindow *)exportSheetParent
+{
+    NSArray *controllers = self.windowControllers;
+    return controllers.count ? [controllers[0] window] : nil;
+}
+
+/** Fetches the remote pictures, then carries on with `next`.
+ *
+ * Both package formats go through here. With the preference off, or with
+ * nothing remote in the markup, `next` runs immediately and the export is
+ * the synchronous thing it always was.
+ */
+- (void)html:(NSString *)html
+    withRemoteImagesFetched:(void (^)(NSString *html,
+                                      NSArray<NSString *> *unreachable))next
+{
+    if (!self.preferences.exportFetchesRemoteImages)
+    {
+        next(html, @[]);
+        return;
+    }
+    MPFetchRemoteImagesInHTML(html, [self exportSheetParent], next);
+}
+
 - (void)writeDocxToURL:(NSURL *)url
 {
     NSString *html = [self htmlForWordExport];
@@ -3017,10 +3238,21 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
     html = [self htmlByInliningDiagramsIn:html asImages:YES];
     html = [self htmlByInliningFormulasIn:html asImages:YES];
 
+    __weak MPDocument *weakSelf = self;
+    [self html:html withRemoteImagesFetched:^(NSString *ready,
+                                              NSArray<NSString *> *unreachable) {
+        [weakSelf writeDocxMarkup:ready toURL:url unreachable:unreachable];
+    }];
+}
+
+- (void)writeDocxMarkup:(NSString *)html
+                  toURL:(NSURL *)url
+            unreachable:(NSArray<NSString *> *)unreachable
+{
     NSMutableArray<MPDocxImage *> *images = [NSMutableArray array];
-    NSUInteger skipped = 0;
+    NSMutableArray<NSString *> *problems = [NSMutableArray array];
     html = [self html:html withImagesReplacedByPlaceholders:images
-              skipped:&skipped];
+             problems:problems];
 
     NSMutableArray<MPDocxTable *> *tables = [NSMutableArray array];
     html = [self html:html withTablesReplacedByPlaceholders:tables];
@@ -3056,12 +3288,6 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
         return;
     }
 
-    // Puts the pictures in, which AppKit's writer would otherwise have left
-    // out of the file entirely.
-    NSData *embedded = MPDocxDataByEmbeddingImages(docx, images);
-    if (embedded)
-        docx = embedded;
-
     // Shading and list indents, which the writer does not carry over either.
     // The family and colour have to match word-export.css, since the font is
     // what identifies a code paragraph once the markup is gone.
@@ -3076,6 +3302,23 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
                                                 10.0);
     if (tabled)
         docx = tabled;
+
+    // Then the pictures, which AppKit's writer would otherwise have left out
+    // of the file entirely. After the tables on purpose: a picture inside a
+    // cell has its marker in the table this step has just written, and
+    // planting them earlier meant looking for a marker that was not in the
+    // document yet — one picture in a table and every picture in the
+    // document went missing, with nothing said.
+    NSMutableArray<NSString *> *unplaced = [NSMutableArray array];
+    NSData *embedded = MPDocxDataByEmbeddingImages(docx, images, unplaced);
+    if (embedded)
+        docx = embedded;
+    for (NSString *source in unplaced)
+    {
+        [problems addObject:MPExportImageProblem(source, NSLocalizedString(
+            @"read, but there was nowhere in the document to put it",
+            @"Export image problem"))];
+    }
 
     // The heading styles, without which Word's navigation pane stays empty
     // and a table of contents field finds nothing to build from.
@@ -3098,19 +3341,8 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
         return;
     }
 
-    if (skipped)
-    {
-        NSAlert *alert = [[NSAlert alloc] init];
-        alert.messageText = NSLocalizedString(
-            @"Some images were not included",
-            @"Word export partial images");
-        alert.informativeText = [NSString stringWithFormat:NSLocalizedString(
-            @"Could not read %lu of the images in this document, so they are "
-            @"missing from the Word file. Images loaded over the network are "
-            @"not fetched during an export.",
-            @"Word export partial images"), (unsigned long)skipped];
-        [alert runModal];
-    }
+    if (problems.count)
+        [self reportImageProblems:problems];
 }
 
 - (IBAction)exportPdf:(id)sender

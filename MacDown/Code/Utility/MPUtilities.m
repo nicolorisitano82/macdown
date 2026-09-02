@@ -164,6 +164,27 @@ NSUInteger MPCharacterIndexForUTF8ByteOffset(NSString *string,
     return length;
 }
 
+NSString *MPStringByUnescapingHTMLEntities(NSString *value)
+{
+    if (!value.length || [value rangeOfString:@"&"].location == NSNotFound)
+        return value;
+
+    NSMutableString *out = [value mutableCopy];
+    // The ampersand last: doing it first would turn `&amp;lt;` into `<`.
+    NSArray<NSArray<NSString *> *> *pairs = @[
+        @[@"&lt;", @"<"], @[@"&gt;", @">"], @[@"&quot;", @"\""],
+        @[@"&#39;", @"'"], @[@"&#x27;", @"'"], @[@"&apos;", @"'"],
+        @[@"&amp;", @"&"],
+    ];
+    for (NSArray<NSString *> *pair in pairs)
+    {
+        [out replaceOccurrencesOfString:pair[0] withString:pair[1]
+                                options:NSCaseInsensitiveSearch
+                                  range:NSMakeRange(0, out.length)];
+    }
+    return out;
+}
+
 BOOL MPCharacterIsWhitespace(unichar character)
 {
     static NSCharacterSet *whitespaces = nil;

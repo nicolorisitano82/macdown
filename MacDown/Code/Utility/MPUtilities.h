@@ -46,6 +46,15 @@ NSUInteger MPUTF8ByteOffsetForCharacterIndex(NSString *string,
 NSUInteger MPCharacterIndexForUTF8ByteOffset(NSString *string,
                                              NSUInteger offset);
 
+/** An HTML attribute value with its five escapes put back.
+ *
+ * Markup is HTML, so a picture called `a&b.png` arrives written
+ * `a&amp;b.png` and is then looked for under a name it does not have; a web
+ * address arrives with its query separators escaped and is fetched as a
+ * different address from the one the writer meant.
+ */
+NSString *MPStringByUnescapingHTMLEntities(NSString *value);
+
 BOOL MPCharacterIsWhitespace(unichar character);
 BOOL MPCharacterIsNewline(unichar character);
 BOOL MPStringIsNewline(NSString *str);

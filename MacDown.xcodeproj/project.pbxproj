@@ -78,6 +78,8 @@
 		1FF1420419A8A24800CF8A6A /* MPUtilityTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FF1420319A8A24800CF8A6A /* MPUtilityTests.m */; };
 		F55A342A5A01CEBCC9F68E3A /* MPTableSourceTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F097331E216 /* MPTableSourceTests.m */; };
 		F55A342A5A01CEBCC9F60001 /* MPMarkerHiderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310001 /* MPMarkerHiderTests.m */; };
+		F55A342A5A01CEBCC9F60002 /* MPDocxExportTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310002 /* MPDocxExportTests.m */; };
+		F55A342A5A01CEBCC9F60005 /* MPRemoteImageFetchTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310005 /* MPRemoteImageFetchTests.m */; };
 		1FF207631941CF22005B5654 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FF207621941CF22005B5654 /* WebKit.framework */; };
 		1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FFEB31819729F7C00B2254F /* MPAssetTests.m */; };
 		1FFEB31D19729FEF00B2254F /* test.css in Resources */ = {isa = PBXBuildFile; fileRef = 1FFEB31C19729FEF00B2254F /* test.css */; };
@@ -98,6 +100,7 @@
 		D0C1A1000000000000000013 /* MPProseChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000012 /* MPProseChecker.m */; };
 		2B1ED4173F22E318E5273038 /* MPMarkdownFromRichText.m in Sources */ = {isa = PBXBuildFile; fileRef = 29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */; };
 		9E013672CE8891FB4CC03FEA /* MPTableSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FD4A413A2D24286D41BAD8E9 /* MPTableSource.m */; };
+		F55A342A5A01CEBCC9F60003 /* MPRemoteImageFetch.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310004 /* MPRemoteImageFetch.m */; };
 		D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000022 /* MPMathEditorController.m */; };
 		D0C1A1000000000000000033 /* MPSidebarController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000032 /* MPSidebarController.m */; };
 		D0C1A1000000000000000043 /* MPZipArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000042 /* MPZipArchive.m */; };
@@ -494,6 +497,8 @@
 		1FF1420319A8A24800CF8A6A /* MPUtilityTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUtilityTests.m; sourceTree = "<group>"; };
 		7DA2311453239F097331E216 /* MPTableSourceTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTableSourceTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310001 /* MPMarkerHiderTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkerHiderTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310002 /* MPDocxExportTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocxExportTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310005 /* MPRemoteImageFetchTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPRemoteImageFetchTests.m; sourceTree = "<group>"; };
 		1FF207621941CF22005B5654 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		1FFEB31819729F7C00B2254F /* MPAssetTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPAssetTests.m; sourceTree = "<group>"; };
 		1FFEB31A19729FD500B2254F /* test.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = test.js; sourceTree = "<group>"; };
@@ -526,6 +531,8 @@
 		F4515DE9C37E50F01037E3DA /* MPMarkdownFromRichText.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMarkdownFromRichText.h; sourceTree = "<group>"; };
 		29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkdownFromRichText.m; sourceTree = "<group>"; };
 		F1E9F6F3D23F16D2286A65DE /* MPTableSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPTableSource.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310003 /* MPRemoteImageFetch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPRemoteImageFetch.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310004 /* MPRemoteImageFetch.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPRemoteImageFetch.m; sourceTree = "<group>"; };
 		FD4A413A2D24286D41BAD8E9 /* MPTableSource.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTableSource.m; sourceTree = "<group>"; };
 		D0C1A1000000000000000021 /* MPMathEditorController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMathEditorController.h; sourceTree = "<group>"; };
 		D0C1A1000000000000000022 /* MPMathEditorController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMathEditorController.m; sourceTree = "<group>"; };
@@ -649,6 +656,8 @@
 				29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */,
 				F1E9F6F3D23F16D2286A65DE /* MPTableSource.h */,
 				FD4A413A2D24286D41BAD8E9 /* MPTableSource.m */,
+				7DA2311453239F0973310003 /* MPRemoteImageFetch.h */,
+				7DA2311453239F0973310004 /* MPRemoteImageFetch.m */,
 				1F0D9D63194AC7CF008E1856 /* MPUtilities.h */,
 				1F0D9D64194AC7CF008E1856 /* MPUtilities.m */,
 			);
@@ -903,6 +912,8 @@
 				1FF1420319A8A24800CF8A6A /* MPUtilityTests.m */,
 				7DA2311453239F097331E216 /* MPTableSourceTests.m */,
 				7DA2311453239F0973310001 /* MPMarkerHiderTests.m */,
+				7DA2311453239F0973310002 /* MPDocxExportTests.m */,
+				7DA2311453239F0973310005 /* MPRemoteImageFetchTests.m */,
 				1F25E1C21A50F4F10029371D /* MPColorTests.m */,
 				1FCDCA311944F96E00B1F966 /* MPPreferencesTests.m */,
 				1FFF301C1948A5320009AF24 /* MPStringLookupTests.m */,
@@ -1302,6 +1313,7 @@
 				D0C1A1000000000000000013 /* MPProseChecker.m in Sources */,
 				2B1ED4173F22E318E5273038 /* MPMarkdownFromRichText.m in Sources */,
 				9E013672CE8891FB4CC03FEA /* MPTableSource.m in Sources */,
+				F55A342A5A01CEBCC9F60003 /* MPRemoteImageFetch.m in Sources */,
 				D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */,
 				D0C1A1000000000000000033 /* MPSidebarController.m in Sources */,
 				1F0D9D67194AC7CF008E1856 /* MPUtilities.m in Sources */,
@@ -1340,6 +1352,8 @@
 				1FF1420419A8A24800CF8A6A /* MPUtilityTests.m in Sources */,
 				F55A342A5A01CEBCC9F68E3A /* MPTableSourceTests.m in Sources */,
 				F55A342A5A01CEBCC9F60001 /* MPMarkerHiderTests.m in Sources */,
+				F55A342A5A01CEBCC9F60002 /* MPDocxExportTests.m in Sources */,
+				F55A342A5A01CEBCC9F60005 /* MPRemoteImageFetchTests.m in Sources */,
 				1FFEB3271972DAB400B2254F /* MPHTMLTabularizeTests.m in Sources */,
 				1F25E1C31A50F4F10029371D /* MPColorTests.m in Sources */,
 				1FFF301D1948A5320009AF24 /* MPStringLookupTests.m in Sources */,

@@ -34,8 +34,13 @@ getting a document out of the app in a shape someone else can open.
 
 ### Export
 
-* **EPUB 3.3.** Local images are copied into the package, and the table of
-  contents is built from the headings.
+* **EPUB 3.3.** Images are copied into the package and the table of contents
+  is built from the headings.
+* **Pictures kept on the web travel too.** A .docx and an EPUB are packages,
+  so a picture they do not carry is a picture nobody sees. Both exports fetch
+  the remote ones first, with a sheet while they wait and a count of whatever
+  could not be had. Turn it off in the preferences if an export must make no
+  network requests.
 * **Word (.docx) that survives the trip.** AppKit's own writer drops
   pictures, flattens tables into tab-separated paragraphs, loses list
   indentation and code block shading, and names a Mac-only font with nothing
