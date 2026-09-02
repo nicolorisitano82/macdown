@@ -12,7 +12,7 @@ tutte le fasi qui sotto sono fatte e segnate come tali. Quello che resta
 ## Il principio da cui non allontanarsi
 
 **Il documento resta la stringa markdown.** Tutto quello che segue cambia
-come il testo viene *disegnato*, mai cosa viene *salvato*. MacDown salva
+come il testo viene *disegnato*, mai cosa viene *salvato*. MacDown Next salva
 `self.editor.string`, quindi nessuna quantità di stile può corrompere un
 file. È questa proprietà che rende ogni passo reversibile: se una fase
 esce male, si spegne e il documento è intatto.
@@ -531,7 +531,7 @@ le frecce non deve mai lasciare markup rivelato dove non c'è il cursore.**
 
 ## Dove tenere d'occhio le interazioni
 
-Tre cose in MacDown toccano lo stesso testo, e vanno considerate a ogni
+Tre cose in MacDown Next toccano lo stesso testo, e vanno considerate a ogni
 fase:
 
 - **Il prose checker** usa attributi temporanei per le sottolineature. Un

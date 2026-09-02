@@ -9,7 +9,17 @@
 #import "version.h"
 
 // These should match the main bundle's values.
-static NSString * const kMPApplicationName = @"MacDown";
+static NSString * const kMPApplicationName = @"MacDown Next";
+
+/** The folder in Application Support, which is not the application's name.
+ *
+ * It used to be read out of CFBundleName, so renaming the application
+ * would have sent it looking in a folder that does not exist — and the
+ * themes, styles and plug-ins someone had put in the old one would have
+ * gone quiet without a word. A display name is a label; this is an
+ * address, and addresses do not change because a label did.
+ */
+static NSString * const kMPDataDirectoryName = @"MacDown";
 
 #ifdef DEBUG
 static NSString * const kMPApplicationBundleIdentifier = @"com.nicolorisitano82.macdown-debug";

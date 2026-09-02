@@ -1,6 +1,6 @@
 # Esempi
 
-Un documento per funzionalità. Aprili in MacDown e guarda l'anteprima a
+Un documento per funzionalità. Aprili in MacDown Next e guarda l'anteprima a
 fianco: ognuno è scritto per mostrare cosa fa la funzione, non solo per
 descriverla.
 

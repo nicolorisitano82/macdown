@@ -65,7 +65,7 @@ issue up rather than to you.
 Say what you did, what happened, and what you expected instead. A document
 that reproduces it is worth more than a description of one.
 
-MacDown leans on other open source projects: [Hoedown](https://github.com/hoedown/hoedown)
+MacDown Next leans on other open source projects: [Hoedown](https://github.com/hoedown/hoedown)
 turns Markdown into HTML, [Prism](https://prismjs.com) highlights code,
 [PEG Markdown Highlight](https://github.com/ali-rantakari/peg-markdown-highlight)
 highlights the editor, [mermaid](https://mermaid.js.org) and
@@ -77,4 +77,4 @@ the parts they do; the issues still come here.
 
 The original MacDown code is under the MIT License. See the `LICENSE`
 directory for that and for the licences of the third-party components, or
-the **About MacDown** panel in the application.
+the **About MacDown Next** panel in the application.

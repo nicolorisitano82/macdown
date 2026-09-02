@@ -10,8 +10,8 @@
 /* Class = "NSTextFieldCell"; title = "●"; ObjectID = "Me9-q2-eWj"; */
 "Me9-q2-eWj.title" = "●";
 
-/* Class = "NSTextFieldCell"; title = "By activating shell support you can use the macdown utility to open MacDown and documents from a shell."; ObjectID = "W5n-x2-ygz"; */
-"W5n-x2-ygz.title" = "启用 Shell 支持即可在 Shell 中使用 MacDown 工具打开 MacDown 和文档。";
+/* Class = "NSTextFieldCell"; title = "By activating shell support you can use the macdown utility to open MacDown Next and documents from a shell."; ObjectID = "W5n-x2-ygz"; */
+"W5n-x2-ygz.title" = "启用 Shell 支持即可在 Shell 中使用 macdown 工具打开 MacDown Next 和文档。";
 
 /* Class = "NSButtonCell"; title = "Install"; ObjectID = "XiC-FP-TWZ"; */
 "XiC-FP-TWZ.title" = "安装";

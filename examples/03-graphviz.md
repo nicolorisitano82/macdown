@@ -70,10 +70,10 @@ Un centro, e tutto il resto in anelli attorno.
 
 ```twopi
 digraph G {
-    root=MacDown;
-    MacDown -> Editor;
-    MacDown -> Anteprima;
-    MacDown -> Export;
+    root="MacDown Next";
+    "MacDown Next" -> Editor;
+    "MacDown Next" -> Anteprima;
+    "MacDown Next" -> Export;
     Editor -> Prosa;
     Editor -> Evidenziazione;
     Anteprima -> mermaid;

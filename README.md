@@ -1,4 +1,4 @@
-# MacDown
+# MacDown Next
 
 A Markdown editor for macOS, released under the MIT License.
 
@@ -115,16 +115,16 @@ They are **not signed or notarised** — no Developer ID certificate stands
 behind them — so macOS will refuse one on a double-click. After dragging the
 app to Applications:
 
-    xattr -d com.apple.quarantine /Applications/MacDown.app
+    xattr -d com.apple.quarantine "/Applications/MacDown Next.app"
 
 Whether to run an unsigned binary from the internet is your call; building
 from source is the alternative, and the next section says how.
 
 ## License
 
-MacDown is released under the terms of MIT License. You may find the content of the license [here](http://opensource.org/licenses/MIT), or inside the `LICENSE` directory.
+MacDown Next is released under the terms of MIT License. You may find the content of the license [here](http://opensource.org/licenses/MIT), or inside the `LICENSE` directory.
 
-You may find full text of licenses about third-party components in the `LICENSE` directory, or the **About MacDown** panel in the application.
+You may find full text of licenses about third-party components in the `LICENSE` directory, or the **About MacDown Next** panel in the application.
 
 The following editor themes and CSS files are extracted from [Mou](http://mouapp.com), courtesy of Chen Luo:
 
@@ -188,7 +188,7 @@ account for it:
 
 ## Credits
 
-MacDown leans on other open source projects:
+MacDown Next leans on other open source projects:
 [Hoedown](https://github.com/hoedown/hoedown) turns Markdown into HTML,
 [Prism](https://prismjs.com) highlights code blocks,
 [PEG Markdown Highlight](https://github.com/ali-rantakari/peg-markdown-highlight)

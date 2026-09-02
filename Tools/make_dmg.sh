@@ -2,7 +2,7 @@
 #
 # Builds the disk image, with the background that shows where to drag.
 #
-#   Tools/make_dmg.sh dist/Release/MacDown.app 0.12.1 [background.png]
+#   Tools/make_dmg.sh "dist/Release/MacDown Next.app" 0.17.0 [background.png]
 #
 # The background is given at 2x and split into a two-representation TIFF, so
 # the picture is sharp on a Retina screen and correct on one that is not.
@@ -12,14 +12,18 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-APP="${1:?percorso di MacDown.app}"
+APP="${1:?percorso del bundle .app}"
 VERSION="${2:?versione}"
 BACKGROUND="${3:-}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-NAME="MacDown"
-VOLUME="MacDown $VERSION"
-OUT="$ROOT/dist/MacDown-$VERSION.dmg"
+# Taken from the bundle rather than written here, so a rename of the
+# product carries the disk image with it.
+NAME="$(basename "$APP" .app)"
+VOLUME="$NAME $VERSION"
+# Without the space: a file whose name has one in it is quoting trouble for
+# everybody who downloads it.
+OUT="$ROOT/dist/${NAME// /}-$VERSION.dmg"
 
 # Points, and the positions the drop zones sit at in the picture.
 WIDTH=793

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
-<dictionary title="MacDown Terminology">
+<dictionary title="MacDown Next Terminology">
 
 	<suite name="Standard Suite" code="????" description="Common classes and commands for all applications.">
 
@@ -161,7 +161,7 @@
 
 	</suite>
 
-	<suite name="MacDown Suite" code="mcdn" description="MacDown specific classes.">
+	<suite name="MacDown Next Suite" code="mcdn" description="MacDown Next specific classes.">
 
 		<enumeration name="saveable file format" code="savf">
 			<enumerator name="Markdown" code="md  " description="Markdown format">
@@ -175,7 +175,7 @@
 			</enumerator>
 		</enumeration>
 
-		<class name="document" code="docu" description="A MacDown document.">
+		<class name="document" code="docu" description="A MacDown Next document.">
 			<cocoa class="MPDocument"/>
 			<property name="name" code="pnam" type="text" access="r" description="Its name.">
 				<cocoa key="displayName"/>

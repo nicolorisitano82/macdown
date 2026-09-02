@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# Builds LoremIpsum.plugin and, with --install, puts it where MacDown looks.
+# Builds LoremIpsum.plugin and, with --install, puts it where MacDown Next looks.
 #
 # A .plugin is a bundle: an Info.plist naming a principal class, and a binary
 # built with -bundle. No Xcode target is needed, which is the point — a
 # plug-in is meant to be something you can write on your own without adding
-# anything to MacDown's project.
+# anything to MacDown Next's project.
 set -e
 
 cd "$(dirname "$0")"
@@ -32,5 +32,5 @@ if [ "$1" = "--install" ]; then
     rm -rf "$DEST/$OUT"
     cp -R "$OUT" "$DEST/"
     echo "installed in $DEST"
-    echo "Restart MacDown: plug-ins are read once, at launch."
+    echo "Restart MacDown Next: plug-ins are read once, at launch."
 fi

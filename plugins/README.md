@@ -1,7 +1,7 @@
 # Plug-in
 
 Un plug-in è un bundle `.plugin` in
-`~/Library/Application Support/MacDown/PlugIns/`. MacDown lo carica
+`~/Library/Application Support/MacDown/PlugIns/`. MacDown Next lo carica
 all'avvio, istanzia la sua classe principale e aggiunge una voce al menu
 **Plug-ins**.
 
@@ -22,7 +22,7 @@ Il bundle deve dichiarare `NSPrincipalClass` nel suo `Info.plist`.
 
 ## Come raggiungere il documento
 
-Un plug-in non viene compilato insieme a MacDown e non conosce le sue
+Un plug-in non viene compilato insieme a MacDown Next e non conosce le sue
 classi. Il modo pulito è la catena dei responder: mentre scrivi, l'editor è
 il first responder.
 
@@ -45,7 +45,7 @@ installarlo:
 
     ./LoremIpsum/build.sh --install
 
-Poi riavvia MacDown, perché i plug-in vengono letti una volta sola.
+Poi riavvia MacDown Next, perché i plug-in vengono letti una volta sola.
 
 Non serve un target Xcode: un `.plugin` è un Info.plist più un binario
 compilato con `-bundle`, ed è quello che fa lo script.

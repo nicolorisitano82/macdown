@@ -22,7 +22,7 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant U as Utente
-    participant M as MacDown
+    participant M as MacDown Next
     participant W as WebView
     U->>M: digita
     M->>M: rende il markdown

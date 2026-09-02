@@ -14,7 +14,7 @@ Questi puntano ad altri file di questa cartella, e sono cliccabili:
 - [[02-mermaid]] — diagrammi
 - [[04-matematica]] — formule
 
-Cliccandoli il documento si apre in MacDown, non nel browser.
+Cliccandoli il documento si apre in MacDown Next, non nel browser.
 
 ## Riferimenti che non esistono ancora
 

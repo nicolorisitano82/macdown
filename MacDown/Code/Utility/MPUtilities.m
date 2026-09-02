@@ -7,6 +7,7 @@
 //
 
 #import "MPUtilities.h"
+#import "MPGlobals.h"
 #import "NSString+Lookup.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
@@ -27,9 +28,9 @@ static NSString *MPDataRootDirectory()
                                                 NSUserDomainMask, YES);
         NSCAssert(paths.count > 0,
                   @"Cannot find directory for NSApplicationSupportDirectory.");
-        NSDictionary *infoDictionary = [NSBundle mainBundle].infoDictionary;
+        // Not CFBundleName: see kMPDataDirectoryName.
         path = [NSString pathWithComponents:@[paths[0],
-                                              infoDictionary[@"CFBundleName"]]];
+                                              kMPDataDirectoryName]];
     }
     return path;
 }

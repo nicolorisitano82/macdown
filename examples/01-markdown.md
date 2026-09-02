@@ -48,7 +48,7 @@ Con **Task list syntax** acceso:
 
 ## Codice
 
-Codice in linea: `NSString *nome = @"MacDown";`
+Codice in linea: `NSString *nome = @"MacDown Next";`
 
 Con **Fenced code block** acceso, un blocco con il linguaggio dichiarato —
 e con **Evidenzia la sintassi** acceso in Preferenze › Resa grafica, colorato:
