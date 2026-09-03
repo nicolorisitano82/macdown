@@ -51,4 +51,21 @@
 /// The one to offer first, or nil if the list is somehow empty.
 @property (readonly, nonatomic) MPModelListing *recommendedListing;
 
+/** The address a pasted one really means, or nil if it means nothing.
+ *
+ * Two kindnesses and one refusal. A Hugging Face page address carries
+ * `/blob/`, which answers with a page of HTML rather than the file — the
+ * download would arrive, fail the magic-number check and say so, which is
+ * correct and useless when the fix is one word. It is turned into
+ * `/resolve/`. A `?download=true` and the like are left as they are.
+ *
+ * The refusal: anything that is not http or https, and anything not ending
+ * in .gguf. This reads a file, and a reader who pastes the wrong thing
+ * should be told before two gigabytes are moved.
+ */
++ (NSURL *)downloadableURLFromPastedText:(NSString *)text;
+
+/// The file name a pasted address would be saved under. Nil if unusable.
++ (NSString *)fileNameFromPastedText:(NSString *)text;
+
 @end

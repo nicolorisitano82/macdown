@@ -75,7 +75,9 @@ character.
   make plain, shorter, longer — over the selection, or the paragraph the
   caret is in. The answer streams in and one undo takes it all back.
   Nothing is sent anywhere: a GGUF model runs locally through llama.cpp,
-  and the Models panel downloads and installs one without any other tool.
+  and the Models panel downloads and installs one without any other tool —
+  from a short curated list, or from any address you paste. Turn the whole
+  thing off in the preferences if you would rather not have it.
 * **Document templates written by hand**, not generated: a commissioning
   report, a software test plan, release notes, minutes. Instant, the same
   every time, and there with no model installed. Put your own in the

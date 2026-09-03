@@ -41,6 +41,7 @@ static const CGFloat kMPMergeSpacing = 16.0;
 @property (strong, nonatomic) NSTextField *status;
 @property (strong, nonatomic) NSProgressIndicator *progress;
 @property (strong, nonatomic) NSButton *stopButton;
+@property (strong, nonatomic) NSTextField *addressField;
 @end
 
 
@@ -468,7 +469,107 @@ static const CGFloat kMPMergeSpacing = 16.0;
                                 ? [self accentTint] : nil]];
     }
 
+    [self addPane:[self pastePane]];
     [self updateProgress];
+}
+
+/** A field for an address of one's own, at the end of the offered ones.
+ *
+ * Four models is a list, not a policy. Somebody who wants a family this
+ * does not know about should not have to wait for the list to grow, and
+ * everything that guards the offered ones — the room on the disk, the size
+ * against what arrives, the four bytes that say GGUF — guards this equally.
+ */
+- (NSView *)pastePane
+{
+    NSStackView *row = [[NSStackView alloc] initWithFrame:NSZeroRect];
+    row.orientation = NSUserInterfaceLayoutOrientationVertical;
+    row.alignment = NSLayoutAttributeLeading;
+    row.spacing = kMPLineGap;
+    row.translatesAutoresizingMaskIntoConstraints = NO;
+
+    NSTextField *title = [NSTextField labelWithString:
+        NSLocalizedString(@"From an address", @"Models panel")];
+    [row addView:title inGravity:NSStackViewGravityTop];
+    [row addView:[self noteWithText:NSLocalizedString(
+        @"A link to a .gguf file. A Hugging Face page address works too — "
+        @"the link to the file itself is what gets used.",
+        @"Models panel")] inGravity:NSStackViewGravityTop];
+
+    if (!_addressField)
+    {
+        _addressField = [NSTextField textFieldWithString:@""];
+        _addressField.placeholderString =
+            @"https://huggingface.co/…/model-Q4_K_M.gguf";
+        _addressField.font = [NSFont systemFontOfSize:11.0];
+    }
+    NSButton *go = [NSButton buttonWithTitle:
+        NSLocalizedString(@"Download", @"Models panel") target:self
+                                      action:@selector(downloadFromAddress:)];
+    go.enabled = ([MPModelDownloader sharedDownloader].current == nil);
+
+    NSStackView *line = [[NSStackView alloc] initWithFrame:NSZeroRect];
+    line.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    line.alignment = NSLayoutAttributeCenterY;
+    line.spacing = 10.0;
+    [line addView:_addressField inGravity:NSStackViewGravityLeading];
+    [line addView:go inGravity:NSStackViewGravityTrailing];
+    [go setContentCompressionResistancePriority:NSLayoutPriorityRequired
+                  forOrientation:NSLayoutConstraintOrientationHorizontal];
+    [row addView:line inGravity:NSStackViewGravityTop];
+
+    NSView *padded = [[NSView alloc] initWithFrame:NSZeroRect];
+    padded.translatesAutoresizingMaskIntoConstraints = NO;
+    [padded addSubview:row];
+    [NSLayoutConstraint activateConstraints:@[
+        [row.topAnchor constraintEqualToAnchor:padded.topAnchor
+                                      constant:kMPPaneInsetVertical],
+        [row.bottomAnchor constraintEqualToAnchor:padded.bottomAnchor
+                                         constant:-kMPPaneInsetVertical],
+        [row.leadingAnchor constraintEqualToAnchor:padded.leadingAnchor
+                                          constant:kMPPaneInsetHorizontal],
+        [row.trailingAnchor constraintEqualToAnchor:padded.trailingAnchor
+                                           constant:-kMPPaneInsetHorizontal],
+        [line.widthAnchor constraintEqualToAnchor:row.widthAnchor],
+    ]];
+
+    NSGlassEffectView *pane =
+        [[NSGlassEffectView alloc] initWithFrame:NSZeroRect];
+    pane.cornerRadius = kMPPaneRadius;
+    pane.style = NSGlassEffectViewStyleRegular;
+    pane.contentView = padded;
+    pane.translatesAutoresizingMaskIntoConstraints = NO;
+    return pane;
+}
+
+- (void)downloadFromAddress:(id)sender
+{
+    NSString *text = self.addressField.stringValue;
+    self.status.stringValue = NSLocalizedString(@"Asking how big it is…",
+                                                @"Models panel");
+
+    __weak MPModelsWindowController *weakSelf = self;
+    [[MPModelDownloader sharedDownloader] listingForPastedText:text
+                                                    completion:
+        ^(MPModelListing *listing, NSError *error) {
+        MPModelsWindowController *controller = weakSelf;
+        if (!listing)
+        {
+            [controller updateProgress];
+            [controller presentError:error];
+            return;
+        }
+        NSError *failure = nil;
+        if (![[MPModelDownloader sharedDownloader]
+                startDownloadOfListing:listing error:&failure])
+        {
+            [controller updateProgress];
+            [controller presentError:failure];
+            return;
+        }
+        controller.addressField.stringValue = @"";
+        [controller reload];
+    }];
 }
 
 - (void)updateProgress

@@ -81,6 +81,43 @@
     return self;
 }
 
++ (NSURL *)downloadableURLFromPastedText:(NSString *)text
+{
+    NSString *trimmed = [text stringByTrimmingCharactersInSet:
+        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (!trimmed.length)
+        return nil;
+
+    NSURL *url = [NSURL URLWithString:trimmed];
+    NSString *scheme = url.scheme.lowercaseString;
+    if (!url || !([scheme isEqualToString:@"https"]
+                  || [scheme isEqualToString:@"http"]))
+        return nil;
+
+    // The page, not the file. One word apart, and the difference between a
+    // model and two gigabytes of HTML.
+    NSRange blob = [url.path rangeOfString:@"/blob/"];
+    if (blob.location != NSNotFound)
+    {
+        NSURLComponents *components =
+            [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+        components.path = [url.path stringByReplacingCharactersInRange:blob
+                                                            withString:@"/resolve/"];
+        url = components.URL ?: url;
+    }
+
+    if (![url.path.pathExtension.lowercaseString isEqualToString:@"gguf"])
+        return nil;
+    return url;
+}
+
++ (NSString *)fileNameFromPastedText:(NSString *)text
+{
+    NSURL *url = [self downloadableURLFromPastedText:text];
+    NSString *name = url.path.lastPathComponent.stringByRemovingPercentEncoding;
+    return name.length ? name : nil;
+}
+
 - (MPModelListing *)recommendedListing
 {
     for (MPModelListing *listing in self.listings)

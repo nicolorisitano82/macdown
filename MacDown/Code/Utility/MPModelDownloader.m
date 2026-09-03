@@ -69,6 +69,72 @@ NS_INLINE NSError *MPDownloaderError(MPModelDownloaderError code,
 }
 
 
+#pragma mark - An address somebody pasted
+
+- (void)listingForPastedText:(NSString *)text
+                  completion:(void (^)(MPModelListing *, NSError *))completion
+{
+    NSParameterAssert(completion);
+
+    NSURL *url = [MPModelCatalog downloadableURLFromPastedText:text];
+    if (!url)
+    {
+        completion(nil, MPDownloaderError(MPModelDownloaderErrorNotAModel,
+            NSLocalizedString(@"That is not an address of a .gguf file. Paste "
+                              @"the link to the model file itself.",
+                              @"Model download failure")));
+        return;
+    }
+
+    NSString *fileName = [MPModelCatalog fileNameFromPastedText:text];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = @"HEAD";
+
+    [[self.session dataTaskWithRequest:request completionHandler:
+        ^(NSData *data, NSURLResponse *response, NSError *error) {
+        long long length = response.expectedContentLength;
+        NSInteger status = [response isKindOfClass:[NSHTTPURLResponse class]]
+            ? [(NSHTTPURLResponse *)response statusCode] : 200;
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (error)
+            {
+                completion(nil, error);
+                return;
+            }
+            if (status < 200 || status >= 300 || length <= 0)
+            {
+                completion(nil, MPDownloaderError(
+                    MPModelDownloaderErrorNotAModel,
+                    [NSString stringWithFormat:NSLocalizedString(
+                        @"The server answered %ld and did not say how big the "
+                        @"file is, so there is nothing to download.",
+                        @"Model download failure"), (long)status]));
+                return;
+            }
+
+            MPModelListing *listing = [[MPModelListing alloc]
+                initWithDictionary:@{
+                    @"name": fileName.stringByDeletingPathExtension ?: @"?",
+                    @"file": fileName,
+                    @"url": url.absoluteString,
+                    @"bytes": @(length),
+                    @"parameters": NSLocalizedString(@"pasted address",
+                                                     @"Models panel"),
+                    @"quantisation": url.host ?: @"",
+                    @"note": NSLocalizedString(@"Added by hand. Nothing is "
+                        @"known about it here beyond its size.",
+                        @"Models panel"),
+                }];
+            completion(listing, listing ? nil : MPDownloaderError(
+                MPModelDownloaderErrorNotAModel,
+                NSLocalizedString(@"That address cannot be turned into a "
+                                  @"download.", @"Model download failure")));
+        });
+    }] resume];
+}
+
+
 #pragma mark - Starting and stopping
 
 - (BOOL)hasResumableDownloadForListing:(MPModelListing *)listing

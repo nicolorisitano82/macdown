@@ -59,4 +59,16 @@ extern NSString * const MPModelDownloaderErrorKey;
 /// Whether a half-finished download of this model is waiting to resume.
 - (BOOL)hasResumableDownloadForListing:(MPModelListing *)listing;
 
+/** Asks the server how big a pasted address is, and makes a listing of it.
+ *
+ * The size has to be known before the download starts, not discovered as
+ * it goes: it is what the progress bar measures against and what the disk
+ * check refuses on. One HEAD request answers it.
+ *
+ * `completion` comes back on the main queue, with a listing or a reason.
+ */
+- (void)listingForPastedText:(NSString *)text
+                  completion:(void (^)(MPModelListing *listing,
+                                       NSError *error))completion;
+
 @end

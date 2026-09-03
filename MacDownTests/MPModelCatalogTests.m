@@ -135,4 +135,69 @@
     }
 }
 
+#pragma mark - An address somebody pasted
+
+/// The page address and the file address are one word apart.
+- (void)testAHuggingFacePageAddressBecomesTheFile
+{
+    NSURL *url = [MPModelCatalog downloadableURLFromPastedText:
+        @"https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/blob/main/"
+        @"qwen2.5-3b-instruct-q4_k_m.gguf"];
+    XCTAssertEqualObjects(url.absoluteString,
+        @"https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/"
+        @"qwen2.5-3b-instruct-q4_k_m.gguf",
+        @"con /blob/ il server manda una pagina, non il modello");
+}
+
+- (void)testAFileAddressIsLeftAsItIs
+{
+    NSString *good = @"https://esempio.it/modelli/m-Q4_K_M.gguf";
+    XCTAssertEqualObjects(
+        [MPModelCatalog downloadableURLFromPastedText:good].absoluteString,
+        good);
+}
+
+/// Spaces around it are what a paste brings, not what a reader meant.
+- (void)testItIsTrimmed
+{
+    XCTAssertNotNil([MPModelCatalog downloadableURLFromPastedText:
+        @"  https://esempio.it/m.gguf\n"]);
+}
+
+/** What is refused, and refused before two gigabytes move.
+ *
+ * A wrong address that is only found out at the end costs a download; the
+ * magic-number check would catch it, and saying so first is cheaper.
+ */
+- (void)testWhatIsNotAModelAddressIsRefused
+{
+    NSArray<NSString *> *bad = @[
+        @"",
+        @"   ",
+        @"https://esempio.it/pagina",          // nessuna estensione
+        @"https://esempio.it/modello.bin",     // non gguf
+        @"ftp://esempio.it/m.gguf",            // non http
+        @"file:///Users/x/m.gguf",             // non è uno scaricamento
+        @"m.gguf",                             // nessuno schema
+        @"parole qualsiasi",
+    ];
+    for (NSString *text in bad)
+    {
+        XCTAssertNil([MPModelCatalog downloadableURLFromPastedText:text],
+                     @"«%@» non doveva passare", text);
+    }
+}
+
+/// The name it will be saved under, unescaped, because a folder is not a URL.
+- (void)testTheFileNameComesOffTheAddress
+{
+    XCTAssertEqualObjects([MPModelCatalog fileNameFromPastedText:
+        @"https://esempio.it/a/b/Modello-Q4_K_M.gguf"],
+        @"Modello-Q4_K_M.gguf");
+    XCTAssertEqualObjects([MPModelCatalog fileNameFromPastedText:
+        @"https://esempio.it/a/Modello%20con%20spazi.gguf"],
+        @"Modello con spazi.gguf");
+    XCTAssertNil([MPModelCatalog fileNameFromPastedText:@"niente"]);
+}
+
 @end
