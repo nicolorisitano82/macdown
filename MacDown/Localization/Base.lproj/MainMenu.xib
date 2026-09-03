@@ -509,6 +509,56 @@
                                     <action selector="toggleComment:" target="-1" id="7Xw-6O-ibS"/>
                                 </connections>
                             </menuItem>
+                            <menuItem isSeparatorItem="YES" id="mdw-sep-1"/>
+                            <menuItem title="Writing Help" id="mdw-help-menu">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Writing Help" id="mdw-help-submenu">
+                                    <items>
+                                        <menuItem title="Improve the Writing" id="mdw-w1-aaa">
+                                            <connections>
+                                                <action selector="improveWriting:" target="-1" id="mdw-w1-aaa-c"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Correct Mistakes Only" id="mdw-w2-aaa">
+                                            <connections>
+                                                <action selector="correctWriting:" target="-1" id="mdw-w2-aaa-c"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Make It Formal" id="mdw-w3-aaa">
+                                            <connections>
+                                                <action selector="makeWritingFormal:" target="-1" id="mdw-w3-aaa-c"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Make It Plain" id="mdw-w4-aaa">
+                                            <connections>
+                                                <action selector="makeWritingPlain:" target="-1" id="mdw-w4-aaa-c"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Make It Shorter" id="mdw-w5-aaa">
+                                            <connections>
+                                                <action selector="makeWritingShorter:" target="-1" id="mdw-w5-aaa-c"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Make It Longer" id="mdw-w6-aaa">
+                                            <connections>
+                                                <action selector="makeWritingLonger:" target="-1" id="mdw-w6-aaa-c"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem isSeparatorItem="YES" id="mdw-sep-2"/>
+                                        <menuItem title="Stop" keyEquivalent="." id="mdw-stop">
+                                            <connections>
+                                                <action selector="stopWritingHelp:" target="-1" id="mdw-stop-c"/>
+                                            </connections>
+                                        </menuItem>
+                                    </items>
+                                </menu>
+                            </menuItem>
+                            <menuItem title="Insert Template" identifier="mdw-tmpl-menu" id="mdw-tmpl-menu">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <menu key="submenu" title="Insert Template" id="mdw-tmpl-submenu">
+                                    <items/>
+                                </menu>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="kPi-GI-e6G"/>
                             <menuItem title="Convert To" id="e8h-vX-NQb">
                                 <modifierMask key="keyEquivalentModifierMask"/>

@@ -68,6 +68,7 @@
 		1FB3C0241E5061A2002AEB6A /* MPExportPanelAccessoryViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1FB3C0221E5061A2002AEB6A /* MPExportPanelAccessoryViewController.xib */; };
 		1FBBD4CB194CA36500BB3C88 /* hoedown_html_patch.c in Sources */ = {isa = PBXBuildFile; fileRef = 1FBBD4CA194CA36500BB3C88 /* hoedown_html_patch.c */; };
 		1FBDFE9C196170FE00BEEA70 /* Extensions in Resources */ = {isa = PBXBuildFile; fileRef = 1FBDFE9B196170FE00BEEA70 /* Extensions */; };
+		F55A342A5A01CEBCC9F60020 /* DocumentTemplates in Resources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310020 /* DocumentTemplates */; };
 		1FBDFEA11962A25A00BEEA70 /* MPGeneralPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FBDFE9F1962A25A00BEEA70 /* MPGeneralPreferencesViewController.m */; };
 		1FBDFEA51962A27300BEEA70 /* MPGeneralPreferencesViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1FBDFEA31962A27300BEEA70 /* MPGeneralPreferencesViewController.xib */; };
 		1FBE8E0F1A11DB1E003E1EF4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FBE8E0E1A11DB1E003E1EF4 /* main.m */; };
@@ -85,6 +86,7 @@
 		F55A342A5A01CEBCC9F60008 /* MPMarkdownRenderingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310008 /* MPMarkdownRenderingTests.m */; };
 		F55A342A5A01CEBCC9F60009 /* MPTextGeneratorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310009 /* MPTextGeneratorTests.m */; };
 		F55A342A5A01CEBCC9F60017 /* MPWritingAssistantTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310017 /* MPWritingAssistantTests.m */; };
+		F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */; };
 		1FF207631941CF22005B5654 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FF207621941CF22005B5654 /* WebKit.framework */; };
 		1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FFEB31819729F7C00B2254F /* MPAssetTests.m */; };
 		1FFEB31D19729FEF00B2254F /* test.css in Resources */ = {isa = PBXBuildFile; fileRef = 1FFEB31C19729FEF00B2254F /* test.css */; };
@@ -105,6 +107,7 @@
 		D0C1A1000000000000000013 /* MPProseChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000012 /* MPProseChecker.m */; };
 		2B1ED4173F22E318E5273038 /* MPMarkdownFromRichText.m in Sources */ = {isa = PBXBuildFile; fileRef = 29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */; };
 		9E013672CE8891FB4CC03FEA /* MPTableSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FD4A413A2D24286D41BAD8E9 /* MPTableSource.m */; };
+		F55A342A5A01CEBCC9F60022 /* MPDocumentTemplate.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310022 /* MPDocumentTemplate.m */; };
 		F55A342A5A01CEBCC9F60014 /* MPModelStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310014 /* MPModelStore.m */; };
 		F55A342A5A01CEBCC9F60016 /* MPWritingAssistant.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310016 /* MPWritingAssistant.m */; };
 		F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310012 /* MPLlamaGenerator.m */; };
@@ -458,6 +461,7 @@
 		1FBD43142099A1A200B348CD /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = Localization/tr.lproj/MPMarkdownPreferencesViewController.strings; sourceTree = "<group>"; };
 		1FBD43152099A1A200B348CD /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = Localization/tr.lproj/MPDocument.strings; sourceTree = "<group>"; };
 		1FBDFE9B196170FE00BEEA70 /* Extensions */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Extensions; path = Resources/Extensions; sourceTree = "<group>"; };
+		7DA2311453239F0973310020 /* DocumentTemplates */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DocumentTemplates; path = Resources/DocumentTemplates; sourceTree = "<group>"; };
 		1FBDFE9E1962A25A00BEEA70 /* MPGeneralPreferencesViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPGeneralPreferencesViewController.h; sourceTree = "<group>"; };
 		1FBDFE9F1962A25A00BEEA70 /* MPGeneralPreferencesViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPGeneralPreferencesViewController.m; sourceTree = "<group>"; };
 		1FBDFEA41962A27300BEEA70 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = MacDown/Localization/Base.lproj/MPGeneralPreferencesViewController.xib; sourceTree = SOURCE_ROOT; };
@@ -512,6 +516,7 @@
 		7DA2311453239F0973310008 /* MPMarkdownRenderingTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkdownRenderingTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310009 /* MPTextGeneratorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTextGeneratorTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310017 /* MPWritingAssistantTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPWritingAssistantTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocumentTemplateTests.m; sourceTree = "<group>"; };
 		1FF207621941CF22005B5654 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		1FFEB31819729F7C00B2254F /* MPAssetTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPAssetTests.m; sourceTree = "<group>"; };
 		1FFEB31A19729FD500B2254F /* test.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = test.js; sourceTree = "<group>"; };
@@ -550,6 +555,8 @@
 		7DA2311453239F0973310014 /* MPModelStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPModelStore.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310015 /* MPWritingAssistant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPWritingAssistant.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310016 /* MPWritingAssistant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPWritingAssistant.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310021 /* MPDocumentTemplate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPDocumentTemplate.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310022 /* MPDocumentTemplate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocumentTemplate.m; sourceTree = "<group>"; };
 		F1E9F6F3D23F16D2286A65DE /* MPTableSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPTableSource.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310003 /* MPRemoteImageFetch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPRemoteImageFetch.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310004 /* MPRemoteImageFetch.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPRemoteImageFetch.m; sourceTree = "<group>"; };
@@ -675,6 +682,8 @@
 				F4515DE9C37E50F01037E3DA /* MPMarkdownFromRichText.h */,
 				29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */,
 				F1E9F6F3D23F16D2286A65DE /* MPTableSource.h */,
+				7DA2311453239F0973310021 /* MPDocumentTemplate.h */,
+				7DA2311453239F0973310022 /* MPDocumentTemplate.m */,
 				7DA2311453239F0973310013 /* MPModelStore.h */,
 				7DA2311453239F0973310014 /* MPModelStore.m */,
 				7DA2311453239F0973310015 /* MPWritingAssistant.h */,
@@ -765,6 +774,7 @@
 				1F9A14F3194EF6A600D1C6A9 /* Themes */,
 				1F41FF7A1C8EEE9200FD9886 /* Templates */,
 				1FBDFE9B196170FE00BEEA70 /* Extensions */,
+				7DA2311453239F0973310020 /* DocumentTemplates */,
 				1F0F3BFB195F75F200FC0B3B /* MathJax */,
 				1F8A82D819533E9300B6BF69 /* Prism */,
 				1F4C8E99194AE0B9004BF82E /* MarkdownDocument.icns */,
@@ -946,6 +956,7 @@
 				7DA2311453239F0973310008 /* MPMarkdownRenderingTests.m */,
 				7DA2311453239F0973310009 /* MPTextGeneratorTests.m */,
 				7DA2311453239F0973310017 /* MPWritingAssistantTests.m */,
+				7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */,
 				1F25E1C21A50F4F10029371D /* MPColorTests.m */,
 				1FCDCA311944F96E00B1F966 /* MPPreferencesTests.m */,
 				1FFF301C1948A5320009AF24 /* MPStringLookupTests.m */,
@@ -1154,6 +1165,7 @@
 				F55A342A5A01CEBCC9F60007 /* Credits.rtf in Resources */,
 				1F0D9DB4194AC9EE008E1856 /* MainMenu.xib in Resources */,
 				1FBDFE9C196170FE00BEEA70 /* Extensions in Resources */,
+				F55A342A5A01CEBCC9F60020 /* DocumentTemplates in Resources */,
 				1F41FF7B1C8EEE9200FD9886 /* Templates in Resources */,
 				1F27896B1973BEB100EE696A /* Localizable.strings in Resources */,
 				1F0D9DAD194AC8EF008E1856 /* Images.xcassets in Resources */,
@@ -1346,6 +1358,7 @@
 				D0C1A1000000000000000013 /* MPProseChecker.m in Sources */,
 				2B1ED4173F22E318E5273038 /* MPMarkdownFromRichText.m in Sources */,
 				9E013672CE8891FB4CC03FEA /* MPTableSource.m in Sources */,
+				F55A342A5A01CEBCC9F60022 /* MPDocumentTemplate.m in Sources */,
 				F55A342A5A01CEBCC9F60014 /* MPModelStore.m in Sources */,
 				F55A342A5A01CEBCC9F60016 /* MPWritingAssistant.m in Sources */,
 				F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */,
@@ -1394,6 +1407,7 @@
 				F55A342A5A01CEBCC9F60008 /* MPMarkdownRenderingTests.m in Sources */,
 				F55A342A5A01CEBCC9F60009 /* MPTextGeneratorTests.m in Sources */,
 				F55A342A5A01CEBCC9F60017 /* MPWritingAssistantTests.m in Sources */,
+				F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */,
 				1FFEB3271972DAB400B2254F /* MPHTMLTabularizeTests.m in Sources */,
 				1F25E1C31A50F4F10029371D /* MPColorTests.m in Sources */,
 				1FFF301D1948A5320009AF24 /* MPStringLookupTests.m in Sources */,
