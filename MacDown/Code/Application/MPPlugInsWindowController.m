@@ -302,15 +302,70 @@ static NSString * const kMPPlugInNameColumn = @"name";
     if ([alert runModal] != NSAlertFirstButtonReturn)
         return;
 
-    // The Trash rather than deletion: this is the user's file, and a wrong
-    // click should be recoverable.
     NSError *error = nil;
-    if (![[NSFileManager defaultManager] trashItemAtURL:plugin.bundleURL
-                                       resultingItemURL:NULL error:&error])
+    if (![self trashPlugIn:plugin error:&error])
     {
-        [self.window presentError:error];
+        // Said out loud, with somewhere to go: a row that stays put after
+        // "Rimuovi" and says nothing is the worst of the three outcomes.
+        NSAlert *failed = [[NSAlert alloc] init];
+        failed.messageText = [NSString stringWithFormat:NSLocalizedString(
+            @"“%@” non si è potuto rimuovere", @"Removal failed"),
+            plugin.name];
+        failed.informativeText = error.localizedDescription ?: @"";
+        [failed addButtonWithTitle:NSLocalizedString(@"OK", @"Confirm")];
+        [failed addButtonWithTitle:NSLocalizedString(@"Mostra nel Finder",
+            @"Reveal the plug-in that could not be removed")];
+        if ([failed runModal] == NSAlertSecondButtonReturn)
+        {
+            [[NSWorkspace sharedWorkspace]
+                activateFileViewerSelectingURLs:@[plugin.bundleURL]];
+        }
     }
     [self reload];
+}
+
+/** Moves a plug-in to the Trash, and makes sure it went.
+ *
+ * The Trash rather than deletion: this is the user's file, and a wrong
+ * click should be recoverable. Checked afterwards, because the interesting
+ * failure is the one where the call says yes and the folder still holds
+ * what it held — which is what "Rimuovi non lo fa sparire dalla lista"
+ * looks like from the outside.
+ */
+- (BOOL)trashPlugIn:(MPPlugIn *)plugin error:(NSError **)error
+{
+    NSURL *url = plugin.bundleURL;
+    if (!url)
+    {
+        if (error)
+        {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain
+                code:NSFileNoSuchFileError userInfo:@{
+                NSLocalizedDescriptionKey: NSLocalizedString(
+                    @"Il plug-in non dice dove si trova.",
+                    @"A plug-in with no bundle URL")}];
+        }
+        return NO;
+    }
+
+    NSFileManager *manager = [NSFileManager defaultManager];
+    if (![manager trashItemAtURL:url resultingItemURL:NULL error:error])
+        return NO;
+
+    if ([manager fileExistsAtPath:url.path])
+    {
+        if (error)
+        {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain
+                code:NSFileWriteNoPermissionError userInfo:@{
+                NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                    NSLocalizedString(@"È ancora in %@.",
+                                      @"The file survived the Trash"),
+                    url.URLByDeletingLastPathComponent.path]}];
+        }
+        return NO;
+    }
+    return YES;
 }
 
 - (void)revealFolder:(id)sender
@@ -346,15 +401,23 @@ static NSString * const kMPPlugInNameColumn = @"name";
         return box;
     }
 
-    NSTextField *label = [NSTextField labelWithString:plugin.name];
+    NSMutableString *title = [NSMutableString stringWithString:plugin.name];
     if (plugin.version.length)
-    {
-        label.stringValue = [NSString stringWithFormat:@"%@  %@",
-                             plugin.name, plugin.version];
-    }
+        [title appendFormat:@"  %@", plugin.version];
+    // Where it comes from, because two copies of the same plug-in can be
+    // installed at once and only one of them is removable: without this,
+    // removing the installed one and seeing the built-in take its place
+    // reads as nothing having happened.
+    [title appendString:plugin.isBuiltIn
+        ? NSLocalizedString(@"  · in dotazione",
+                            @"A plug-in that ships with the application")
+        : NSLocalizedString(@"  · installato",
+                            @"A plug-in the user installed")];
+
+    NSTextField *label = [NSTextField labelWithString:title];
     label.textColor = [self isEnabled:plugin] ? [NSColor labelColor]
                                               : [NSColor secondaryLabelColor];
-    label.toolTip = plugin.identifier;
+    label.toolTip = plugin.bundleURL.path ?: plugin.identifier;
     return label;
 }
 

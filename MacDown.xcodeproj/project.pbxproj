@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		F55A342A5A01CEBCC9F60047 /* MPProseIssuesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310050 /* MPProseIssuesViewController.m */; };
+		F55A342A5A01CEBCC9F60048 /* MPPlugInsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310051 /* MPPlugInsTests.m */; };
 		D1A0000000000000000000BA /* MDDrawioProgress.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000D3 /* MDDrawioProgress.m */; };
 		D1A0000000000000000000BB /* MDDrawioLog.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000D5 /* MDDrawioLog.m */; };
 		D1A0000000000000000000B9 /* Drawio.plugin in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C9 /* Drawio.plugin */; };
@@ -583,6 +584,7 @@
 		7DA2311453239F0973310044 /* MPCodeLanguageTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPCodeLanguageTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310047 /* MPCodeIndenterTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPCodeIndenterTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310048 /* MDDrawioPlugInTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MDDrawioPlugInTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310051 /* MPPlugInsTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPPlugInsTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocumentTemplateTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310036 /* MPModelCatalogTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPModelCatalogTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310037 /* MPTemplateMenuTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTemplateMenuTests.m; sourceTree = "<group>"; };
@@ -1077,6 +1079,7 @@
 				7DA2311453239F0973310044 /* MPCodeLanguageTests.m */,
 				7DA2311453239F0973310047 /* MPCodeIndenterTests.m */,
 				7DA2311453239F0973310048 /* MDDrawioPlugInTests.m */,
+				7DA2311453239F0973310051 /* MPPlugInsTests.m */,
 				7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */,
 				7DA2311453239F0973310036 /* MPModelCatalogTests.m */,
 				7DA2311453239F0973310037 /* MPTemplateMenuTests.m */,
@@ -1584,6 +1587,7 @@
 				F55A342A5A01CEBCC9F60043 /* MPCodeLanguageTests.m in Sources */,
 				F55A342A5A01CEBCC9F60045 /* MPCodeIndenterTests.m in Sources */,
 				F55A342A5A01CEBCC9F60046 /* MDDrawioPlugInTests.m in Sources */,
+				F55A342A5A01CEBCC9F60048 /* MPPlugInsTests.m in Sources */,
 				F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */,
 				F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */,

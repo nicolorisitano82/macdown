@@ -31,6 +31,9 @@ NSString *MPPathToDataFile(NSString *name, NSString *dirPath);
  */
 NSArray<NSURL *> *MPPlugInBundleURLs(void);
 
+/// The same, over folders given rather than the two the application uses.
+NSArray<NSURL *> *MPPlugInBundleURLsInFolders(NSArray<NSURL *> *folders);
+
 /** Which line `location` falls on in `text`, counting from one.
  *
  * For showing where something is rather than for finding it again: a

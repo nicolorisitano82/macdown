@@ -73,17 +73,20 @@ NSUInteger MPLineNumberForLocation(NSString *text, NSUInteger location)
 
 NSArray<NSURL *> *MPPlugInBundleURLs(void)
 {
-    NSFileManager *manager = [NSFileManager defaultManager];
-    NSMutableArray *found = [NSMutableArray array];
-    NSMutableSet *names = [NSMutableSet set];
-
-    NSArray *folders = @[
+    return MPPlugInBundleURLsInFolders(@[
         [NSURL fileURLWithPath:MPDataDirectory(kMPPlugInsDirectoryName)],
         // The application's own, which is where the ones it ships with are.
         // The test bundle lives here too in a test build, and is not a
         // plug-in: the extension settles that.
         [NSBundle mainBundle].builtInPlugInsURL,
-    ];
+    ]);
+}
+
+NSArray<NSURL *> *MPPlugInBundleURLsInFolders(NSArray<NSURL *> *folders)
+{
+    NSFileManager *manager = [NSFileManager defaultManager];
+    NSMutableArray *found = [NSMutableArray array];
+    NSMutableSet *names = [NSMutableSet set];
 
     for (NSURL *folder in folders)
     {
