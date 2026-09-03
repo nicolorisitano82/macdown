@@ -137,20 +137,34 @@ NS_INLINE void treat()
  * window; the items aim at the first responder, so it is still the document
  * in front that inserts.
  */
+/// The tag the nib puts on Format › Insert Template.
+const NSInteger kMPTemplateMenuTag = 9001;
+
 - (void)takeChargeOfTheTemplateMenu
 {
     NSMenu *submenu = [self templateSubmenu];
     submenu.delegate = self;
 }
 
+/** Finds the template submenu by its tag.
+ *
+ * The first version of this walk also required `item.action == NULL`,
+ * reasoning that an item which only opens a submenu does nothing itself.
+ * It does: AppKit gives it `submenuAction:`. So nothing matched, the
+ * delegate was never set, and the menu shipped exactly as the nib drew it
+ * — empty. The identifier it also looked for was innocent, and is in the
+ * compiled nib; I checked, after blaming it in a comment.
+ *
+ * A tag rather than a title, because a title is localised out from under
+ * a lookup like this one.
+ */
 - (NSMenu *)templateSubmenu
 {
     for (NSMenuItem *top in [NSApp mainMenu].itemArray)
     {
         for (NSMenuItem *item in top.submenu.itemArray)
         {
-            if (item.action == NULL && item.submenu
-                    && [item.identifier isEqualToString:@"mdw-tmpl-menu"])
+            if (item.tag == kMPTemplateMenuTag && item.submenu)
                 return item.submenu;
         }
     }

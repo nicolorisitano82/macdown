@@ -89,6 +89,7 @@
 		F55A342A5A01CEBCC9F60017 /* MPWritingAssistantTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310017 /* MPWritingAssistantTests.m */; };
 		F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */; };
 		F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310036 /* MPModelCatalogTests.m */; };
+		F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310037 /* MPTemplateMenuTests.m */; };
 		1FF207631941CF22005B5654 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FF207621941CF22005B5654 /* WebKit.framework */; };
 		1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FFEB31819729F7C00B2254F /* MPAssetTests.m */; };
 		1FFEB31D19729FEF00B2254F /* test.css in Resources */ = {isa = PBXBuildFile; fileRef = 1FFEB31C19729FEF00B2254F /* test.css */; };
@@ -524,6 +525,7 @@
 		7DA2311453239F0973310017 /* MPWritingAssistantTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPWritingAssistantTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocumentTemplateTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310036 /* MPModelCatalogTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPModelCatalogTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310037 /* MPTemplateMenuTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTemplateMenuTests.m; sourceTree = "<group>"; };
 		1FF207621941CF22005B5654 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		1FFEB31819729F7C00B2254F /* MPAssetTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPAssetTests.m; sourceTree = "<group>"; };
 		1FFEB31A19729FD500B2254F /* test.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = test.js; sourceTree = "<group>"; };
@@ -975,6 +977,7 @@
 				7DA2311453239F0973310017 /* MPWritingAssistantTests.m */,
 				7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */,
 				7DA2311453239F0973310036 /* MPModelCatalogTests.m */,
+				7DA2311453239F0973310037 /* MPTemplateMenuTests.m */,
 				1F25E1C21A50F4F10029371D /* MPColorTests.m */,
 				1FCDCA311944F96E00B1F966 /* MPPreferencesTests.m */,
 				1FFF301C1948A5320009AF24 /* MPStringLookupTests.m */,
@@ -1430,6 +1433,7 @@
 				F55A342A5A01CEBCC9F60017 /* MPWritingAssistantTests.m in Sources */,
 				F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */,
 				F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */,
+				F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */,
 				1FFEB3271972DAB400B2254F /* MPHTMLTabularizeTests.m in Sources */,
 				1F25E1C31A50F4F10029371D /* MPColorTests.m in Sources */,
 				1FFF301D1948A5320009AF24 /* MPStringLookupTests.m in Sources */,

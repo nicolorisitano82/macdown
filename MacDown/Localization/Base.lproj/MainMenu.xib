@@ -558,7 +558,7 @@
                                     </items>
                                 </menu>
                             </menuItem>
-                            <menuItem title="Insert Template" identifier="mdw-tmpl-menu" id="mdw-tmpl-menu">
+                            <menuItem tag="9001" title="Insert Template" id="mdw-tmpl-menu">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="Insert Template" id="mdw-tmpl-submenu">
                                     <items/>
