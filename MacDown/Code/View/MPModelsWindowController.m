@@ -11,6 +11,29 @@
 
 static const CGFloat kMPPanelWidth = 560.0;
 static const CGFloat kMPPanelPadding = 20.0;
+/// Room for the title bar the content now runs underneath.
+static const CGFloat kMPPanelTitleBar = 44.0;
+/** The rhythm of a pane, in one place.
+ *
+ * Generous on purpose. The first attempt used twelve and sixteen and the
+ * verdict was that it looked like it had been made in Paint, which was
+ * fair: glass wants air around what floats on it, or the pane reads as a
+ * box drawn around some text rather than as a surface holding it.
+ *
+ * The curvature goes with the padding — a wide margin inside a tight
+ * corner looks like a mistake — and the buttons keep the system's own
+ * radius, which is smaller, so the two sit concentric.
+ */
+static const CGFloat kMPPaneRadius = 18.0;
+static const CGFloat kMPPaneInsetVertical = 20.0;
+static const CGFloat kMPPaneInsetHorizontal = 24.0;
+/// Between the words and the button that acts on them.
+static const CGFloat kMPPaneGap = 24.0;
+/// Between the lines of one pane: the name, then what is true about it.
+static const CGFloat kMPLineGap = 5.0;
+/// Between panes, and the distance at which the glass starts to merge.
+static const CGFloat kMPPaneSpacing = 12.0;
+static const CGFloat kMPMergeSpacing = 16.0;
 
 
 @interface MPModelsWindowController ()
@@ -36,12 +59,18 @@ static const CGFloat kMPPanelPadding = 20.0;
 - (instancetype)init
 {
     NSWindow *window = [[NSWindow alloc]
-        initWithContentRect:NSMakeRect(0.0, 0.0, kMPPanelWidth, 520.0)
+        initWithContentRect:NSMakeRect(0.0, 0.0, kMPPanelWidth, 560.0)
                   styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
                             | NSWindowStyleMaskResizable
+                            | NSWindowStyleMaskFullSizeContentView
                     backing:NSBackingStoreBuffered defer:NO];
     window.title = NSLocalizedString(@"Models", @"Models panel title");
-    window.minSize = NSMakeSize(kMPPanelWidth, 300.0);
+    window.minSize = NSMakeSize(kMPPanelWidth, 360.0);
+    // The material runs the whole height, title bar included: glass needs
+    // to be seen against something, and a solid strip across the top is a
+    // seam where the design asks for one surface.
+    window.titlebarAppearsTransparent = YES;
+    window.movableByWindowBackground = YES;
     [window center];
 
     self = [super initWithWindow:window];
@@ -67,18 +96,55 @@ static const CGFloat kMPPanelPadding = 20.0;
 {
     NSView *content = self.window.contentView;
 
+    // The ground. Glass refracts what is behind it, so there has to be a
+    // material behind it — over a plain window it looks like a grey box.
+    NSVisualEffectView *ground =
+        [[NSVisualEffectView alloc] initWithFrame:NSZeroRect];
+    ground.material = NSVisualEffectMaterialUnderWindowBackground;
+    ground.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+    ground.state = NSVisualEffectStateActive;
+    ground.translatesAutoresizingMaskIntoConstraints = NO;
+    [content addSubview:ground];
+
     _rows = [[NSStackView alloc] initWithFrame:NSZeroRect];
     _rows.orientation = NSUserInterfaceLayoutOrientationVertical;
     _rows.alignment = NSLayoutAttributeLeading;
-    _rows.spacing = 14.0;
+    _rows.spacing = kMPPaneSpacing;
     _rows.translatesAutoresizingMaskIntoConstraints = NO;
+
+    // Merges the panes that are close to one another, which is what makes a
+    // list of them read as one surface rather than as a stack of cards. The
+    // spacing is the distance at which they start to run together, and it
+    // has to be a little more than the gap between rows or nothing merges.
+    NSGlassEffectContainerView *container =
+        [[NSGlassEffectContainerView alloc] initWithFrame:NSZeroRect];
+    container.spacing = kMPMergeSpacing;
+    container.contentView = _rows;
+    container.translatesAutoresizingMaskIntoConstraints = NO;
 
     NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSZeroRect];
     scroll.hasVerticalScroller = YES;
     scroll.drawsBackground = NO;
-    scroll.documentView = _rows;
+    scroll.documentView = container;
     scroll.translatesAutoresizingMaskIntoConstraints = NO;
     [content addSubview:scroll];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [ground.topAnchor constraintEqualToAnchor:content.topAnchor],
+        [ground.bottomAnchor constraintEqualToAnchor:content.bottomAnchor],
+        [ground.leadingAnchor constraintEqualToAnchor:content.leadingAnchor],
+        [ground.trailingAnchor constraintEqualToAnchor:content.trailingAnchor],
+        [_rows.topAnchor constraintEqualToAnchor:container.topAnchor],
+        [_rows.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
+        [_rows.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [_rows.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+    ]];
+
+    NSStackView *footer = [[NSStackView alloc] initWithFrame:NSZeroRect];
+    footer.orientation = NSUserInterfaceLayoutOrientationVertical;
+    footer.alignment = NSLayoutAttributeLeading;
+    footer.spacing = 10.0;
+    footer.translatesAutoresizingMaskIntoConstraints = NO;
 
     _progress = [[NSProgressIndicator alloc] initWithFrame:NSZeroRect];
     _progress.style = NSProgressIndicatorStyleBar;
@@ -86,65 +152,92 @@ static const CGFloat kMPPanelPadding = 20.0;
     _progress.minValue = 0.0;
     _progress.maxValue = 1.0;
     _progress.hidden = YES;
-    _progress.translatesAutoresizingMaskIntoConstraints = NO;
-    [content addSubview:_progress];
 
-    _status = [NSTextField labelWithString:@""];
+    _status = [NSTextField wrappingLabelWithString:@""];
     _status.font = [NSFont systemFontOfSize:11.0];
     _status.textColor = [NSColor secondaryLabelColor];
-    _status.translatesAutoresizingMaskIntoConstraints = NO;
-    [content addSubview:_status];
+    _status.selectable = NO;
 
     _stopButton = [NSButton buttonWithTitle:
         NSLocalizedString(@"Stop", @"Models panel") target:self
                                      action:@selector(stopDownload:)];
     _stopButton.hidden = YES;
-    _stopButton.translatesAutoresizingMaskIntoConstraints = NO;
-    [content addSubview:_stopButton];
 
     NSButton *reveal = [NSButton buttonWithTitle:
         NSLocalizedString(@"Reveal Models Folder", @"Models panel")
                                           target:self
                                           action:@selector(revealFolder:)];
-    reveal.translatesAutoresizingMaskIntoConstraints = NO;
-    [content addSubview:reveal];
+
+    // Progress and its Stop on one line, the words under them.
+    NSStackView *bar = [[NSStackView alloc] initWithFrame:NSZeroRect];
+    bar.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    bar.alignment = NSLayoutAttributeCenterY;
+    bar.spacing = 12.0;
+    [bar addView:_progress inGravity:NSStackViewGravityLeading];
+    [bar addView:_stopButton inGravity:NSStackViewGravityTrailing];
+    // Its own height and a width that gives: a progress bar with neither
+    // is a nought-by-nought view that appears as nothing appearing.
+    [_progress.heightAnchor constraintEqualToConstant:6.0].active = YES;
+    [_progress.widthAnchor constraintGreaterThanOrEqualToConstant:200.0]
+        .active = YES;
+    [_progress setContentHuggingPriority:NSLayoutPriorityDefaultLow
+                          forOrientation:NSLayoutConstraintOrientationHorizontal];
+
+    NSStackView *words = [[NSStackView alloc] initWithFrame:NSZeroRect];
+    words.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    words.alignment = NSLayoutAttributeCenterY;
+    words.spacing = 12.0;
+    [words addView:_status inGravity:NSStackViewGravityLeading];
+    [words addView:reveal inGravity:NSStackViewGravityTrailing];
+    [reveal setContentCompressionResistancePriority:NSLayoutPriorityRequired
+                          forOrientation:NSLayoutConstraintOrientationHorizontal];
+
+    [footer addView:bar inGravity:NSStackViewGravityTop];
+    [footer addView:words inGravity:NSStackViewGravityTop];
+
+    NSView *paddedFooter = [[NSView alloc] initWithFrame:NSZeroRect];
+    paddedFooter.translatesAutoresizingMaskIntoConstraints = NO;
+    [paddedFooter addSubview:footer];
+    [NSLayoutConstraint activateConstraints:@[
+        [footer.topAnchor constraintEqualToAnchor:paddedFooter.topAnchor
+                                         constant:kMPPaneInsetVertical],
+        [footer.bottomAnchor constraintEqualToAnchor:paddedFooter.bottomAnchor
+                                            constant:-kMPPaneInsetVertical],
+        [footer.leadingAnchor constraintEqualToAnchor:
+            paddedFooter.leadingAnchor constant:kMPPaneInsetHorizontal],
+        [footer.trailingAnchor constraintEqualToAnchor:
+            paddedFooter.trailingAnchor constant:-kMPPaneInsetHorizontal],
+    ]];
+
+    NSGlassEffectView *footerPane =
+        [[NSGlassEffectView alloc] initWithFrame:NSZeroRect];
+    footerPane.cornerRadius = kMPPaneRadius;
+    footerPane.style = NSGlassEffectViewStyleRegular;
+    footerPane.contentView = paddedFooter;
+    footerPane.translatesAutoresizingMaskIntoConstraints = NO;
+    [content addSubview:footerPane];
 
     CGFloat pad = kMPPanelPadding;
     [NSLayoutConstraint activateConstraints:@[
         [scroll.topAnchor constraintEqualToAnchor:content.topAnchor
-                                         constant:pad],
+                                         constant:kMPPanelTitleBar],
         [scroll.leadingAnchor constraintEqualToAnchor:content.leadingAnchor
                                              constant:pad],
         [scroll.trailingAnchor constraintEqualToAnchor:content.trailingAnchor
                                               constant:-pad],
-        [scroll.bottomAnchor constraintEqualToAnchor:_progress.topAnchor
-                                            constant:-14.0],
+        [scroll.bottomAnchor constraintEqualToAnchor:footerPane.topAnchor
+                                            constant:-12.0],
 
-        [_rows.widthAnchor constraintEqualToAnchor:scroll.widthAnchor
-                                          constant:-4.0],
+        [container.widthAnchor constraintEqualToAnchor:scroll.widthAnchor
+                                              constant:-4.0],
 
-        [_progress.leadingAnchor constraintEqualToAnchor:content.leadingAnchor
-                                               constant:pad],
-        [_progress.trailingAnchor constraintEqualToAnchor:
-            _stopButton.leadingAnchor constant:-10.0],
-        [_stopButton.trailingAnchor constraintEqualToAnchor:
+        [footerPane.leadingAnchor constraintEqualToAnchor:
+            content.leadingAnchor constant:pad],
+        [footerPane.trailingAnchor constraintEqualToAnchor:
             content.trailingAnchor constant:-pad],
-        [_stopButton.centerYAnchor constraintEqualToAnchor:
-            _progress.centerYAnchor],
-
-        [_status.leadingAnchor constraintEqualToAnchor:content.leadingAnchor
-                                             constant:pad],
-        [_status.topAnchor constraintEqualToAnchor:_progress.bottomAnchor
-                                         constant:8.0],
-        [_status.trailingAnchor constraintLessThanOrEqualToAnchor:
-            reveal.leadingAnchor constant:-10.0],
-
-        [reveal.trailingAnchor constraintEqualToAnchor:content.trailingAnchor
-                                             constant:-pad],
-        [reveal.topAnchor constraintEqualToAnchor:_progress.bottomAnchor
-                                        constant:4.0],
-        [reveal.bottomAnchor constraintEqualToAnchor:content.bottomAnchor
-                                            constant:-pad],
+        [footerPane.bottomAnchor constraintEqualToAnchor:
+            content.bottomAnchor constant:-pad],
+        [bar.widthAnchor constraintEqualToAnchor:words.widthAnchor],
     ]];
 }
 
@@ -157,12 +250,24 @@ static const CGFloat kMPPanelPadding = 20.0;
     [self.window makeKeyAndOrderFront:nil];
 }
 
-/// A heading between the two halves of the list.
+/// The accent, weak enough to tint glass rather than paint it.
+- (NSColor *)accentTint
+{
+    return [[NSColor controlAccentColor] colorWithAlphaComponent:0.28];
+}
+
+/** A heading between the two halves of the list.
+ *
+ * Not on glass. Everything cannot float, or nothing reads as floating:
+ * the headings belong to the ground and the panes sit above them.
+ */
 - (NSView *)headingWithText:(NSString *)text
 {
-    NSTextField *label = [NSTextField labelWithString:text];
-    label.font = [NSFont boldSystemFontOfSize:
-        [NSFont systemFontSize]];
+    NSTextField *label = [NSTextField labelWithString:
+        text.localizedUppercaseString];
+    label.font = [NSFont systemFontOfSize:11.0
+                                   weight:NSFontWeightSemibold];
+    label.textColor = [NSColor secondaryLabelColor];
     return label;
 }
 
@@ -172,10 +277,20 @@ static const CGFloat kMPPanelPadding = 20.0;
     label.font = [NSFont systemFontOfSize:11.0];
     label.textColor = [NSColor secondaryLabelColor];
     label.selectable = NO;
+    // Shortened rather than clipped: a line that wants four points more
+    // than the column has was losing its last letters without saying so.
+    label.lineBreakMode = NSLineBreakByTruncatingTail;
+    [label setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow
+                  forOrientation:NSLayoutConstraintOrientationHorizontal];
     return label;
 }
 
-/** One row: what it is on the left, what can be done with it on the right.
+/** One row: what it is on the left, what can be done with it on the right,
+ *  the pair floating on a pane of glass.
+ *
+ * `tint` colours the glass rather than anything drawn on it, which is how
+ * the one in use and the one recommended are told apart without a badge,
+ * a border or a second typeface.
  */
 - (NSView *)rowWithTitle:(NSString *)title
                   detail:(NSString *)detail
@@ -184,16 +299,18 @@ static const CGFloat kMPPanelPadding = 20.0;
                   action:(SEL)action
           representedBy:(id)object
                  enabled:(BOOL)enabled
+                    tint:(NSColor *)tint
 {
     NSStackView *row = [[NSStackView alloc] initWithFrame:NSZeroRect];
     row.orientation = NSUserInterfaceLayoutOrientationHorizontal;
     row.alignment = NSLayoutAttributeCenterY;
-    row.spacing = 12.0;
+    row.spacing = kMPPaneGap;
+    row.translatesAutoresizingMaskIntoConstraints = NO;
 
     NSStackView *text = [[NSStackView alloc] initWithFrame:NSZeroRect];
     text.orientation = NSUserInterfaceLayoutOrientationVertical;
     text.alignment = NSLayoutAttributeLeading;
-    text.spacing = 2.0;
+    text.spacing = kMPLineGap;
 
     NSTextField *name = [NSTextField labelWithString:title];
     name.font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
@@ -220,12 +337,54 @@ static const CGFloat kMPPanelPadding = 20.0;
                                  OBJC_ASSOCIATION_RETAIN);
         [row addView:button inGravity:NSStackViewGravityTrailing];
     }
-    return row;
+
+    // The row inside a plain view, pinned with constraints, and that view
+    // is what the glass holds. A stack view's own edgeInsets did not
+    // survive being a glass content view — measured: the pane came out
+    // exactly as tall as its text, with no margin at all — and explicit
+    // constraints are not open to interpretation.
+    NSView *padded = [[NSView alloc] initWithFrame:NSZeroRect];
+    padded.translatesAutoresizingMaskIntoConstraints = NO;
+    [padded addSubview:row];
+    [NSLayoutConstraint activateConstraints:@[
+        [row.topAnchor constraintEqualToAnchor:padded.topAnchor
+                                      constant:kMPPaneInsetVertical],
+        [row.bottomAnchor constraintEqualToAnchor:padded.bottomAnchor
+                                         constant:-kMPPaneInsetVertical],
+        [row.leadingAnchor constraintEqualToAnchor:padded.leadingAnchor
+                                          constant:kMPPaneInsetHorizontal],
+        [row.trailingAnchor constraintEqualToAnchor:padded.trailingAnchor
+                                           constant:-kMPPaneInsetHorizontal],
+    ]];
+
+    NSGlassEffectView *pane =
+        [[NSGlassEffectView alloc] initWithFrame:NSZeroRect];
+    pane.cornerRadius = kMPPaneRadius;
+    pane.style = NSGlassEffectViewStyleRegular;
+    pane.tintColor = tint;
+    // Only the content view is promised a place inside the glass; a
+    // subview added the ordinary way is not.
+    pane.contentView = padded;
+    pane.translatesAutoresizingMaskIntoConstraints = NO;
+    return pane;
 }
 
 - (id)rowObject:(NSButton *)button
 {
     return objc_getAssociatedObject(button, @selector(rowObject));
+}
+
+/** Adds a pane, full width.
+ *
+ * A stack view sizes its children to what they contain, so the panes came
+ * out five different widths — measured, and wrong: they are rows of one
+ * list and a list has one edge.
+ */
+- (void)addPane:(NSView *)pane
+{
+    [self.rows addView:pane inGravity:NSStackViewGravityTop];
+    [pane.widthAnchor constraintEqualToAnchor:self.rows.widthAnchor].active =
+        YES;
 }
 
 - (void)reload
@@ -263,20 +422,25 @@ static const CGFloat kMPPanelPadding = 20.0;
                 @" — the one the writing commands use",
                 @"Models panel")];
         }
-        [self.rows addView:
+        [self addPane:
             [self rowWithTitle:model.name detail:detail note:nil
                    buttonTitle:inUse
                         ? NSLocalizedString(@"Remove", @"Models panel")
                         : NSLocalizedString(@"Use This One", @"Models panel")
                         action:inUse ? @selector(removeModel:)
                                      : @selector(useModel:)
-                 representedBy:model enabled:YES]
-                 inGravity:NSStackViewGravityTop];
+                 representedBy:model enabled:YES
+                          tint:inUse ? [self accentTint] : nil]];
     }
 
-    [self.rows addView:[self headingWithText:
-        NSLocalizedString(@"Available to download", @"Models panel")]
-             inGravity:NSStackViewGravityTop];
+    NSView *lastInstalled = self.rows.views.lastObject;
+    NSView *availableHeading = [self headingWithText:
+        NSLocalizedString(@"Available to download", @"Models panel")];
+    [self.rows addView:availableHeading inGravity:NSStackViewGravityTop];
+    // Air above the second heading: without it the panes of one half merge
+    // with the panes of the other and the list reads as one long thing.
+    if (lastInstalled)
+        [self.rows setCustomSpacing:26.0 afterView:lastInstalled];
 
     MPModelDownloader *downloader = [MPModelDownloader sharedDownloader];
     NSMutableSet<NSString *> *have = [NSMutableSet set];
@@ -295,12 +459,13 @@ static const CGFloat kMPPanelPadding = 20.0;
         else if ([downloader hasResumableDownloadForListing:listing])
             title = NSLocalizedString(@"Resume", @"Models panel");
 
-        [self.rows addView:
+        [self addPane:
             [self rowWithTitle:listing.name detail:detail note:listing.note
                    buttonTitle:title action:@selector(downloadModel:)
                  representedBy:listing
-                       enabled:!already && !downloader.current]
-                 inGravity:NSStackViewGravityTop];
+                       enabled:!already && !downloader.current
+                          tint:listing.recommended && !already
+                                ? [self accentTint] : nil]];
     }
 
     [self updateProgress];
