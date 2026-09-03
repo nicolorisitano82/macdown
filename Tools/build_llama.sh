@@ -37,9 +37,13 @@ fi
 # refuses the archives.
 DEPLOYMENT=26.0
 
+# Both architectures, because the application's Release build is universal
+# and a linker handed an arm64-only archive for an x86_64 slice says only
+# that every symbol is missing.
 cmake -S "$SRC" -B "$OUT" \
     -DCMAKE_BUILD_TYPE="$CONFIG" \
     -DCMAKE_OSX_DEPLOYMENT_TARGET="$DEPLOYMENT" \
+    -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
     -DBUILD_SHARED_LIBS=OFF \
     -DGGML_METAL=ON \
     -DGGML_METAL_EMBED_LIBRARY=ON \
