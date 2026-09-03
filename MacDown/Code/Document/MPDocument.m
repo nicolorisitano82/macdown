@@ -43,6 +43,7 @@
 #import "MPWritingAssistant.h"
 #import "MPDocumentTemplate.h"
 #import "MPCodeLanguages.h"
+#import "MPProseIssuesViewController.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -185,6 +186,12 @@ NS_INLINE NSString *MPRectStringForAutosaveName(NSString *name)
      MPSidebarControllerDelegate,
      WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler,
      MPAutosaving, MPRendererDataSource, MPRendererDelegate>
+
+/// The tally in the title bar, and the list it opens.
+@property (strong, nonatomic) NSButton *proseButton;
+@property (strong, nonatomic)
+    NSTitlebarAccessoryViewController *proseAccessory;
+@property (strong, nonatomic) NSPopover *prosePopover;
 
 typedef NS_ENUM(NSUInteger, MPWordCountType) {
     MPWordCountTypeWord,
@@ -4842,17 +4849,25 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
     [self updateProseSummary];
 }
 
-/// Puts the tally in the window subtitle, which is otherwise unused, so the
-/// count needs no widget of its own.
+/** Puts the tally in the title bar, on a button that opens the list.
+ *
+ * It used to be the window's subtitle, which reads the same and cannot be
+ * clicked. "Spie del passivo: 5" told you there were five and left the
+ * finding of them to you, in a document where the underlines may be pages
+ * apart.
+ */
 - (void)updateProseSummary
 {
     NSWindow *window = self.windowForSheet;
     if (!window)
         return;
+    // Nothing here writes the subtitle any more; a stale one would sit
+    // under the title for the rest of the session.
+    window.subtitle = @"";
 
     if (!self.editor.proseHighlightsEnabled)
     {
-        window.subtitle = @"";
+        self.proseAccessory.hidden = YES;
         return;
     }
 
@@ -4860,8 +4875,97 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
     NSArray<MPProseIssue *> *issues =
         [checker issuesInString:self.editor.string ?: @""];
     NSString *summary = [checker summaryForIssues:issues];
-    window.subtitle = summary ?: NSLocalizedString(
+
+    [self buildProseButtonIfNeeded];
+    self.proseAccessory.hidden = NO;
+    self.proseButton.title = summary ?: NSLocalizedString(
         @"nothing flagged", @"prose checker found no issues");
+    // Nothing flagged is not a list worth opening.
+    self.proseButton.enabled = (issues.count > 0);
+}
+
+- (void)buildProseButtonIfNeeded
+{
+    if (self.proseAccessory)
+        return;
+    NSWindow *window = self.windowForSheet;
+    if (!window)
+        return;
+
+    NSButton *button = [NSButton buttonWithTitle:@"" target:self
+                                          action:@selector(showProseIssues:)];
+    button.bezelStyle = NSBezelStyleAccessoryBarAction;
+    button.bordered = NO;
+    button.font = [NSFont systemFontOfSize:[NSFont smallSystemFontSize]];
+    button.contentTintColor = [NSColor secondaryLabelColor];
+    button.lineBreakMode = NSLineBreakByTruncatingTail;
+    button.frame = NSMakeRect(0.0, 0.0, 320.0, 22.0);
+    self.proseButton = button;
+
+    NSView *holder = [[NSView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 332.0, 28.0)];
+    button.frame = NSMakeRect(0.0, 3.0, 320.0, 22.0);
+    [holder addSubview:button];
+
+    NSTitlebarAccessoryViewController *accessory =
+        [[NSTitlebarAccessoryViewController alloc] init];
+    accessory.view = holder;
+    accessory.layoutAttribute = NSLayoutAttributeRight;
+    self.proseAccessory = accessory;
+    [window addTitlebarAccessoryViewController:accessory];
+}
+
+/** The list of what is flagged, and going to one of them.
+ *
+ * Read again on opening rather than kept: between the tally being written
+ * and the button being pressed the document may have been typed in, and a
+ * list of ranges that have moved sends the caret to the wrong words.
+ */
+- (IBAction)showProseIssues:(id)sender
+{
+    if (self.prosePopover.isShown)
+    {
+        [self.prosePopover close];
+        return;
+    }
+
+    MPProseChecker *checker = [MPProseChecker sharedChecker];
+    NSString *text = self.editor.string ?: @"";
+    NSArray<MPProseIssue *> *issues = [checker issuesInString:text];
+    if (!issues.count)
+        return;
+
+    __weak MPDocument *document = self;
+    MPProseIssuesViewController *list =
+        [[MPProseIssuesViewController alloc] initWithIssues:issues
+            inText:text summary:[checker summaryForIssues:issues]
+            chosen:^(MPProseIssue *issue) {
+        [document goToProseIssue:issue];
+    }];
+
+    NSPopover *popover = [[NSPopover alloc] init];
+    popover.contentViewController = list;
+    popover.behavior = NSPopoverBehaviorTransient;
+    popover.contentSize = list.view.frame.size;
+    self.prosePopover = popover;
+
+    NSView *anchorView = self.proseButton ?: self.editor;
+    [popover showRelativeToRect:anchorView.bounds ofView:anchorView
+                 preferredEdge:NSRectEdgeMinY];
+}
+
+- (void)goToProseIssue:(MPProseIssue *)issue
+{
+    NSRange range = issue.range;
+    if (NSMaxRange(range) > self.editor.string.length)
+        return;
+
+    // Selected rather than a caret next to it: the point is to see which
+    // words were meant.
+    self.editor.selectedRange = range;
+    [self.editor scrollRangeToVisible:range];
+    [self.windowForSheet makeFirstResponder:self.editor];
+    [self.prosePopover close];
 }
 
 - (IBAction)toggleToolbar:(id)sender

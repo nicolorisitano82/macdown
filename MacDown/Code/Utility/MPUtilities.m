@@ -48,6 +48,29 @@ NSString *MPPathToDataFile(NSString *name, NSString *dirPath)
                                           name]];
 }
 
+NSUInteger MPLineNumberForLocation(NSString *text, NSUInteger location)
+{
+    if (!text.length)
+        return 1;
+    location = MIN(location, text.length);
+
+    // One more line for each line ending passed, and not for the last line
+    // of a text that does not end with one: its end is on it, not after it.
+    NSUInteger line = 1;
+    NSUInteger at = 0;
+    while (at < location)
+    {
+        NSUInteger start = 0, end = 0, contentsEnd = 0;
+        [text getLineStart:&start end:&end contentsEnd:&contentsEnd
+                  forRange:NSMakeRange(at, 0)];
+        if (end <= at || end > location || contentsEnd == end)
+            break;
+        line++;
+        at = end;
+    }
+    return line;
+}
+
 NSArray<NSURL *> *MPPlugInBundleURLs(void)
 {
     NSFileManager *manager = [NSFileManager defaultManager];

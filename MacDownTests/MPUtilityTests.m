@@ -255,4 +255,49 @@
     XCTAssertNotEqualObjects(kMPCommandName, @"macdown");
 }
 
+/** Which line something is on, for showing rather than for finding.
+ *
+ * The prose list is a column of "è stato" and "può essere": without the
+ * line number the rows cannot be told apart at all.
+ */
+- (void)testTheLineSomethingIsOn
+{
+    NSString *text = @"prima\nseconda\n\nquarta";
+    //                 0      6        14 15
+
+    XCTAssertEqual(MPLineNumberForLocation(text, 0), 1u);
+    XCTAssertEqual(MPLineNumberForLocation(text, 5), 1u);
+    // The newline belongs to the line it ends, so what follows it is the
+    // next one.
+    XCTAssertEqual(MPLineNumberForLocation(text, 6), 2u);
+    XCTAssertEqual(MPLineNumberForLocation(text, 13), 2u);
+    XCTAssertEqual(MPLineNumberForLocation(text, 14), 3u);
+    XCTAssertEqual(MPLineNumberForLocation(text, 15), 4u);
+    XCTAssertEqual(MPLineNumberForLocation(text, text.length), 4u);
+
+    // Nothing to count, and nowhere to be: still a first line.
+    XCTAssertEqual(MPLineNumberForLocation(@"", 0), 1u);
+    XCTAssertEqual(MPLineNumberForLocation(@"solo una riga", 99), 1u);
+}
+
+/** The plug-ins the application loads, from both of the places it looks.
+ *
+ * The one that ships inside is why nothing has to be installed; the test
+ * bundle lives in the same folder and is not a plug-in.
+ */
+- (void)testThePlugInsTheApplicationLoads
+{
+    NSArray<NSURL *> *urls = MPPlugInBundleURLs();
+    NSMutableArray *names = [NSMutableArray array];
+    for (NSURL *url in urls)
+        [names addObject:url.lastPathComponent];
+
+    XCTAssertTrue([names containsObject:@"Drawio.plugin"],
+                  @"il plug-in in dotazione non è fra %@", names);
+    XCTAssertFalse([names containsObject:@"MacDownTests.xctest"],
+                   @"il bundle dei test non è un plug-in");
+    for (NSString *name in names)
+        XCTAssertEqualObjects(name.pathExtension, @"plugin");
+}
+
 @end

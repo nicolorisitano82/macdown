@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F55A342A5A01CEBCC9F60047 /* MPProseIssuesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310050 /* MPProseIssuesViewController.m */; };
 		D1A0000000000000000000BA /* MDDrawioProgress.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000D3 /* MDDrawioProgress.m */; };
 		D1A0000000000000000000BB /* MDDrawioLog.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000D5 /* MDDrawioLog.m */; };
 		D1A0000000000000000000B9 /* Drawio.plugin in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C9 /* Drawio.plugin */; };
@@ -217,6 +218,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7DA2311453239F0973310049 /* MPProseIssuesViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPProseIssuesViewController.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310050 /* MPProseIssuesViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPProseIssuesViewController.m; sourceTree = "<group>"; };
 		D1A0000000000000000000CF /* MDDrawioProgress.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDDrawioProgress.h; sourceTree = "<group>"; };
 		D1A0000000000000000000D3 /* MDDrawioProgress.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MDDrawioProgress.m; sourceTree = "<group>"; };
 		D1A0000000000000000000D4 /* MDDrawioLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDDrawioLog.h; sourceTree = "<group>"; };
@@ -865,6 +868,8 @@
 				D0C1C00200000000000000A1 /* MPSemanticStyler.h */,
 				D0C1C00100000000000000A1 /* MPSemanticStyler.m */,
 				1F396E6519B0EA17000D3EFC /* MPEditorView.m */,
+				7DA2311453239F0973310049 /* MPProseIssuesViewController.h */,
+				7DA2311453239F0973310050 /* MPProseIssuesViewController.m */,
 				7DA2311453239F0973310034 /* MPModelsWindowController.h */,
 				7DA2311453239F0973310035 /* MPModelsWindowController.m */,
 				D0C1A1000000000000000021 /* MPMathEditorController.h */,
@@ -1503,6 +1508,7 @@
 				D0C1E00300000000000000C1 /* MPMarkerHider.m in Sources */,
 				D0C1C00300000000000000A1 /* MPSemanticStyler.m in Sources */,
 				1F396E6619B0EA17000D3EFC /* MPEditorView.m in Sources */,
+				F55A342A5A01CEBCC9F60047 /* MPProseIssuesViewController.m in Sources */,
 				F55A342A5A01CEBCC9F60035 /* MPModelsWindowController.m in Sources */,
 				1F0D9D7A194AC7F7008E1856 /* MPMarkdownPreferencesViewController.m in Sources */,
 				1F0D9D7D194AC7F7008E1856 /* MPPreferencesViewController.m in Sources */,

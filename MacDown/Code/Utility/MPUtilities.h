@@ -31,6 +31,13 @@ NSString *MPPathToDataFile(NSString *name, NSString *dirPath);
  */
 NSArray<NSURL *> *MPPlugInBundleURLs(void);
 
+/** Which line `location` falls on in `text`, counting from one.
+ *
+ * For showing where something is rather than for finding it again: a
+ * number a person can compare with what the editor shows them.
+ */
+NSUInteger MPLineNumberForLocation(NSString *text, NSUInteger location);
+
 NSArray *MPListEntriesForDirectory(
     NSString *dirName, NSString *(^processor)(NSString *absolutePath)
 );
