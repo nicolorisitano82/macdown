@@ -259,6 +259,10 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (assign) NSTimeInterval lastTypedAt;
 /// Made on the first writing command, and only then.
 @property (strong) MPWritingAssistant *writingAssistant;
+/// Says what the writing help is doing, while it is doing it.
+@property (strong) NSView *writingStatus;
+@property (strong) NSTextField *writingStatusLabel;
+@property (strong) NSProgressIndicator *writingSpinner;
 /// Where the editor stood when the current burst of typing began.
 @property (assign) CGFloat editorTopWhenTypingBegan;
 /// Whether a keystroke is recent enough that the panes should sit still.
@@ -1509,6 +1513,9 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
 
     if (MPIsWritingCommandAction(action))
     {
+        // Switched off, and they are not offered at all.
+        if (!self.preferences.editorWritingHelp)
+            return NO;
         // Something to work on, a model to work with, and not already busy.
         NSRange range =
             [MPWritingAssistant rangeForCommandInTextView:self.editor];
@@ -1517,7 +1524,10 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
             && !self.writingAssistant.isWorking;
     }
     if (action == @selector(stopWritingHelp:))
-        return self.writingAssistant.isWorking;
+    {
+        return self.preferences.editorWritingHelp
+            && self.writingAssistant.isWorking;
+    }
 
     if (action == @selector(toggleToolbar:))
     {
@@ -3848,6 +3858,87 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
  */
 #pragma mark - Writing help
 
+/** A spinner and a line of words, beside the word count.
+ *
+ * Because the wait had nothing to show for it. The model takes a moment to
+ * open, and on a machine that has never compiled the Metal shaders the
+ * first command takes three and a half seconds — for all of which the
+ * application looked as though it had ignored the request. A wait that is
+ * accounted for is a wait; an unaccounted one is a fault.
+ *
+ * Built here rather than in the nib: it is two views, and a nib would be
+ * one more file to keep in step with twenty-six localisations.
+ */
+- (void)buildWritingStatusIfNeeded
+{
+    if (self.writingStatus)
+        return;
+
+    NSPopUpButton *counter = self.wordCountWidget;
+    NSView *strip = counter.superview;
+    if (!strip)
+        return;
+
+    NSProgressIndicator *spinner =
+        [[NSProgressIndicator alloc] initWithFrame:NSZeroRect];
+    spinner.style = NSProgressIndicatorStyleSpinning;
+    spinner.controlSize = NSControlSizeSmall;
+    spinner.indeterminate = YES;
+    spinner.displayedWhenStopped = NO;
+    spinner.translatesAutoresizingMaskIntoConstraints = NO;
+
+    NSTextField *label = [NSTextField labelWithString:@""];
+    label.font = [NSFont systemFontOfSize:11.0];
+    label.textColor = [NSColor secondaryLabelColor];
+    label.lineBreakMode = NSLineBreakByTruncatingTail;
+    label.translatesAutoresizingMaskIntoConstraints = NO;
+
+    NSStackView *row = [[NSStackView alloc] initWithFrame:NSZeroRect];
+    row.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    row.alignment = NSLayoutAttributeCenterY;
+    row.spacing = 6.0;
+    row.translatesAutoresizingMaskIntoConstraints = NO;
+    [row addView:spinner inGravity:NSStackViewGravityLeading];
+    [row addView:label inGravity:NSStackViewGravityLeading];
+    row.hidden = YES;
+
+    [strip addSubview:row];
+    [NSLayoutConstraint activateConstraints:@[
+        [row.leadingAnchor constraintEqualToAnchor:counter.trailingAnchor
+                                          constant:12.0],
+        [row.centerYAnchor constraintEqualToAnchor:counter.centerYAnchor],
+        [row.trailingAnchor constraintLessThanOrEqualToAnchor:
+            strip.trailingAnchor constant:-12.0],
+    ]];
+
+    self.writingStatus = row;
+    self.writingStatusLabel = label;
+    self.writingSpinner = spinner;
+}
+
+- (void)showWritingStatus:(NSString *)text
+{
+    [self buildWritingStatusIfNeeded];
+    self.writingStatusLabel.stringValue = text ?: @"";
+    self.writingStatus.hidden = NO;
+    [self.writingSpinner startAnimation:nil];
+}
+
+- (void)hideWritingStatus
+{
+    [self.writingSpinner stopAnimation:nil];
+    self.writingStatus.hidden = YES;
+    self.writingStatusLabel.stringValue = @"";
+}
+
+/// "Making it shorter…", from the command's own menu title.
+- (NSString *)workingTitleForCommand:(MPWritingCommand)command
+{
+    return [NSString stringWithFormat:NSLocalizedString(@"%@…",
+        @"Writing help in progress"),
+        [MPWritingAssistant titleForCommand:command]];
+}
+
 /** Runs a writing command, loading the model first if it is not loaded.
  *
  * The loading is somebody else's business — one model serves every window
@@ -3858,30 +3949,46 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
  */
 - (void)runWritingCommand:(MPWritingCommand)command
 {
+    // Two waits, and they are told apart on screen: opening the model is
+    // one thing and answering is another, and a reader who sees only a
+    // spinner cannot tell a slow model from a stuck one.
+    MPModelStore *store = [MPModelStore sharedStore];
+    [self showWritingStatus:store.isGeneratorLoaded
+        ? [self workingTitleForCommand:command]
+        : NSLocalizedString(@"Opening the model…", @"Writing help")];
+
     __weak MPDocument *weakSelf = self;
-    [[MPModelStore sharedStore] generatorWithCompletion:
+    [store generatorWithCompletion:
         ^(id<MPTextGenerator> generator, NSError *error) {
         MPDocument *document = weakSelf;
         if (!document)
             return;
         if (!generator)
         {
+            [document hideWritingStatus];
             [document presentWritingError:error];
             return;
         }
+        [document showWritingStatus:
+            [document workingTitleForCommand:command]];
 
         if (document.writingAssistant.generator != generator)
         {
             document.writingAssistant =
                 [[MPWritingAssistant alloc] initWithGenerator:generator];
         }
-        [document.writingAssistant runCommand:command
+        BOOL started = [document.writingAssistant runCommand:command
                                    onTextView:document.editor
                                    completion:^(NSError *failure) {
+            [document hideWritingStatus];
             // Cancelling is the reader's own doing and needs no telling.
             if (failure && failure.code != MPTextGeneratorErrorCancelled)
                 [document presentWritingError:failure];
         }];
+        // Refused — nothing to work on, or one already running — and the
+        // spinner would otherwise turn for a command that never began.
+        if (!started)
+            [document hideWritingStatus];
     }];
 }
 

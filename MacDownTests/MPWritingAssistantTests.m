@@ -256,6 +256,33 @@
                           @"un solo annulla, non cinque");
 }
 
+/** The text stays put until there is something to put in its place.
+ *
+ * It used to be taken away the moment the command started, so that the
+ * document would not look untouched while the model warmed up. Then the
+ * warming up was measured — three and a half seconds on a machine that has
+ * never compiled the Metal shaders — and for all of it the reader's
+ * paragraph was gone with nothing to show why.
+ */
+- (void)testTheTextWaitsForTheFirstPiece
+{
+    self.generator.manual = YES;
+    self.textView.string = @"Prima. Da riscrivere. Dopo.";
+    self.textView.selectedRange = NSMakeRange(7, 14);
+
+    [self.assistant runCommand:MPWritingCommandImprove
+                    onTextView:self.textView completion:nil];
+
+    XCTAssertEqualObjects(self.textView.string,
+                          @"Prima. Da riscrivere. Dopo.",
+                          @"niente è ancora cambiato");
+    XCTAssertTrue(self.assistant.isWorking);
+
+    [self.generator deliver];
+    XCTAssertEqualObjects(self.textView.string,
+                          @"Prima. Testo riscritto. Dopo.");
+}
+
 /// A failure with nothing generated must not cost the reader their text.
 - (void)testAFailureLeavesTheTextWhereItWas
 {

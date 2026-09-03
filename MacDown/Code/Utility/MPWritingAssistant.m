@@ -20,6 +20,8 @@ const NSUInteger MPWritingCommandCount = 6;
 @property (assign, nonatomic, getter=isWorking) BOOL working;
 /// What has been written into the document so far, this command.
 @property (assign, nonatomic) NSRange written;
+/// The text still waiting to be replaced, until the first piece arrives.
+@property (assign, nonatomic) NSRange pending;
 @property (weak, nonatomic) NSTextView *textView;
 @end
 
@@ -179,19 +181,22 @@ const NSUInteger MPWritingCommandCount = 6;
     self.textView = textView;
     // Nothing written yet, but the place it will go is known.
     self.written = NSMakeRange(range.location, 0);
+    self.pending = NSMakeRange(range.location, 0);
 
     // One group around the whole answer, so the reader takes it all back
     // with one undo rather than a token at a time.
     [textView.undoManager beginUndoGrouping];
 
-    // The selection goes first: replacing it as the first piece arrives
-    // would leave the old text on screen for as long as the model takes to
-    // start, which reads as nothing happening.
-    if ([textView shouldChangeTextInRange:range replacementString:@""])
-    {
-        [textView.textStorage replaceCharactersInRange:range withString:@""];
-        [textView didChangeText];
-    }
+    // The text stays until there is something to put in its place.
+    //
+    // It used to go at once, so that the document would not sit there
+    // looking untouched while the model started. Then the model was
+    // measured starting: on a machine that has never compiled the Metal
+    // shaders it is three and a half seconds, and for all of it the
+    // reader's paragraph was simply gone. A paragraph that vanishes and
+    // stays vanished is worse than one that waits, and the waiting is
+    // accounted for now by something that says so on screen.
+    self.pending = range;
 
     __weak MPWritingAssistant *weakSelf = self;
     [self.generator generateWithInstruction:
@@ -214,6 +219,19 @@ const NSUInteger MPWritingCommandCount = 6;
     NSTextView *textView = self.textView;
     if (!textView || !piece.length)
         return;
+
+    // The first piece is what the old text makes way for.
+    if (self.pending.length)
+    {
+        NSRange going = self.pending;
+        self.pending = NSMakeRange(going.location, 0);
+        if ([textView shouldChangeTextInRange:going replacementString:@""])
+        {
+            [textView.textStorage replaceCharactersInRange:going
+                                               withString:@""];
+            [textView didChangeText];
+        }
+    }
 
     NSRange at = NSMakeRange(NSMaxRange(self.written), 0);
     if (at.location > textView.textStorage.length)
@@ -238,18 +256,13 @@ const NSUInteger MPWritingCommandCount = 6;
 {
     NSTextView *textView = self.textView;
 
-    // Nothing came back at all: put back what was taken away, so a failure
-    // costs the reader nothing rather than deleting their paragraph.
+    // Nothing came back at all: the text was never taken away, so there is
+    // nothing to put back — only the selection to leave as it was found.
     if (textView && !self.written.length)
     {
-        NSRange at = NSMakeRange(self.written.location, 0);
-        if ([textView shouldChangeTextInRange:at replacementString:original])
-        {
-            [textView.textStorage replaceCharactersInRange:at
-                                               withString:original];
-            [textView didChangeText];
-            textView.selectedRange = NSMakeRange(at.location, original.length);
-        }
+        textView.selectedRange = self.pending.length
+            ? self.pending
+            : NSMakeRange(self.written.location, 0);
     }
     else if (textView)
     {

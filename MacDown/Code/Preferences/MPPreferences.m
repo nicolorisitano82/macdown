@@ -52,6 +52,7 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
         @"editorHideMarkers": @YES,
         @"editorBlockLayout": @YES,
         @"exportFetchesRemoteImages": @YES,
+        @"editorWritingHelp": @YES,
     }];
 
     [self cleanupObsoleteAutosaveValues];
@@ -140,6 +141,7 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
 @dynamic editorHideMarkers;
 @dynamic editorBlockLayout;
 @dynamic exportFetchesRemoteImages;
+@dynamic editorWritingHelp;
 @dynamic editorPasteAsMarkdown;
 @dynamic disabledPlugIns;
 @dynamic htmlCodeBlockAccessory;

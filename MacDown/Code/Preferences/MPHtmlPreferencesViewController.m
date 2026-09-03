@@ -392,6 +392,9 @@ static const CGFloat kMPNoteWidth = 400.0;
         [self checkboxWithTitle:NSLocalizedString(
             @"Fetch images from the network when exporting", @"Preference")
                             key:@"exportFetchesRemoteImages"],
+        [self checkboxWithTitle:NSLocalizedString(
+            @"Offer the writing commands, using a local model",
+            @"Preference") key:@"editorWritingHelp"],
         [self noteWithText:NSLocalizedString(
             @"Editor themes state heading sizes in points, chosen for the "
             @"default body size. This keeps their proportions at any size. "

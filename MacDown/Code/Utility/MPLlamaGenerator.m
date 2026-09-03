@@ -126,6 +126,18 @@ static void MPLlamaSwallowLog(enum ggml_log_level level, const char *text,
 }
 
 
+- (void)warmUp
+{
+    // Straight through the same road a command takes, so whatever it
+    // compiles is what a command will need. One token is enough: the cost
+    // is in the first pass, not in the length of the answer.
+    NSUInteger limit = self.maximumTokens;
+    self.maximumTokens = 1;
+    [self runPrompt:@"." limit:1 temperature:0.0f onChunk:nil];
+    self.maximumTokens = limit;
+}
+
+
 #pragma mark - MPTextGenerator
 
 - (NSString *)displayName

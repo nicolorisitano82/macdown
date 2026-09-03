@@ -183,6 +183,10 @@ static const NSTimeInterval kMPModelIdleTimeout = 10.0 * 60.0;
         NSError *error = nil;
         MPLlamaGenerator *loaded =
             [[MPLlamaGenerator alloc] initWithModelURL:url error:&error];
+        // Here, on this queue, while whoever asked is being told to wait:
+        // the shaders are compiled once in the life of an install and this
+        // is the only place that wait can be accounted for.
+        [loaded warmUp];
         dispatch_async(dispatch_get_main_queue(), ^{
             MPModelStore *store = weakSelf;
             if (!store)

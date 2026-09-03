@@ -31,6 +31,19 @@
 /// Where the model was read from.
 @property (readonly, copy, nonatomic) NSURL *modelURL;
 
+/** Makes the context and produces one token, which is thrown away.
+ *
+ * Metal compiles the shaders embedded in the library the first time a
+ * context runs, and on a machine that has never done it that is around
+ * three and a half seconds. Left to happen by itself it happens inside the
+ * reader's first command, where it looks like the command has hung. Done
+ * here it happens inside the load, which is a wait that can be explained.
+ *
+ * Slow the first time in the life of an install and quick after: the
+ * system keeps the compiled shaders. Call it off the main thread.
+ */
+- (void)warmUp;
+
 /// How many tokens of answer at most. 512 unless set.
 @property (assign, nonatomic) NSUInteger maximumTokens;
 
