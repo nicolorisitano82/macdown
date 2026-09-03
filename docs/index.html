@@ -545,7 +545,9 @@
         <pre>git clone https://github.com/nicolorisitano82/macdown.git
 cd macdown
 git submodule update --init
-pod install</pre>
+pod install
+make -C Dependency/peg-markdown-highlight
+Tools/build_llama.sh</pre>
         <p style="margin-top:12px">Then open <code>MacDown.xcworkspace</code>
         — the workspace, not the project, which on its own has no pods.</p>
       </div>

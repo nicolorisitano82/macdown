@@ -199,3 +199,6 @@ MacDown/Resources/Styles/GitHub-2020.css
 
 # Plug-in bundles are build output
 *.plugin/
+
+# llama.cpp builds its own static libraries beside its sources.
+Dependency/llama.cpp/build-*/

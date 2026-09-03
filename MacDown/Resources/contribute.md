@@ -18,6 +18,8 @@ Tools cannot stand in for Xcode.
     cd macdown
     git submodule update --init
     pod install
+    make -C Dependency/peg-markdown-highlight
+    Tools/build_llama.sh
 
 Then open `MacDown.xcworkspace` — the workspace, not the project, which on
 its own has no pods. CocoaPods is easiest from Homebrew; the Ruby that ships

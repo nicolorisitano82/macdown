@@ -83,6 +83,7 @@
 		F55A342A5A01CEBCC9F60005 /* MPRemoteImageFetchTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310005 /* MPRemoteImageFetchTests.m */; };
 		F55A342A5A01CEBCC9F60006 /* MPPreviewSchemeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310006 /* MPPreviewSchemeTests.m */; };
 		F55A342A5A01CEBCC9F60008 /* MPMarkdownRenderingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310008 /* MPMarkdownRenderingTests.m */; };
+		F55A342A5A01CEBCC9F60009 /* MPTextGeneratorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310009 /* MPTextGeneratorTests.m */; };
 		1FF207631941CF22005B5654 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FF207621941CF22005B5654 /* WebKit.framework */; };
 		1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 1FFEB31819729F7C00B2254F /* MPAssetTests.m */; };
 		1FFEB31D19729FEF00B2254F /* test.css in Resources */ = {isa = PBXBuildFile; fileRef = 1FFEB31C19729FEF00B2254F /* test.css */; };
@@ -103,6 +104,7 @@
 		D0C1A1000000000000000013 /* MPProseChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000012 /* MPProseChecker.m */; };
 		2B1ED4173F22E318E5273038 /* MPMarkdownFromRichText.m in Sources */ = {isa = PBXBuildFile; fileRef = 29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */; };
 		9E013672CE8891FB4CC03FEA /* MPTableSource.m in Sources */ = {isa = PBXBuildFile; fileRef = FD4A413A2D24286D41BAD8E9 /* MPTableSource.m */; };
+		F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310012 /* MPLlamaGenerator.m */; };
 		F55A342A5A01CEBCC9F60003 /* MPRemoteImageFetch.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310004 /* MPRemoteImageFetch.m */; };
 		D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000022 /* MPMathEditorController.m */; };
 		D0C1A1000000000000000033 /* MPSidebarController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000032 /* MPSidebarController.m */; };
@@ -505,6 +507,7 @@
 		7DA2311453239F0973310005 /* MPRemoteImageFetchTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPRemoteImageFetchTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310006 /* MPPreviewSchemeTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPPreviewSchemeTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310008 /* MPMarkdownRenderingTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkdownRenderingTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310009 /* MPTextGeneratorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTextGeneratorTests.m; sourceTree = "<group>"; };
 		1FF207621941CF22005B5654 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
 		1FFEB31819729F7C00B2254F /* MPAssetTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPAssetTests.m; sourceTree = "<group>"; };
 		1FFEB31A19729FD500B2254F /* test.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = test.js; sourceTree = "<group>"; };
@@ -536,6 +539,9 @@
 		D0C1A1000000000000000012 /* MPProseChecker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPProseChecker.m; sourceTree = "<group>"; };
 		F4515DE9C37E50F01037E3DA /* MPMarkdownFromRichText.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPMarkdownFromRichText.h; sourceTree = "<group>"; };
 		29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkdownFromRichText.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310010 /* MPTextGenerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPTextGenerator.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310011 /* MPLlamaGenerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPLlamaGenerator.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310012 /* MPLlamaGenerator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPLlamaGenerator.m; sourceTree = "<group>"; };
 		F1E9F6F3D23F16D2286A65DE /* MPTableSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPTableSource.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310003 /* MPRemoteImageFetch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPRemoteImageFetch.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310004 /* MPRemoteImageFetch.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPRemoteImageFetch.m; sourceTree = "<group>"; };
@@ -661,6 +667,9 @@
 				F4515DE9C37E50F01037E3DA /* MPMarkdownFromRichText.h */,
 				29C1D7B46370B53E4803BBA6 /* MPMarkdownFromRichText.m */,
 				F1E9F6F3D23F16D2286A65DE /* MPTableSource.h */,
+				7DA2311453239F0973310010 /* MPTextGenerator.h */,
+				7DA2311453239F0973310011 /* MPLlamaGenerator.h */,
+				7DA2311453239F0973310012 /* MPLlamaGenerator.m */,
 				FD4A413A2D24286D41BAD8E9 /* MPTableSource.m */,
 				7DA2311453239F0973310003 /* MPRemoteImageFetch.h */,
 				7DA2311453239F0973310004 /* MPRemoteImageFetch.m */,
@@ -923,6 +932,7 @@
 				7DA2311453239F0973310005 /* MPRemoteImageFetchTests.m */,
 				7DA2311453239F0973310006 /* MPPreviewSchemeTests.m */,
 				7DA2311453239F0973310008 /* MPMarkdownRenderingTests.m */,
+				7DA2311453239F0973310009 /* MPTextGeneratorTests.m */,
 				1F25E1C21A50F4F10029371D /* MPColorTests.m */,
 				1FCDCA311944F96E00B1F966 /* MPPreferencesTests.m */,
 				1FFF301C1948A5320009AF24 /* MPStringLookupTests.m */,
@@ -1323,6 +1333,7 @@
 				D0C1A1000000000000000013 /* MPProseChecker.m in Sources */,
 				2B1ED4173F22E318E5273038 /* MPMarkdownFromRichText.m in Sources */,
 				9E013672CE8891FB4CC03FEA /* MPTableSource.m in Sources */,
+				F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */,
 				F55A342A5A01CEBCC9F60003 /* MPRemoteImageFetch.m in Sources */,
 				D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */,
 				D0C1A1000000000000000033 /* MPSidebarController.m in Sources */,
@@ -1366,6 +1377,7 @@
 				F55A342A5A01CEBCC9F60005 /* MPRemoteImageFetchTests.m in Sources */,
 				F55A342A5A01CEBCC9F60006 /* MPPreviewSchemeTests.m in Sources */,
 				F55A342A5A01CEBCC9F60008 /* MPMarkdownRenderingTests.m in Sources */,
+				F55A342A5A01CEBCC9F60009 /* MPTextGeneratorTests.m in Sources */,
 				1FFEB3271972DAB400B2254F /* MPHTMLTabularizeTests.m in Sources */,
 				1F25E1C31A50F4F10029371D /* MPColorTests.m in Sources */,
 				1FFF301D1948A5320009AF24 /* MPStringLookupTests.m in Sources */,
@@ -1863,9 +1875,27 @@
 				GCC_PREFIX_HEADER = "MacDown/Code/MacDown-Prefix.pch";
 				INFOPLIST_FILE = "MacDown/MacDown-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/Dependency/llama.cpp/include",
+					"$(SRCROOT)/Dependency/llama.cpp/ggml/include",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lcompression",
+					"-lc++",
+					"-framework",
+					Accelerate,
+					"-framework",
+					Metal,
+					"-framework",
+					MetalKit,
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/src/libllama.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/libggml.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/libggml-cpu.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/ggml-metal/libggml-metal.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/ggml-blas/libggml-blas.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/libggml-base.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicolorisitano82.macdown-debug";
 				PRODUCT_NAME = "MacDown Next";
@@ -1885,9 +1915,27 @@
 				GCC_PREFIX_HEADER = "MacDown/Code/MacDown-Prefix.pch";
 				INFOPLIST_FILE = "MacDown/MacDown-Info.plist";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/Dependency/llama.cpp/include",
+					"$(SRCROOT)/Dependency/llama.cpp/ggml/include",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lcompression",
+					"-lc++",
+					"-framework",
+					Accelerate,
+					"-framework",
+					Metal,
+					"-framework",
+					MetalKit,
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/src/libllama.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/libggml.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/libggml-cpu.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/ggml-metal/libggml-metal.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/ggml-blas/libggml-blas.a",
+					"$(SRCROOT)/Dependency/llama.cpp/build-Release/ggml/src/libggml-base.a",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicolorisitano82.macdown";
 				PRODUCT_NAME = "MacDown Next";

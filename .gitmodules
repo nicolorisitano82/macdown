@@ -1,3 +1,7 @@
 [submodule "Dependency/prism"]
 	path = Dependency/prism
 	url = https://github.com/PrismJS/prism.git
+[submodule "Dependency/llama.cpp"]
+	path = Dependency/llama.cpp
+	url = https://github.com/ggml-org/llama.cpp.git
+	branch = master

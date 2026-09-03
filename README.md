@@ -179,10 +179,14 @@ After cloning the repository, run the following inside the repository root:
     git submodule update --init
     pod install
     make -C Dependency/peg-markdown-highlight
+    Tools/build_llama.sh
 
 and open `MacDown.xcworkspace` — the workspace, not the project; the project
 alone has no pods. The first command fetches the dependency submodules, the
-second installs the CocoaPods dependencies.
+second installs the CocoaPods dependencies, and the last two build the
+dependencies that come with their own build system — the editor's highlighter
+and llama.cpp, which the writing commands generate through. `Tools/build_llama.sh`
+needs `cmake` and takes about fifteen seconds.
 
 If a build fails later on after pulling, the same two commands usually
 account for it:
