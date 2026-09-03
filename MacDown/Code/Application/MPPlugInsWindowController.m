@@ -409,9 +409,9 @@ static NSString * const kMPPlugInNameColumn = @"name";
     // removing the installed one and seeing the built-in take its place
     // reads as nothing having happened.
     [title appendString:plugin.isBuiltIn
-        ? NSLocalizedString(@"  · in dotazione",
+        ? NSLocalizedString(@"  · incluso nell'app",
                             @"A plug-in that ships with the application")
-        : NSLocalizedString(@"  · installato",
+        : NSLocalizedString(@"  · installato da te",
                             @"A plug-in the user installed")];
 
     NSTextField *label = [NSTextField labelWithString:title];
