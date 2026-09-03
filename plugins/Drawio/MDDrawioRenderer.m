@@ -50,10 +50,18 @@ static const NSTimeInterval kMDPollInterval = 0.1;
  * Inline rather than linked: a page loaded from a string has no folder to
  * resolve a `src` against, and copying two and a half megabytes into a
  * temporary folder for every picture is worse than holding it in a string
- * for a moment. It also settles the question of what may be fetched — the
- * document asks for nothing at all.
+ * for a moment.
+ *
+ * The eight addresses below are the viewer's own defaults, every one of
+ * them on diagrams.net. Emptied, the page reaches for nothing; left alone,
+ * it fetches the shape sets and images a diagram asks for. Two of the eight
+ * were emptied here at first, which is the same as none: a diagram drawn
+ * with the AWS library would have gone out for its stencils and the plug-in
+ * would have said it was working offline.
  */
-- (NSString *)pageForXML:(NSString *)xml
++ (NSString *)pageForXML:(NSString *)xml
+                stencils:(BOOL)stencils
+                  viewer:(NSString *)viewer
 {
     NSDictionary *settings = @{
         @"xml": xml,
@@ -72,22 +80,41 @@ static const NSTimeInterval kMDPollInterval = 0.1;
     config = [config stringByReplacingOccurrencesOfString:@"'"
                                                withString:@"&#39;"];
 
+    NSDictionary *defaults = @{
+        @"STYLE_PATH": @"/styles",
+        @"SHAPES_PATH": @"/shapes",
+        @"STENCIL_PATH": @"/stencils",
+        @"DRAW_MATH_URL": @"/math4/es5",
+        @"GRAPH_IMAGE_PATH": @"/img",
+        @"mxImageBasePath": @"/mxgraph/images",
+        @"mxBasePath": @"/mxgraph/",
+    };
+    // Empty, not relative: a path of "/stencils" against a page with no
+    // base is a request that fails quietly instead of one never made.
+    NSMutableString *paths = [NSMutableString stringWithString:
+        @"window.PROXY_URL='';"];
+    for (NSString *name in defaults)
+    {
+        NSString *value = stencils
+            ? [@"https://viewer.diagrams.net"
+                stringByAppendingString:defaults[name]]
+            : @"";
+        [paths appendFormat:@"window.%@='%@';", name, value];
+    }
+    [paths appendString:@"window.mxLoadStylesheets=false;"];
+
     return [NSString stringWithFormat:
         @"<!doctype html><html><head><meta charset=\"utf-8\">"
         @"<style>html,body{margin:0;padding:0;background:#fff}</style>"
-        @"<script>"
-        // The viewer defaults these to its own site. Emptied, because a
-        // picture of a diagram is not worth a request to anybody.
-        @"window.STYLE_PATH='';window.PROXY_URL='';"
-        @"window.mxLoadStylesheets=false;"
-        @"</script></head><body>"
+        @"<script>%@</script></head><body>"
         @"<div class=\"mxgraph\" data-mxgraph='%@'></div>"
         @"<script>%@</script></body></html>",
-        config, self.viewer];
+        paths, config, viewer];
 }
 
 - (void)renderPage:(MDDrawioPage *)page
              scale:(CGFloat)scale
+          stencils:(BOOL)stencils
         completion:(MDDrawioRenderHandler)handler
 {
     if (!self.viewer.length)
@@ -113,7 +140,9 @@ static const NSTimeInterval kMDPollInterval = 0.1;
         configuration:config];
     self.webView.navigationDelegate = self;
 
-    [self.webView loadHTMLString:[self pageForXML:page.xml] baseURL:nil];
+    [self.webView loadHTMLString:
+        [[self class] pageForXML:page.xml stencils:stencils
+                          viewer:self.viewer] baseURL:nil];
 }
 
 - (void)webView:(WKWebView *)webView

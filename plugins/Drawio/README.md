@@ -37,10 +37,22 @@ cambia.
 
 **Su questo Mac** — è l'impostazione predefinita. Il visualizzatore di
 draw.io viaggia dentro il plug-in (2,6 MB di JavaScript, Apache 2.0, JGraph
-Ltd) e disegna in un WebKit che non chiede niente a nessuno: la pagina è
-costruita col visualizzatore scritto dentro, `STYLE_PATH` e `PROXY_URL`
-vuoti, e nessuna risorsa esterna. **Il diagramma non esce dalla macchina, e
-funziona senza connessione.**
+Ltd) e disegna in un WebKit. Il diagramma **non esce dalla macchina**.
+
+Il visualizzatore però tiene otto indirizzi propri, tutti su
+`viewer.diagrams.net`: `PROXY_URL`, `STYLE_PATH`, `SHAPES_PATH`,
+`STENCIL_PATH`, `DRAW_MATH_URL`, `GRAPH_IMAGE_PATH`, `mxImageBasePath`,
+`mxBasePath`. Nella pagina che il plug-in costruisce sono **svuotati tutti
+e otto**, quindi la pagina non chiede niente a nessuno e il disegno funziona
+senza connessione.
+
+Il prezzo è che le librerie di forme grandi — AWS, Cisco, Azure, BPMN — non
+sono dentro il visualizzatore: sono file che lui scarica quando un diagramma
+le chiede. Senza quei file una forma di quelle viene disegnata come un
+rettangolo. Per questo c'è la casella **«Scarica da diagrams.net le
+librerie di forme che servono»**, spenta di suo: accesa, vengono scaricati
+quei file — il diagramma non viene mandato da nessuna parte, ma da cosa
+chiede si capisce cosa contiene.
 
 **Su un export server tuo** — l'indirizzo lo indichi nel foglio; viene
 ricordato. Serve per le librerie di forme che si portano dietro immagini da

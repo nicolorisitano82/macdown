@@ -11,6 +11,7 @@
 static NSString * const kMDScaleKey = @"MDDrawioScale";
 static NSString * const kMDUseServiceKey = @"MDDrawioUsesExportServer";
 static NSString * const kMDServiceKey = @"MDDrawioExportServer";
+static NSString * const kMDStencilsKey = @"MDDrawioFetchesStencils";
 
 
 #pragma mark - Reaching the document
@@ -95,6 +96,7 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
 @property (strong, nonatomic) NSButton *hereRadio;
 @property (strong, nonatomic) NSButton *serviceRadio;
 @property (strong, nonatomic) NSTextField *serviceField;
+@property (strong, nonatomic) NSButton *stencilsBox;
 @end
 
 
@@ -102,17 +104,17 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
 
 - (instancetype)initWithDefaults:(NSUserDefaults *)defaults
 {
-    self = [super initWithFrame:NSMakeRect(0.0, 0.0, 400.0, 116.0)];
+    self = [super initWithFrame:NSMakeRect(0.0, 0.0, 420.0, 150.0)];
     if (!self)
         return nil;
 
     NSTextField *sizeLabel = [NSTextField labelWithString:@"Dimensione:"];
     sizeLabel.alignment = NSTextAlignmentRight;
-    sizeLabel.frame = NSMakeRect(0.0, 94.0, 92.0, 18.0);
+    sizeLabel.frame = NSMakeRect(0.0, 128.0, 92.0, 18.0);
     [self addSubview:sizeLabel];
 
     _scaleButton = [[NSPopUpButton alloc]
-        initWithFrame:NSMakeRect(96.0, 90.0, 150.0, 25.0) pullsDown:NO];
+        initWithFrame:NSMakeRect(96.0, 124.0, 150.0, 25.0) pullsDown:NO];
     [_scaleButton addItemsWithTitles:@[@"1×", @"2× (retina)", @"3×"]];
     double scale = [defaults doubleForKey:kMDScaleKey];
     [_scaleButton selectItemAtIndex:(scale >= 3.0 ? 2 : (scale <= 1.0 ? 0 : 1))];
@@ -120,21 +122,21 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
 
     NSTextField *whereLabel = [NSTextField labelWithString:@"Disegna:"];
     whereLabel.alignment = NSTextAlignmentRight;
-    whereLabel.frame = NSMakeRect(0.0, 64.0, 92.0, 18.0);
+    whereLabel.frame = NSMakeRect(0.0, 98.0, 92.0, 18.0);
     [self addSubview:whereLabel];
 
     _hereRadio = [NSButton radioButtonWithTitle:
         @"Su questo Mac, senza connessione"
                                          target:self
                                          action:@selector(whereChanged:)];
-    _hereRadio.frame = NSMakeRect(96.0, 62.0, 300.0, 20.0);
+    _hereRadio.frame = NSMakeRect(96.0, 96.0, 300.0, 20.0);
     [self addSubview:_hereRadio];
 
     _serviceRadio = [NSButton radioButtonWithTitle:
         @"Su un export server, a questo indirizzo:"
                                             target:self
                                             action:@selector(whereChanged:)];
-    _serviceRadio.frame = NSMakeRect(96.0, 40.0, 300.0, 20.0);
+    _serviceRadio.frame = NSMakeRect(96.0, 74.0, 300.0, 20.0);
     [self addSubview:_serviceRadio];
 
     BOOL service = [defaults boolForKey:kMDUseServiceKey];
@@ -145,17 +147,39 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
 
     _serviceField = [NSTextField textFieldWithString:
         [defaults stringForKey:kMDServiceKey] ?: @"http://localhost:8000/"];
-    _serviceField.frame = NSMakeRect(114.0, 12.0, 282.0, 22.0);
+    _serviceField.frame = NSMakeRect(114.0, 46.0, 282.0, 22.0);
     _serviceField.placeholderString = @"http://localhost:8000/";
     [self addSubview:_serviceField];
+
+    // The big shape libraries — AWS, Cisco, BPMN — are files the viewer
+    // fetches when a diagram asks for them, and it carries none of them.
+    // Off, such a shape is a plain rectangle and the drawing is done with
+    // no network at all; on, those files are fetched. Either way the
+    // diagram itself is not sent anywhere, which is why this is a box of
+    // its own rather than part of the choice above.
+    _stencilsBox = [NSButton checkboxWithTitle:
+        @"Scarica da diagrams.net le librerie di forme che servono"
+                                        target:nil action:NULL];
+    _stencilsBox.frame = NSMakeRect(96.0, 12.0, 320.0, 20.0);
+    _stencilsBox.state = [defaults boolForKey:kMDStencilsKey]
+        ? NSControlStateValueOn : NSControlStateValueOff;
+    [self addSubview:_stencilsBox];
 
     [self whereChanged:nil];
     return self;
 }
 
+- (BOOL)fetchesStencils
+{
+    return self.stencilsBox.state == NSControlStateValueOn;
+}
+
 - (void)whereChanged:(id)sender
 {
     self.serviceField.enabled = self.usesService;
+    // An export server fetches whatever it fetches; the box is about the
+    // viewer in here.
+    self.stencilsBox.enabled = !self.usesService;
 }
 
 - (BOOL)usesService
@@ -260,6 +284,7 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
 
     [defaults setDouble:options.scale forKey:kMDScaleKey];
     [defaults setBool:options.usesService forKey:kMDUseServiceKey];
+    [defaults setBool:options.fetchesStencils forKey:kMDStencilsKey];
     if (options.usesService && options.service)
         [defaults setObject:options.service.absoluteString forKey:kMDServiceKey];
 
@@ -275,6 +300,7 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
 
     [self renderPagesOf:file from:panel.URL into:document editor:editor
                   scale:options.scale
+               stencils:options.fetchesStencils
                 service:options.usesService ? options.service : nil];
     return YES;
 }
@@ -290,6 +316,7 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
                  into:(NSDocument *)document
                editor:(NSTextView *)editor
                 scale:(CGFloat)scale
+             stencils:(BOOL)stencils
               service:(NSURL *)service
 {
     NSMutableArray<MDDrawioPage *> *queue = [file.pages mutableCopy];
@@ -342,7 +369,8 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
             [self.renderer renderPage:page scale:scale onService:service
                            completion:done];
         else
-            [self.renderer renderPage:page scale:scale completion:done];
+            [self.renderer renderPage:page scale:scale stencils:stencils
+                           completion:done];
     };
     next = step;
     step();

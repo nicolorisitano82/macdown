@@ -50,8 +50,43 @@ Da lì il resto era lavoro, non ricerca.
 > ragioni: una pagina caricata da una stringa non ha una cartella contro cui
 > risolvere un `src`, e copiare due megabyte e mezzo in una cartella
 > temporanea per ogni figura è peggio che tenerle in una stringa per un
-> istante. E chiude la domanda su cosa possa essere scaricato: il documento
-> non chiede niente.
+> istante.
+
+---
+
+## Due indirizzi su otto
+
+Alla domanda «ma non ci sono librerie?» la risposta è che la libreria è
+quella e la stiamo usando: non esiste un renderer di `.drawio` che non sia
+il JavaScript di draw.io. L'export server in docker, `drawio-batch`, l'app
+desktop con `--export` sono **lo stesso JS** dentro un Electron; JGraphX, il
+port Java di mxGraph, disegna i modelli base e non conosce le librerie di
+forme di draw.io; una libreria nativa non c'è.
+
+Ma andando a verificarlo ho trovato una cosa mia. Il visualizzatore tiene
+**otto** indirizzi propri, tutti su `viewer.diagrams.net`:
+
+```
+PROXY_URL  STYLE_PATH  SHAPES_PATH  STENCIL_PATH
+DRAW_MATH_URL  GRAPH_IMAGE_PATH  mxImageBasePath  mxBasePath
+```
+
+Io ne avevo svuotati **due**, e avevo scritto che la pagina non chiedeva
+niente a nessuno. Per il diagramma della sonda era vero — le forme di base
+sono dentro il JS — e per un diagramma con la libreria AWS non lo era
+affatto: `STENCIL_PATH/aws4.xml` sarebbe uscito, mentre il plug-in
+dichiarava di lavorare offline.
+
+Ora sono svuotati tutti e otto, e **vuoti per davvero**: al primo tentativo
+scrivevo `'/stencils'` invece di `''`, cioè una richiesta che falliva in
+silenzio invece di una richiesta non fatta. La prova lo ha preso: elenca gli
+otto nomi e pretende `window.NOME=''` per ognuno.
+
+Quello che si perde svuotandoli sono le librerie di forme grandi, che il
+visualizzatore non porta dentro. Quindi c'è una casella, spenta di suo, per
+scaricarle: il diagramma resta qui, escono le richieste dei file di forme.
+Ed è una scelta migliore dell'export server per questo problema — lì il
+diagramma lo mandi tutto.
 
 ---
 

@@ -218,6 +218,48 @@ static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
 }
 
 
+/** Nothing is reached for unless it is asked for.
+ *
+ * The viewer's own defaults put eight addresses on diagrams.net, and the
+ * big shape libraries are files it fetches from them. Emptying two of the
+ * eight — which is what this did at first — is the same as emptying none:
+ * a diagram drawn with the AWS library would have gone out for its
+ * stencils while the plug-in claimed to be working offline.
+ */
+- (void)testThePageAsksForNothingUnlessTheStencilsAreWanted
+{
+    Class renderer = [self classNamed:@"MDDrawioRenderer"];
+    NSString *xml = @"<mxGraphModel><root/></mxGraphModel>";
+
+    NSString *offline = [renderer pageForXML:xml stencils:NO
+                                      viewer:@"/* il visualizzatore */"];
+    XCTAssertFalse([offline containsString:@"diagrams.net"],
+                   @"la pagina si porta dietro un indirizzo remoto");
+    for (NSString *name in @[@"PROXY_URL", @"STYLE_PATH", @"SHAPES_PATH",
+                             @"STENCIL_PATH", @"DRAW_MATH_URL",
+                             @"GRAPH_IMAGE_PATH", @"mxImageBasePath",
+                             @"mxBasePath"])
+    {
+        // Named and emptied, every one: an address left out is an address
+        // left at the viewer's default, which is remote.
+        NSString *emptied = [NSString stringWithFormat:@"window.%@=''", name];
+        XCTAssertTrue([offline containsString:emptied],
+                      @"%@ non è stato svuotato", name);
+    }
+
+    // And when they are wanted, they point somewhere.
+    NSString *fetching = [renderer pageForXML:xml stencils:YES
+                                       viewer:@"/* il visualizzatore */"];
+    XCTAssertTrue([fetching containsString:
+        @"window.STENCIL_PATH='https://viewer.diagrams.net/stencils'"]);
+
+    // The diagram goes in as data for the viewer, whichever way round.
+    XCTAssertTrue([offline containsString:@"class=\"mxgraph\""]);
+    XCTAssertTrue([offline containsString:@"mxGraphModel"]);
+    XCTAssertTrue([offline containsString:@"il visualizzatore"]);
+}
+
+
 #pragma mark - Names and links
 
 - (void)testAPageNameBecomesAFileName
@@ -284,8 +326,8 @@ static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
     XCTestExpectation *done = [self expectationWithDescription:@"disegnato"];
     __block NSData *png = nil;
     __block NSError *failure = nil;
-    [drawing renderPage:page scale:2.0 completion:^(NSData *data,
-                                                    NSError *error) {
+    [drawing renderPage:page scale:2.0 stencils:NO
+            completion:^(NSData *data, NSError *error) {
         png = data;
         failure = error;
         [done fulfill];

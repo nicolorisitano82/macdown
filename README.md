@@ -109,10 +109,11 @@ Writing**.
 * **A draw.io importer**, as a real plug-in (`Drawio.plugin`): pick a
   `.drawio` file and every page in it becomes a PNG beside the document,
   linked where the caret is. Drawn by draw.io's own viewer, which travels
-  inside the plug-in — **the diagram never leaves the Mac and it works with
-  no connection**. An export server of your own can be used instead, for
-  the shape libraries that fetch their pictures. Compressed pages, editable
-  PNGs and editable SVGs are all read. See
+  inside the plug-in — **the diagram never leaves the Mac**, and with the
+  viewer's eight remote addresses emptied the page asks nothing of anybody.
+  The big shape libraries can be fetched when wanted, or an export server of
+  your own used instead. Compressed pages, editable PNGs and editable SVGs
+  are all read. See
   [plugins/Drawio/README.md](plugins/Drawio/README.md).
 
 ### Writing
