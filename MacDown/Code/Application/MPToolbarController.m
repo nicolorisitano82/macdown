@@ -72,7 +72,7 @@
             ]
          ],
         [self toolbarItemWithIdentifier:@"blockquote" label:NSLocalizedString(@"Blockquote", @"Blockquote toolbar button") icon:@"ToolbarIconBlockquote" action:@selector(toggleBlockquote:)],
-        [self toolbarItemWithIdentifier:@"code" label:NSLocalizedString(@"Inline Code", @"Inline code toolbar button") icon:@"ToolbarIconInlineCode" action:@selector(toggleInlineCode:)],
+        [self toolbarItemWithIdentifier:@"code" label:NSLocalizedString(@"Code", @"Code toolbar button") icon:@"ToolbarIconInlineCode" action:@selector(insertCode:)],
         [self toolbarItemWithIdentifier:@"link" label:NSLocalizedString(@"Link", @"Link toolbar button") icon:@"ToolbarIconLink" action:@selector(toggleLink:)],
         [self toolbarItemWithIdentifier:@"image" label:NSLocalizedString(@"Image", @"Image toolbar button") icon:@"ToolbarIconImage" action:@selector(toggleImage:)],
         [self toolbarItemWithIdentifier:@"table" label:NSLocalizedString(@"Table", @"Insert table toolbar button") icon:@"tablecells" action:@selector(insertTable:)],

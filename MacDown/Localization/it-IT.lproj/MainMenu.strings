@@ -166,6 +166,9 @@
 /* Class = "NSMenuItem"; title = "Inline Code"; ObjectID = "iRQ-Q6-N4K"; */
 "iRQ-Q6-N4K.title" = "Codice in Linea";
 
+/* Class = "NSMenuItem"; title = "Code Block…"; ObjectID = "mdw-fence-itm"; */
+"mdw-fence-itm.title" = "Blocco di Codice…";
+
 /* Class = "NSMenuItem"; title = "Unordered List"; ObjectID = "jn0-Kb-yH6"; */
 "jn0-Kb-yH6.title" = "Elenco Puntato";
 

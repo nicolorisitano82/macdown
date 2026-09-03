@@ -42,6 +42,7 @@
 #import "MPModelStore.h"
 #import "MPWritingAssistant.h"
 #import "MPDocumentTemplate.h"
+#import "MPCodeLanguages.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -585,6 +586,128 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 {
     return [self.textField.stringValue stringByTrimmingCharactersInSet:
         [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+@end
+
+
+/** Asks whether code goes in the line or in a block, and in what language.
+ *
+ * Backticks around a word and a fenced block are the same idea at two
+ * scales, and one button used to do only the smaller one. The larger needs
+ * a language to be worth anything — a fence without one is a grey box —
+ * and a language is not something to type from memory when there are more
+ * than a hundred of them and only the ones in this build will work.
+ */
+@interface MPCodeAccessory : NSView
+@property (strong, nonatomic) NSButton *inlineRadio;
+@property (strong, nonatomic) NSButton *blockRadio;
+@property (strong, nonatomic) NSPopUpButton *languageButton;
+/// Whether a fenced block was asked for, rather than backticks in the line.
+@property (readonly, nonatomic) BOOL usesBlock;
+/// The chosen language as it is written after the fence; empty for none.
+@property (readonly, nonatomic) NSString *language;
+@end
+
+
+@implementation MPCodeAccessory
+
+- (instancetype)initWithBlock:(BOOL)block language:(NSString *)language
+{
+    self = [super initWithFrame:NSMakeRect(0.0, 0.0, 380.0, 74.0)];
+    if (!self)
+        return nil;
+
+    NSTextField *kind = [NSTextField labelWithString:
+        NSLocalizedString(@"Code:", @"Code sheet")];
+    kind.alignment = NSTextAlignmentRight;
+    kind.frame = NSMakeRect(0.0, 53.0, 78.0, 18.0);
+    [self addSubview:kind];
+
+    _inlineRadio = [NSButton radioButtonWithTitle:
+        NSLocalizedString(@"Inside the line", @"Code sheet")
+                                           target:self
+                                           action:@selector(kindChanged:)];
+    _inlineRadio.frame = NSMakeRect(84.0, 51.0, 280.0, 20.0);
+    [self addSubview:_inlineRadio];
+
+    _blockRadio = [NSButton radioButtonWithTitle:
+        NSLocalizedString(@"A block, highlighted as:", @"Code sheet")
+                                          target:self
+                                          action:@selector(kindChanged:)];
+    _blockRadio.frame = NSMakeRect(84.0, 29.0, 280.0, 20.0);
+    [self addSubview:_blockRadio];
+
+    _inlineRadio.state = block ? NSControlStateValueOff
+                               : NSControlStateValueOn;
+    _blockRadio.state = block ? NSControlStateValueOn
+                              : NSControlStateValueOff;
+
+    _languageButton = [[NSPopUpButton alloc]
+        initWithFrame:NSMakeRect(102.0, 2.0, 262.0, 25.0) pullsDown:NO];
+    [self fillLanguageButtonSelecting:language];
+    [self addSubview:_languageButton];
+
+    [self kindChanged:nil];
+    return self;
+}
+
+/** The languages this build can highlight, the common ones above a line.
+ *
+ * "None" first, because a fence with no language is still the right answer
+ * for a shell transcript or a piece of output, and it is what the plain
+ * button used to give.
+ */
+- (void)fillLanguageButtonSelecting:(NSString *)language
+{
+    NSMenu *menu = [[NSMenu alloc] init];
+
+    NSMenuItem *none = [[NSMenuItem alloc] init];
+    none.title = NSLocalizedString(@"No language", @"Code sheet");
+    none.representedObject = @"";
+    [menu addItem:none];
+    [menu addItem:[NSMenuItem separatorItem]];
+
+    BOOL separated = NO;
+    for (MPCodeLanguage *found in MPAvailableCodeLanguages())
+    {
+        if (!found.isCommon && !separated)
+        {
+            [menu addItem:[NSMenuItem separatorItem]];
+            separated = YES;
+        }
+        NSMenuItem *item = [[NSMenuItem alloc] init];
+        item.title = found.title;
+        item.representedObject = found.identifier;
+        [menu addItem:item];
+    }
+    self.languageButton.menu = menu;
+
+    for (NSMenuItem *item in menu.itemArray)
+    {
+        if (![item.representedObject isEqualToString:language ?: @""])
+            continue;
+        [self.languageButton selectItem:item];
+        break;
+    }
+}
+
+- (void)kindChanged:(id)sender
+{
+    // A language only means something to a block: there is no way to mark
+    // one on backticks inside a sentence.
+    self.languageButton.enabled = self.usesBlock;
+}
+
+- (BOOL)usesBlock
+{
+    return self.blockRadio.state == NSControlStateValueOn;
+}
+
+- (NSString *)language
+{
+    NSString *identifier = self.languageButton.selectedItem.representedObject;
+    return [identifier isKindOfClass:[NSString class]] ? identifier : @"";
 }
 
 @end
@@ -3669,6 +3792,122 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
 - (IBAction)toggleInlineCode:(id)sender
 {
     [self.editor toggleForMarkupPrefix:@"`" suffix:@"`"];
+}
+
+/** Code, at whichever size is wanted, from one button.
+ *
+ * A selection that is already marked is taken off without asking, so the
+ * button undoes itself the way the others do.
+ */
+- (IBAction)insertCode:(id)sender
+{
+    NSRange selection = self.editor.selectedRange;
+    if (selection.length
+            && [self.editor substringInRange:selection
+                        isSurroundedByPrefix:@"`" suffix:@"`"])
+    {
+        [self.editor toggleForMarkupPrefix:@"`" suffix:@"`"];
+        return;
+    }
+    if ([self selectedLinesAreFencedCodeBlock])
+    {
+        [self insertCodeFenceForLanguage:nil];
+        return;
+    }
+
+    // Text with a line break in it cannot be code inside a line, so that
+    // half of the question answers itself; the language does not.
+    NSString *chosen = selection.length
+        ? [self.editor.string substringWithRange:selection] : @"";
+    BOOL block = [chosen rangeOfString:@"\n"].location != NSNotFound;
+    [self runCodeSheetPreferringBlock:block onlyBlock:block];
+}
+
+/// The same, when the block is already the answer.
+- (IBAction)insertCodeBlock:(id)sender
+{
+    if ([self selectedLinesAreFencedCodeBlock])
+    {
+        [self insertCodeFenceForLanguage:nil];
+        return;
+    }
+    [self runCodeSheetPreferringBlock:YES onlyBlock:YES];
+}
+
+- (BOOL)selectedLinesAreFencedCodeBlock
+{
+    NSString *text = self.editor.string;
+    NSRange lines = [text lineRangeForRange:self.editor.selectedRange];
+    return MPBodyOfFencedCodeBlock([text substringWithRange:lines]) != nil;
+}
+
+- (void)runCodeSheetPreferringBlock:(BOOL)block onlyBlock:(BOOL)onlyBlock
+{
+    // What was asked for last time. Someone writing code samples is
+    // usually writing several, in one language.
+    static BOOL lastWasBlock = NO;
+    static NSString *lastLanguage = nil;
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Insert code", @"Code sheet");
+    alert.informativeText = NSLocalizedString(
+        @"A block is highlighted by the language you name here. Only the "
+        @"languages this copy of MacDown Next can highlight are listed.",
+        @"Code sheet");
+    [alert addButtonWithTitle:NSLocalizedString(@"Insert", @"Code sheet")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Cancel", @"Code sheet")];
+
+    MPCodeAccessory *accessory =
+        [[MPCodeAccessory alloc] initWithBlock:(block || lastWasBlock)
+                                      language:lastLanguage];
+    // Nothing to choose when only one of the two is possible; the choice
+    // is still shown, so it is clear which one is being made.
+    if (onlyBlock)
+    {
+        accessory.inlineRadio.enabled = NO;
+        accessory.blockRadio.enabled = NO;
+    }
+    alert.accessoryView = accessory;
+
+    void (^insert)(NSModalResponse) = ^(NSModalResponse response) {
+        if (response != NSAlertFirstButtonReturn)
+            return;
+        lastWasBlock = accessory.usesBlock;
+        if (!accessory.usesBlock)
+        {
+            [self.editor toggleForMarkupPrefix:@"`" suffix:@"`"];
+            return;
+        }
+        lastLanguage = accessory.language;
+        [self insertCodeFenceForLanguage:accessory.language];
+    };
+
+    NSWindow *window = self.windowForSheet;
+    if (window)
+    {
+        [alert beginSheetModalForWindow:window completionHandler:insert];
+        [window makeFirstResponder:accessory.languageButton];
+    }
+    else
+    {
+        insert([alert runModal]);
+    }
+}
+
+/** Puts the fence on the selected lines, or takes it off.
+ *
+ * Where the fence goes and where the caret lands afterwards is worked out
+ * apart from here, in MPCodeLanguages, so it can be checked.
+ */
+- (void)insertCodeFenceForLanguage:(NSString *)language
+{
+    NSTextView *editor = self.editor;
+    MPCodeFenceEdit *edit = MPCodeFenceEditForText(
+        editor.string, editor.selectedRange, language);
+
+    [editor insertText:edit.replacement
+      replacementRange:edit.replacedRange];
+    editor.selectedRange = edit.selectedRange;
 }
 
 - (IBAction)toggleStrikethrough:(id)sender

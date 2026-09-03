@@ -87,6 +87,7 @@
 		F55A342A5A01CEBCC9F60008 /* MPMarkdownRenderingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310008 /* MPMarkdownRenderingTests.m */; };
 		F55A342A5A01CEBCC9F60009 /* MPTextGeneratorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310009 /* MPTextGeneratorTests.m */; };
 		F55A342A5A01CEBCC9F60017 /* MPWritingAssistantTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310017 /* MPWritingAssistantTests.m */; };
+		F55A342A5A01CEBCC9F60043 /* MPCodeLanguageTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310044 /* MPCodeLanguageTests.m */; };
 		F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */; };
 		F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310036 /* MPModelCatalogTests.m */; };
 		F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310037 /* MPTemplateMenuTests.m */; };
@@ -117,6 +118,7 @@
 		F55A342A5A01CEBCC9F60022 /* MPDocumentTemplate.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310022 /* MPDocumentTemplate.m */; };
 		F55A342A5A01CEBCC9F60014 /* MPModelStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310014 /* MPModelStore.m */; };
 		F55A342A5A01CEBCC9F60016 /* MPWritingAssistant.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310016 /* MPWritingAssistant.m */; };
+		F55A342A5A01CEBCC9F60042 /* MPCodeLanguages.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310043 /* MPCodeLanguages.m */; };
 		F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310012 /* MPLlamaGenerator.m */; };
 		F55A342A5A01CEBCC9F60003 /* MPRemoteImageFetch.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310004 /* MPRemoteImageFetch.m */; };
 		D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000022 /* MPMathEditorController.m */; };
@@ -525,6 +527,7 @@
 		7DA2311453239F0973310008 /* MPMarkdownRenderingTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPMarkdownRenderingTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310009 /* MPTextGeneratorTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTextGeneratorTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310017 /* MPWritingAssistantTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPWritingAssistantTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310044 /* MPCodeLanguageTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPCodeLanguageTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocumentTemplateTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310036 /* MPModelCatalogTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPModelCatalogTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310037 /* MPTemplateMenuTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTemplateMenuTests.m; sourceTree = "<group>"; };
@@ -568,6 +571,8 @@
 		7DA2311453239F0973310014 /* MPModelStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPModelStore.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310015 /* MPWritingAssistant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPWritingAssistant.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310016 /* MPWritingAssistant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPWritingAssistant.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310042 /* MPCodeLanguages.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPCodeLanguages.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310043 /* MPCodeLanguages.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPCodeLanguages.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310021 /* MPDocumentTemplate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPDocumentTemplate.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310022 /* MPDocumentTemplate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocumentTemplate.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310030 /* MPModelCatalog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPModelCatalog.h; sourceTree = "<group>"; };
@@ -709,6 +714,8 @@
 				7DA2311453239F0973310014 /* MPModelStore.m */,
 				7DA2311453239F0973310015 /* MPWritingAssistant.h */,
 				7DA2311453239F0973310016 /* MPWritingAssistant.m */,
+				7DA2311453239F0973310042 /* MPCodeLanguages.h */,
+				7DA2311453239F0973310043 /* MPCodeLanguages.m */,
 				7DA2311453239F0973310010 /* MPTextGenerator.h */,
 				7DA2311453239F0973310011 /* MPLlamaGenerator.h */,
 				7DA2311453239F0973310012 /* MPLlamaGenerator.m */,
@@ -979,6 +986,7 @@
 				7DA2311453239F0973310008 /* MPMarkdownRenderingTests.m */,
 				7DA2311453239F0973310009 /* MPTextGeneratorTests.m */,
 				7DA2311453239F0973310017 /* MPWritingAssistantTests.m */,
+				7DA2311453239F0973310044 /* MPCodeLanguageTests.m */,
 				7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */,
 				7DA2311453239F0973310036 /* MPModelCatalogTests.m */,
 				7DA2311453239F0973310037 /* MPTemplateMenuTests.m */,
@@ -1391,6 +1399,7 @@
 				F55A342A5A01CEBCC9F60022 /* MPDocumentTemplate.m in Sources */,
 				F55A342A5A01CEBCC9F60014 /* MPModelStore.m in Sources */,
 				F55A342A5A01CEBCC9F60016 /* MPWritingAssistant.m in Sources */,
+				F55A342A5A01CEBCC9F60042 /* MPCodeLanguages.m in Sources */,
 				F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */,
 				F55A342A5A01CEBCC9F60003 /* MPRemoteImageFetch.m in Sources */,
 				D0C1A1000000000000000023 /* MPMathEditorController.m in Sources */,
@@ -1437,6 +1446,7 @@
 				F55A342A5A01CEBCC9F60008 /* MPMarkdownRenderingTests.m in Sources */,
 				F55A342A5A01CEBCC9F60009 /* MPTextGeneratorTests.m in Sources */,
 				F55A342A5A01CEBCC9F60017 /* MPWritingAssistantTests.m in Sources */,
+				F55A342A5A01CEBCC9F60043 /* MPCodeLanguageTests.m in Sources */,
 				F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */,
 				F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */,

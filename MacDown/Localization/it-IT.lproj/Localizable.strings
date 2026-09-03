@@ -290,3 +290,11 @@
 "Save this document first" = "Salva prima questo documento";
 "Select the words the link should say, and they will name the file too." = "Seleziona le parole che il collegamento deve dire: daranno il nome anche al file.";
 "That leaves nothing to name the file after" = "Non resta niente con cui chiamare il file";
+
+/* Code sheet */
+"Insert code" = "Inserisci codice";
+"A block is highlighted by the language you name here. Only the languages this copy of MacDown Next can highlight are listed." = "Un blocco viene evidenziato secondo il linguaggio che indichi qui. Sono elencati solo i linguaggi che questa copia di MacDown Next sa evidenziare.";
+"Code:" = "Codice:";
+"Inside the line" = "Dentro la riga";
+"A block, highlighted as:" = "Un blocco, evidenziato come:";
+"No language" = "Nessun linguaggio";

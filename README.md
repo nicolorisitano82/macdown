@@ -114,6 +114,9 @@ Writing**.
 * **WikiLinks**: `[[Another note]]` links to a neighbouring document, and
   says so when the file is not there.
 * **A sidebar** with the document outline, for moving around a long file.
+* **The code button asks which kind**: backticks inside the line, or a
+  fenced block marked with a language chosen from a list — and the list
+  holds only the 113 languages this build can actually highlight.
 
 ### Appearance
 
