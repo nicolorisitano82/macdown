@@ -121,9 +121,9 @@ Writing**.
 
 * **A prose checker**: qualifiers, weasel words, hedging, wordiness, passive
   tells and repeated words, in **English and Italian**. The word lists are a
-  resource file, editable without rebuilding. The tally sits in the title
-  bar and **opens the list**: every flagged word with its line, and clicking
-  one goes to it.
+  resource file, editable without rebuilding. The tally sits under the
+  window title, and **⌃⌥⌘P lists what it counted**: every flagged word with
+  its line, and clicking one goes to it.
 * **A maths editor** for TeX, with a live preview, backed by a bundled
   MathJax — so formulas render with no network.
 * **WikiLinks**: `[[Another note]]` links to a neighbouring document, and

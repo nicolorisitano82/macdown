@@ -352,6 +352,9 @@
 /* Class = "NSMenuItem"; title = "Highlight Prose Issues"; ObjectID = "prs-01-tgl"; */
 "prs-01-tgl.title" = "Evidenzia i problemi di prosa";
 
+/* Class = "NSMenuItem"; title = "List Prose Issues…"; ObjectID = "prs-02-lst"; */
+"prs-02-lst.title" = "Elenca i problemi di prosa…";
+
 /* Class = "NSMenuItem"; title = "Show Sidebar"; ObjectID = "sbr-01-itm"; */
 "sbr-01-itm.title" = "Mostra barra laterale";
 
