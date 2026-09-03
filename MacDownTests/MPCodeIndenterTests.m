@@ -119,6 +119,22 @@
         @"foo(\n  a,\n  b);\nnext();");
 }
 
+- (void)testALineMovesTheDepthByOneStepAtMost
+{
+    // Two brackets left open, one step in: this is how a callback is
+    // written everywhere, and counting both would push it twice.
+    XCTAssertEqualObjects(
+        MPReindentedCode(@"f(function () {\ng();\n});", @"javascript"),
+        @"f(function () {\n  g();\n});");
+    XCTAssertEqualObjects(
+        MPReindentedCode(@"items.map((x) => {\nreturn x;\n});", @"javascript"),
+        @"items.map((x) => {\n  return x;\n});");
+    // And the line that shuts them both takes the one step off again.
+    XCTAssertEqualObjects(
+        MPReindentedCode(@"a(() => {\nb();\n});\nc();", @"javascript"),
+        @"a(() => {\n  b();\n});\nc();");
+}
+
 - (void)testBracketsInStringsAndCommentsDoNotCount
 {
     XCTAssertEqualObjects(
@@ -132,16 +148,39 @@
         @"a(); /* { */\nb();");
 }
 
-- (void)testWhatRunsOverLinesIsLeftAsWritten
+- (void)testAStringThatRunsOverLinesIsLeftAsWritten
 {
     // A template literal is text: moving its lines would change it.
     NSString *body = @"const s = `\n    keep    me\n`;\nif (x) {\nq();\n}";
     XCTAssertEqualObjects(MPReindentedCode(body, @"javascript"),
         @"const s = `\n    keep    me\n`;\nif (x) {\n  q();\n}");
+}
 
-    // A comment's asterisks keep their column for the same reason.
+- (void)testACommentMovesWholeAndKeepsItsAsterisksInColumn
+{
+    // The line that opens it is indented like code; the rest keep the
+    // offset they had from it, which is what holds the column together.
+    XCTAssertEqualObjects(
+        MPReindentedCode(@"if (x) {\n/**\n * nota\n */\nf();\n}",
+                         @"javascript"),
+        @"if (x) {\n  /**\n   * nota\n   */\n  f();\n}");
+
+    // Already where it belongs: nothing moves.
     NSString *comment = @"/**\n * nota\n */\nf();";
     XCTAssertEqualObjects(MPReindentedCode(comment, @"javascript"), comment);
+
+    // Whatever else is in there keeps its shape too, since the whole
+    // comment is shifted by the one amount.
+    XCTAssertEqualObjects(
+        MPReindentedCode(@"class A {\n/*\n  a\n    b\n*/\nm();\n}",
+                         @"java"),
+        @"class A {\n    /*\n      a\n        b\n    */\n    m();\n}");
+
+    // And a comment that ends where the code steps back out.
+    XCTAssertEqualObjects(
+        MPReindentedCode(@"f(function () {\n/* uno\ndue */\ng();\n});",
+                         @"javascript"),
+        @"f(function () {\n  /* uno\n  due */\n  g();\n});");
 }
 
 - (void)testJSONIsLaidOutByItsBrackets
@@ -168,11 +207,11 @@
                          @"html"),
         @"<div>\n  <p>ciao</p>\n  <br>\n  <img src=\"x\">\n</div>");
 
-    // A comment that spans lines, and a declaration, move nothing.
+    // A comment that spans lines moves whole, like the code around it.
     XCTAssertEqualObjects(
         MPReindentedCode(@"<ul>\n<!-- nota\nsu due righe -->\n<li>a</li>\n</ul>",
                          @"html"),
-        @"<ul>\n  <!-- nota\nsu due righe -->\n  <li>a</li>\n</ul>");
+        @"<ul>\n  <!-- nota\n  su due righe -->\n  <li>a</li>\n</ul>");
 }
 
 

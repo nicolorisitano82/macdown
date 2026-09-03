@@ -100,20 +100,59 @@ compare. Evidenziare vuole una grammatica di simboli; impaginare vuole una
 grammatica di blocchi. Solo la seconda è dichiarata qui, e dichiararla dove
 non c'è è il modo di rovinare il codice di qualcuno.
 
+### I commenti su più righe
+
+Prima li lasciavo stare, per non perdere la colonna degli asterischi. Era
+la risposta comoda, non quella giusta: un commento dentro un blocco che si
+sposta resta indietro, e si vede.
+
+Ora il commento **si muove intero**. La riga che lo apre viene rientrata
+come codice; le righe successive tengono lo scarto che avevano da quella.
+Con questo la colonna degli asterischi si tiene da sé — lo spazio prima di
+`*` è lo scarto — e si tiene anche tutto il resto che uno mette lì dentro,
+uno schema, un esempio, senza che il programma debba sapere cos'è.
+
+```java
+class A {
+    /*
+      a
+        b
+    */
+    m();
+}
+```
+
+Il commento è arrivato al rientro del metodo, e `a` e `b` sono rimasti dove
+erano rispetto a `/*`.
+
 ### Le cose che non si toccano
 
-Tre casi in cui il comando **lascia stare**, e ognuno è una prova:
+Due casi in cui il comando **lascia stare**, e ognuno è una prova:
 
 - **Quello che sta dentro una stringa che va a capo.** Un template literal
   in JavaScript, un docstring in Python: quelle righe sono testo, il loro
   rientro è parte di ciò che la stringa dice. Restano come scritte, e nel
   caso offside non entrano nemmeno nella misura.
-- **I commenti su più righe.** Gli asterischi in colonna se ne vanno se li
-  reindenti.
 - **Il codice allineato invece che rientrato.** Argomenti sotto la parentesi
   aperta: se le rientrature del blocco sono 4 e 11, non esiste un passo che
   misuri entrambe, e moltiplicare quelle colonne fa un disastro. Il blocco
   torna identico.
+
+### Un passo per riga, non due
+
+Contare tutte le parentesi sembra giusto finché non arriva JavaScript:
+
+```javascript
+f(function () {
+  g();
+});
+```
+
+`f(function () {` lascia aperte due parentesi, e il conto esatto
+spingerebbe `g()` due passi dentro. Nessuno lo scrive così. Quindi una riga
+sposta la profondità **di un passo al massimo**, in entrambi i versi — e il
+prezzo è il caso opposto, due blocchi aperti sulla stessa riga, che è molto
+più raro e viene rientrato di meno invece che di troppo.
 
 Nella famiglia offside il passo del blocco è il **massimo comun divisore**
 delle sue rientrature. Un divisore di uno spazio non è un passo: è il segno

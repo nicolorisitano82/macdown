@@ -120,7 +120,8 @@ Writing**.
 * **Right-click inside a code block to lay it out** the way its language
   wants: brackets for the C family and JSON, tags for HTML, and for Python,
   YAML or a Makefile — where the indentation *is* the syntax — the step
-  only, never the structure. Multi-line strings, comments and code that is
+  only, never the structure. A comment that runs over lines moves whole, so
+  its column of asterisks holds; multi-line strings and code that is
   aligned rather than indented are left alone.
 
 ### Appearance

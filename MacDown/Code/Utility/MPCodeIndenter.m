@@ -365,26 +365,83 @@ NS_INLINE NSString *MPWithoutLeadingSpace(NSString *line)
 }
 
 /// Depth from structure, then written out with the language's own step.
+/** One line moves the depth by one step at most, in either direction.
+ *
+ * Counting every bracket looks right until JavaScript: `f(function () {`
+ * leaves two open and would push its body two steps in, where everybody
+ * writes it one. The cost of the clamp is the opposite case — two blocks
+ * opened on the same line — which is rarer by far, and under-indented
+ * rather than misleading.
+ */
+NS_INLINE NSInteger MPOneStepAtMost(NSInteger balance)
+{
+    return MAX(-1, MIN(1, balance));
+}
+
+/// The leading whitespace of a line, as it was written.
+NS_INLINE NSString *MPLeadingSpaceOf(NSString *line, NSString *content)
+{
+    return [line substringToIndex:line.length - content.length];
+}
+
 static NSString *MPCodeByCounting(NSString *body, MPCodeIndentRule *rule)
 {
     MPScanState state = {NO, NO};
     NSInteger depth = 0;
     NSMutableArray *out = [NSMutableArray array];
 
+    // A comment that runs over lines moves as one piece: the line that
+    // opens it is indented like code, and the rest keep the offset they had
+    // from it. That is what holds a column of asterisks together, and it
+    // holds anything else in there too — a diagram, a sample — without
+    // knowing what it is.
+    NSString *commentIndent = @"";
+    NSUInteger commentWasIndented = 0;
+
     for (NSString *line in MPLinesOf(body))
     {
-        // Inside a string that runs over lines, the leading whitespace is
-        // part of the string; inside a comment that runs over lines it is
-        // what keeps the asterisks in a column. Either way it stays as
-        // written, and the line is only read for where it ends.
-        if (state.inRawString || state.inBlockComment)
+        // Inside a string that runs over lines the whitespace is part of
+        // what the string says, so the line stays exactly as written and
+        // is only read for where it ends.
+        if (state.inRawString)
         {
             NSInteger carried =
-                (rule.family == MPCodeIndentFamilyTags)
-                    ? MPTagBalanceOfLine(line, &state, NULL)
-                    : MPBracketBalanceOfLine(line, rule, &state, NULL);
+                MPBracketBalanceOfLine(line, rule, &state, NULL);
             [out addObject:line];
-            depth = MAX(0, depth + carried);
+            depth = MAX(0, depth + MPOneStepAtMost(carried));
+            continue;
+        }
+
+        if (state.inBlockComment)
+        {
+            NSString *content = MPWithoutLeadingSpace(line);
+            NSInteger carried = (rule.family == MPCodeIndentFamilyTags)
+                ? MPTagBalanceOfLine(content, &state, NULL)
+                : MPBracketBalanceOfLine(content, rule, &state, NULL);
+
+            if (content.length)
+            {
+                NSInteger moved = (NSInteger)MPLeadingSpaceOf(line,
+                    content).length - (NSInteger)commentWasIndented;
+                NSMutableString *written =
+                    [NSMutableString stringWithString:commentIndent];
+                for (NSInteger i = 0; i < moved; i++)
+                    [written appendString:@" "];
+                // Further left than the line that opened it: rare, and the
+                // most that can be honoured is the opening line's own
+                // indentation.
+                for (NSInteger i = 0; i > moved && written.length; i--)
+                    [written deleteCharactersInRange:
+                        NSMakeRange(written.length - 1, 1)];
+                [written appendString:content];
+                [out addObject:written];
+            }
+            else
+            {
+                [out addObject:@""];
+            }
+
+            depth = MAX(0, depth + MPOneStepAtMost(carried));
             continue;
         }
 
@@ -401,17 +458,24 @@ static NSString *MPCodeByCounting(NSString *body, MPCodeIndentRule *rule)
             ? MPTagBalanceOfLine(content, &state, &closers)
             : MPBracketBalanceOfLine(content, rule, &state, &closers);
 
-        NSInteger here = depth - (NSInteger)closers;
+        NSInteger here = depth - (closers ? 1 : 0);
         if (here < 0)
             here = 0;
 
-        NSMutableString *written = [NSMutableString string];
+        NSMutableString *indent = [NSMutableString string];
         for (NSInteger i = 0; i < here; i++)
-            [written appendString:rule.unit];
-        [written appendString:content];
-        [out addObject:written];
+            [indent appendString:rule.unit];
+        [out addObject:[indent stringByAppendingString:content]];
 
-        depth = depth + balance;
+        // This line opened a comment that the next one continues, so the
+        // rest of it will be measured from where this one ended up.
+        if (state.inBlockComment)
+        {
+            commentIndent = [indent copy];
+            commentWasIndented = MPLeadingSpaceOf(line, content).length;
+        }
+
+        depth = depth + MPOneStepAtMost(balance);
         if (depth < 0)
             depth = 0;
     }
