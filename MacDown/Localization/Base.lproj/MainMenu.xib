@@ -509,6 +509,12 @@
                                     <action selector="toggleInlineCode:" target="-1" id="XJO-7P-4Nh"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Code Block…" keyEquivalent="k" id="mdw-fence-itm">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="insertCodeBlock:" target="-1" id="mdw-fence-act"/>
+                                </connections>
+                            </menuItem>
                             <menuItem title="Comment" keyEquivalent="/" id="i8c-gf-w29">
                                 <connections>
                                     <action selector="toggleComment:" target="-1" id="7Xw-6O-ibS"/>

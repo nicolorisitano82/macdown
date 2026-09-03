@@ -11,6 +11,8 @@
 #import "MPMarkerHider.h"
 #import "MPMarkdownFromRichText.h"
 #import "MPTableSource.h"
+#import "MPCodeLanguages.h"
+#import "MPCodeIndenter.h"
 
 
 NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
@@ -23,6 +25,7 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 
 @interface MPEditorView ()
 @property (assign, nonatomic) NSUInteger tableActionIndex;
+@property (assign, nonatomic) NSUInteger codeActionIndex;
 @property (assign, nonatomic) NSRange lastDrawnActiveRange;
 
 @property NSRect contentRect;
@@ -604,12 +607,36 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 - (NSMenu *)menuForEvent:(NSEvent *)event
 {
     NSMenu *menu = [super menuForEvent:event];
-    if (!self.tableMenuEnabled || !menu)
+    if (!menu)
         return menu;
+
+    /* The note that leads somewhere before there is anything there.
+     *
+     * At the top, and only with something selected, because the selection
+     * is both the name of the file and the words of the link — with nothing
+     * selected there is nothing to call it. Target nil so it walks the
+     * responder chain to the document, which is what knows where its own
+     * folder is.
+     */
+    if (self.selectedRange.length > 0)
+    {
+        NSMenuItem *link = [[NSMenuItem alloc] initWithTitle:
+            NSLocalizedString(@"Link to a New Markdown File",
+                              @"Editor context menu")
+            action:@selector(linkToNewMarkdownFile:) keyEquivalent:@""];
+        link.target = nil;
+        [menu insertItem:link atIndex:0];
+        [menu insertItem:[NSMenuItem separatorItem] atIndex:1];
+    }
 
     NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
     NSUInteger index = [self characterIndexForInsertionAtPoint:point];
     if (index == NSNotFound || index > self.string.length)
+        return menu;
+
+    [self addCodeBlockItemsToMenu:menu forIndex:index];
+
+    if (!self.tableMenuEnabled)
         return menu;
 
     MPTableSource *table = [MPTableSource tableCoveringIndex:index
@@ -692,6 +719,71 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     for (NSUInteger i = 0; i < items.count; i++)
         [menu insertItem:items[i] atIndex:(NSInteger)i];
     return menu;
+}
+
+/** The one command a code block has of its own: lay it out.
+ *
+ * Only for a block whose language has a rule, and only when the rule would
+ * actually change something — a command that does nothing when you press it
+ * teaches you to stop pressing it.
+ */
+- (void)addCodeBlockItemsToMenu:(NSMenu *)menu forIndex:(NSUInteger)index
+{
+    MPFencedCodeBlock *block =
+        [MPFencedCodeBlock blockCoveringIndex:index inText:self.string];
+    if (!block || !block.language.length)
+        return;
+
+    MPCodeIndentRule *rule = MPCodeIndentRuleForLanguage(block.language);
+    if (!rule || rule.family == MPCodeIndentFamilyNone)
+        return;
+
+    NSString *body = [self.string substringWithRange:block.bodyRange];
+    if ([MPReindentedCode(body, block.language) isEqualToString:body])
+        return;
+
+    self.codeActionIndex = index;
+    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:
+        [NSString stringWithFormat:
+            NSLocalizedString(@"Indent as %@", @"Editor context menu"),
+            MPTitleOfCodeLanguage(block.language)]
+        action:@selector(indentCodeBlock:) keyEquivalent:@""];
+    item.target = self;
+    [menu insertItem:item atIndex:0];
+    [menu insertItem:[NSMenuItem separatorItem] atIndex:1];
+}
+
+/// The block is found again from the click, so a stale menu cannot misfire.
+- (IBAction)indentCodeBlock:(id)sender
+{
+    NSUInteger index = self.codeActionIndex;
+    if (index > self.string.length)
+        return;
+
+    MPFencedCodeBlock *block =
+        [MPFencedCodeBlock blockCoveringIndex:index inText:self.string];
+    if (!block)
+        return;
+
+    NSString *body = [self.string substringWithRange:block.bodyRange];
+    NSString *laid = MPReindentedCode(body, block.language);
+    if (!laid || [laid isEqualToString:body])
+        return;
+
+    if (![self shouldChangeTextInRange:block.bodyRange
+                    replacementString:laid])
+        return;
+
+    [self.textStorage replaceCharactersInRange:block.bodyRange
+                                    withString:laid];
+    [self didChangeText];
+    [self.undoManager setActionName:
+        [NSString stringWithFormat:
+            NSLocalizedString(@"Indent as %@", @"Editor context menu"),
+            MPTitleOfCodeLanguage(block.language)]];
+
+    // The code that moved, so what the command did can be seen.
+    self.selectedRange = NSMakeRange(block.bodyRange.location, laid.length);
 }
 
 /// Runs one edit: the table is read again, so a stale menu cannot misfire.

@@ -42,6 +42,7 @@
 #import "MPModelStore.h"
 #import "MPWritingAssistant.h"
 #import "MPDocumentTemplate.h"
+#import "MPCodeLanguages.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -424,6 +425,9 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 @property (strong, nonatomic) NSTextField *textField;
 @property (strong, nonatomic) NSButton *webRadio;
 @property (strong, nonatomic) NSButton *fileRadio;
+@property (strong, nonatomic) NSButton *emptyFileRadio;
+/// Whether the sheet was asked for a file that does not exist yet.
+@property (readonly, nonatomic) BOOL makesNewFile;
 @property (strong, nonatomic) NSButton *chooseButton;
 /// The file picked through the panel, and what was shown in the field for it.
 @property (strong, nonatomic) NSURL *chosenURL;
@@ -437,32 +441,43 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
                      address:(NSString *)address
                       toFile:(BOOL)toFile
 {
-    self = [super initWithFrame:NSMakeRect(0.0, 0.0, 380.0, 112.0)];
+    self = [super initWithFrame:NSMakeRect(0.0, 0.0, 380.0, 134.0)];
     if (!self)
         return nil;
 
     NSTextField *kind = [NSTextField labelWithString:
         NSLocalizedString(@"Link to:", @"Link sheet")];
     kind.alignment = NSTextAlignmentRight;
-    kind.frame = NSMakeRect(0.0, 91.0, 78.0, 18.0);
+    kind.frame = NSMakeRect(0.0, 113.0, 78.0, 18.0);
     [self addSubview:kind];
 
     _webRadio = [NSButton radioButtonWithTitle:
         NSLocalizedString(@"A web address", @"Link sheet")
                                         target:self
                                         action:@selector(kindChanged:)];
-    _webRadio.frame = NSMakeRect(84.0, 89.0, 240.0, 20.0);
+    _webRadio.frame = NSMakeRect(84.0, 111.0, 240.0, 20.0);
     [self addSubview:_webRadio];
 
     _fileRadio = [NSButton radioButtonWithTitle:
         NSLocalizedString(@"A file on this Mac", @"Link sheet")
                                          target:self
                                          action:@selector(kindChanged:)];
-    _fileRadio.frame = NSMakeRect(84.0, 67.0, 240.0, 20.0);
+    _fileRadio.frame = NSMakeRect(84.0, 89.0, 240.0, 20.0);
     [self addSubview:_fileRadio];
+
+    // The third destination is one that does not exist yet, which is why
+    // it needs no address: the text below names it.
+    _emptyFileRadio = [NSButton radioButtonWithTitle:
+        NSLocalizedString(@"A new, empty Markdown file beside this one",
+                          @"Link sheet")
+                                            target:self
+                                            action:@selector(kindChanged:)];
+    _emptyFileRadio.frame = NSMakeRect(84.0, 67.0, 300.0, 20.0);
+    [self addSubview:_emptyFileRadio];
 
     _webRadio.state = toFile ? NSControlStateValueOff : NSControlStateValueOn;
     _fileRadio.state = toFile ? NSControlStateValueOn : NSControlStateValueOff;
+    _emptyFileRadio.state = NSControlStateValueOff;
 
     NSTextField *where = [NSTextField labelWithString:
         NSLocalizedString(@"Address:", @"Link sheet")];
@@ -498,6 +513,17 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     // Choosing a file is the point of the file option, so offer it at once.
     if (sender == self.fileRadio && !self.chosenURL)
         [self choose:sender];
+
+    // A file that does not exist yet has no address to give, and the text
+    // is what will name it.
+    BOOL blank = (self.emptyFileRadio.state == NSControlStateValueOn);
+    self.targetField.enabled = !blank;
+    self.chooseButton.enabled = !blank;
+}
+
+- (BOOL)makesNewFile
+{
+    return self.emptyFileRadio.state == NSControlStateValueOn;
 }
 
 /** Runs the open panel modally, on top of the sheet.
@@ -560,6 +586,128 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 {
     return [self.textField.stringValue stringByTrimmingCharactersInSet:
         [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+@end
+
+
+/** Asks whether code goes in the line or in a block, and in what language.
+ *
+ * Backticks around a word and a fenced block are the same idea at two
+ * scales, and one button used to do only the smaller one. The larger needs
+ * a language to be worth anything — a fence without one is a grey box —
+ * and a language is not something to type from memory when there are more
+ * than a hundred of them and only the ones in this build will work.
+ */
+@interface MPCodeAccessory : NSView
+@property (strong, nonatomic) NSButton *inlineRadio;
+@property (strong, nonatomic) NSButton *blockRadio;
+@property (strong, nonatomic) NSPopUpButton *languageButton;
+/// Whether a fenced block was asked for, rather than backticks in the line.
+@property (readonly, nonatomic) BOOL usesBlock;
+/// The chosen language as it is written after the fence; empty for none.
+@property (readonly, nonatomic) NSString *language;
+@end
+
+
+@implementation MPCodeAccessory
+
+- (instancetype)initWithBlock:(BOOL)block language:(NSString *)language
+{
+    self = [super initWithFrame:NSMakeRect(0.0, 0.0, 380.0, 74.0)];
+    if (!self)
+        return nil;
+
+    NSTextField *kind = [NSTextField labelWithString:
+        NSLocalizedString(@"Code:", @"Code sheet")];
+    kind.alignment = NSTextAlignmentRight;
+    kind.frame = NSMakeRect(0.0, 53.0, 78.0, 18.0);
+    [self addSubview:kind];
+
+    _inlineRadio = [NSButton radioButtonWithTitle:
+        NSLocalizedString(@"Inside the line", @"Code sheet")
+                                           target:self
+                                           action:@selector(kindChanged:)];
+    _inlineRadio.frame = NSMakeRect(84.0, 51.0, 280.0, 20.0);
+    [self addSubview:_inlineRadio];
+
+    _blockRadio = [NSButton radioButtonWithTitle:
+        NSLocalizedString(@"A block, highlighted as:", @"Code sheet")
+                                          target:self
+                                          action:@selector(kindChanged:)];
+    _blockRadio.frame = NSMakeRect(84.0, 29.0, 280.0, 20.0);
+    [self addSubview:_blockRadio];
+
+    _inlineRadio.state = block ? NSControlStateValueOff
+                               : NSControlStateValueOn;
+    _blockRadio.state = block ? NSControlStateValueOn
+                              : NSControlStateValueOff;
+
+    _languageButton = [[NSPopUpButton alloc]
+        initWithFrame:NSMakeRect(102.0, 2.0, 262.0, 25.0) pullsDown:NO];
+    [self fillLanguageButtonSelecting:language];
+    [self addSubview:_languageButton];
+
+    [self kindChanged:nil];
+    return self;
+}
+
+/** The languages this build can highlight, the common ones above a line.
+ *
+ * "None" first, because a fence with no language is still the right answer
+ * for a shell transcript or a piece of output, and it is what the plain
+ * button used to give.
+ */
+- (void)fillLanguageButtonSelecting:(NSString *)language
+{
+    NSMenu *menu = [[NSMenu alloc] init];
+
+    NSMenuItem *none = [[NSMenuItem alloc] init];
+    none.title = NSLocalizedString(@"No language", @"Code sheet");
+    none.representedObject = @"";
+    [menu addItem:none];
+    [menu addItem:[NSMenuItem separatorItem]];
+
+    BOOL separated = NO;
+    for (MPCodeLanguage *found in MPAvailableCodeLanguages())
+    {
+        if (!found.isCommon && !separated)
+        {
+            [menu addItem:[NSMenuItem separatorItem]];
+            separated = YES;
+        }
+        NSMenuItem *item = [[NSMenuItem alloc] init];
+        item.title = found.title;
+        item.representedObject = found.identifier;
+        [menu addItem:item];
+    }
+    self.languageButton.menu = menu;
+
+    for (NSMenuItem *item in menu.itemArray)
+    {
+        if (![item.representedObject isEqualToString:language ?: @""])
+            continue;
+        [self.languageButton selectItem:item];
+        break;
+    }
+}
+
+- (void)kindChanged:(id)sender
+{
+    // A language only means something to a block: there is no way to mark
+    // one on backticks inside a sentence.
+    self.languageButton.enabled = self.usesBlock;
+}
+
+- (BOOL)usesBlock
+{
+    return self.blockRadio.state == NSControlStateValueOn;
+}
+
+- (NSString *)language
+{
+    NSString *identifier = self.languageButton.selectedItem.representedObject;
+    return [identifier isKindOfClass:[NSString class]] ? identifier : @"";
 }
 
 @end
@@ -1182,6 +1330,26 @@ static NSString * const kMPSelectionSource =
     NSWindow *window = controller.window;
     window.toolbarStyle = NSWindowToolbarStyleUnified;
 
+    /* One window, one tab per open file.
+     *
+     * The system's own tabs rather than a bar of our own: they are the ones
+     * with the keyboard shortcuts people already know, the overview on
+     * ⇧⌘\, the drag between windows, and the behaviour Finder and Safari
+     * have. A bar of our own would be a month of building the same thing
+     * slightly differently.
+     *
+     * Preferred, not Automatic. Automatic follows the system setting for
+     * whether documents open in tabs, which is "in full screen only" by
+     * default — and this is a feature somebody asked for, not one to be
+     * discovered by chance. One line to defer to the system again.
+     *
+     * All documents share the identifier, so any two of them can be tabs
+     * of each other; the identifier is the only thing keeping unrelated
+     * windows out of the group.
+     */
+    window.tabbingMode = NSWindowTabbingModePreferred;
+    window.tabbingIdentifier = @"com.nicolorisitano82.macdown.document";
+
     [self installSidebarInWindow:window];
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -1523,6 +1691,9 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
             && [MPModelStore sharedStore].selectedModel != nil
             && !self.writingAssistant.isWorking;
     }
+    if (action == @selector(linkToNewMarkdownFile:))
+        return self.fileURL != nil && self.editor.selectedRange.length > 0;
+
     if (action == @selector(stopWritingHelp:))
     {
         return self.preferences.editorWritingHelp
@@ -3623,6 +3794,122 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
     [self.editor toggleForMarkupPrefix:@"`" suffix:@"`"];
 }
 
+/** Code, at whichever size is wanted, from one button.
+ *
+ * A selection that is already marked is taken off without asking, so the
+ * button undoes itself the way the others do.
+ */
+- (IBAction)insertCode:(id)sender
+{
+    NSRange selection = self.editor.selectedRange;
+    if (selection.length
+            && [self.editor substringInRange:selection
+                        isSurroundedByPrefix:@"`" suffix:@"`"])
+    {
+        [self.editor toggleForMarkupPrefix:@"`" suffix:@"`"];
+        return;
+    }
+    if ([self selectedLinesAreFencedCodeBlock])
+    {
+        [self insertCodeFenceForLanguage:nil];
+        return;
+    }
+
+    // Text with a line break in it cannot be code inside a line, so that
+    // half of the question answers itself; the language does not.
+    NSString *chosen = selection.length
+        ? [self.editor.string substringWithRange:selection] : @"";
+    BOOL block = [chosen rangeOfString:@"\n"].location != NSNotFound;
+    [self runCodeSheetPreferringBlock:block onlyBlock:block];
+}
+
+/// The same, when the block is already the answer.
+- (IBAction)insertCodeBlock:(id)sender
+{
+    if ([self selectedLinesAreFencedCodeBlock])
+    {
+        [self insertCodeFenceForLanguage:nil];
+        return;
+    }
+    [self runCodeSheetPreferringBlock:YES onlyBlock:YES];
+}
+
+- (BOOL)selectedLinesAreFencedCodeBlock
+{
+    NSString *text = self.editor.string;
+    NSRange lines = [text lineRangeForRange:self.editor.selectedRange];
+    return MPBodyOfFencedCodeBlock([text substringWithRange:lines]) != nil;
+}
+
+- (void)runCodeSheetPreferringBlock:(BOOL)block onlyBlock:(BOOL)onlyBlock
+{
+    // What was asked for last time. Someone writing code samples is
+    // usually writing several, in one language.
+    static BOOL lastWasBlock = NO;
+    static NSString *lastLanguage = nil;
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Insert code", @"Code sheet");
+    alert.informativeText = NSLocalizedString(
+        @"A block is highlighted by the language you name here. Only the "
+        @"languages this copy of MacDown Next can highlight are listed.",
+        @"Code sheet");
+    [alert addButtonWithTitle:NSLocalizedString(@"Insert", @"Code sheet")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Cancel", @"Code sheet")];
+
+    MPCodeAccessory *accessory =
+        [[MPCodeAccessory alloc] initWithBlock:(block || lastWasBlock)
+                                      language:lastLanguage];
+    // Nothing to choose when only one of the two is possible; the choice
+    // is still shown, so it is clear which one is being made.
+    if (onlyBlock)
+    {
+        accessory.inlineRadio.enabled = NO;
+        accessory.blockRadio.enabled = NO;
+    }
+    alert.accessoryView = accessory;
+
+    void (^insert)(NSModalResponse) = ^(NSModalResponse response) {
+        if (response != NSAlertFirstButtonReturn)
+            return;
+        lastWasBlock = accessory.usesBlock;
+        if (!accessory.usesBlock)
+        {
+            [self.editor toggleForMarkupPrefix:@"`" suffix:@"`"];
+            return;
+        }
+        lastLanguage = accessory.language;
+        [self insertCodeFenceForLanguage:accessory.language];
+    };
+
+    NSWindow *window = self.windowForSheet;
+    if (window)
+    {
+        [alert beginSheetModalForWindow:window completionHandler:insert];
+        [window makeFirstResponder:accessory.languageButton];
+    }
+    else
+    {
+        insert([alert runModal]);
+    }
+}
+
+/** Puts the fence on the selected lines, or takes it off.
+ *
+ * Where the fence goes and where the caret lands afterwards is worked out
+ * apart from here, in MPCodeLanguages, so it can be checked.
+ */
+- (void)insertCodeFenceForLanguage:(NSString *)language
+{
+    NSTextView *editor = self.editor;
+    MPCodeFenceEdit *edit = MPCodeFenceEditForText(
+        editor.string, editor.selectedRange, language);
+
+    [editor insertText:edit.replacement
+      replacementRange:edit.replacedRange];
+    editor.selectedRange = edit.selectedRange;
+}
+
 - (IBAction)toggleStrikethrough:(id)sender
 {
     [self.editor toggleForMarkupPrefix:@"~~" suffix:@"~~"];
@@ -3718,6 +4005,13 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
 - (void)insertLinkFromAccessory:(MPLinkAccessory *)accessory
                       replacing:(NSRange)selection
 {
+    if (accessory.makesNewFile)
+    {
+        [self linkToNewMarkdownFileNamed:accessory.linkText
+                          replacingRange:selection];
+        return;
+    }
+
     NSURL *file = accessory.fileToLink;
     NSString *target = file
         ? MPMarkdownLinkTargetForFileURL(file, self.fileURL)
@@ -4043,6 +4337,109 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
  * Where the caret is, not over the document: someone with a page of notes
  * who asks for a report skeleton wants it added, not their notes replaced.
  */
+/** Makes an empty document beside this one, links to it, and opens it.
+ *
+ * The thing a note leads to before it exists. The selection is the name and
+ * the link text, so writing "see the test plan", selecting three words of it
+ * and pressing the key leaves a link in place and a file open at the other
+ * end of it — which is how a set of notes actually grows.
+ *
+ * Empty, and not a template: what goes in it is the reader's business, and
+ * a file that arrives with headings already in it is a file they have to
+ * clear out first.
+ *
+ * A file that is already there is linked and opened, never overwritten. The
+ * whole point is to reach the other document, and destroying it on the way
+ * is not a lesser version of that.
+ */
+- (void)linkToNewMarkdownFileNamed:(NSString *)name
+                    replacingRange:(NSRange)range
+{
+    if (!self.fileURL)
+    {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = NSLocalizedString(
+            @"Save this document first", @"New linked file");
+        alert.informativeText = NSLocalizedString(
+            @"A new file is made in the same folder as this one, and this "
+            @"one has no folder yet.", @"New linked file");
+        [alert beginSheetModalForWindow:self.windowForSheet
+                      completionHandler:nil];
+        return;
+    }
+
+    NSURL *url = MPNewMarkdownFileURLForName(name, self.fileURL);
+    if (!url)
+    {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = NSLocalizedString(
+            @"That leaves nothing to name the file after",
+            @"New linked file");
+        alert.informativeText = NSLocalizedString(
+            @"Select the words the link should say, and they will name the "
+            @"file too.", @"New linked file");
+        [alert beginSheetModalForWindow:self.windowForSheet
+                      completionHandler:nil];
+        return;
+    }
+
+    NSFileManager *files = [NSFileManager defaultManager];
+    if (![files fileExistsAtPath:url.path])
+    {
+        NSError *error = nil;
+        if (![@"" writeToURL:url atomically:YES encoding:NSUTF8StringEncoding
+                        error:&error])
+        {
+            [self presentError:error];
+            return;
+        }
+    }
+
+    NSString *text = [name stringByTrimmingCharactersInSet:
+        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (!text.length)
+        text = url.lastPathComponent.stringByDeletingPathExtension;
+
+    NSString *markup = [NSString stringWithFormat:@"[%@](%@)", text,
+        MPMarkdownLinkTargetForFileURL(url, self.fileURL)];
+
+    if (NSMaxRange(range) > self.editor.string.length)
+        range = self.editor.selectedRange;
+    [self.editor insertText:markup replacementRange:range];
+    self.editor.selectedRange =
+        NSMakeRange(range.location + markup.length, 0);
+
+    // And there it is, in its own tab.
+    [self openOrCreateFileForUrl:url];
+}
+
+- (IBAction)linkToNewMarkdownFile:(id)sender
+{
+    NSRange selection = self.editor.selectedRange;
+    NSString *name = selection.length
+        ? [self.editor.string substringWithRange:selection] : @"";
+    [self linkToNewMarkdownFileNamed:name replacingRange:selection];
+}
+
+/** The plus at the end of the tab bar.
+ *
+ * AppKit shows it only if something in the responder chain answers this,
+ * and in a document-based application nothing does by default — so the bar
+ * appears with no way to add to it, which reads as a missing button rather
+ * than as a decision.
+ *
+ * A new untitled document, which joins the group because every document
+ * window shares the tabbing identifier. ⌘T reaches the same code.
+ */
+- (IBAction)newWindowForTab:(id)sender
+{
+    NSError *error = nil;
+    NSDocumentController *controller =
+        [NSDocumentController sharedDocumentController];
+    if (![controller openUntitledDocumentAndDisplay:YES error:&error] && error)
+        [self presentError:error];
+}
+
 - (IBAction)insertDocumentTemplate:(id)sender
 {
     MPDocumentTemplate *template = nil;
@@ -5103,6 +5500,25 @@ NS_INLINE BOOL MPIsMarkdownFileURL(NSURL *url)
     
     if (reachable)
     {
+        /* Already open? Then the link goes to the tab it is open in.
+         *
+         * Before anything else, because the alternative is asking the
+         * document controller to open it and trusting that it notices. It
+         * does notice — but this way the intent is in the code rather than
+         * in a framework's good manners, and -showWindows on a tabbed
+         * document is exactly "select that tab".
+         */
+        if (file)
+        {
+            NSDocument *already = [[NSDocumentController
+                sharedDocumentController] documentForURL:url];
+            if (already)
+            {
+                [already showWindows];
+                return;
+            }
+        }
+
         // A document this application can open, opened here. Handing a
         // neighbouring note to the workspace opens it in whatever holds the
         // extension — which may be another copy of MacDown, or another

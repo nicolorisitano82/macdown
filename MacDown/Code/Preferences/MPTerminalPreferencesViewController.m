@@ -114,7 +114,7 @@ NS_INLINE NSColor *MPGetInstallationIndicatorColor(BOOL installed)
 #pragma mark - Private methods
 
 /**
- * Searches for the the macdown shell utility and invokes foundShellUtilityAtURL: if found.
+ * Searches for the shell utility and invokes foundShellUtilityAtURL: if found.
  */
 - (void)lookForShellUtility
 {
@@ -127,7 +127,8 @@ NS_INLINE NSColor *MPGetInstallationIndicatorColor(BOOL installed)
                 [NSCharacterSet whitespaceAndNewlineCharacterSet];
             NSString *prefix = [output stringByTrimmingCharactersInSet:padding];
             macdownPath =
-                [prefix stringByAppendingPathComponent:@"bin/macdown"];
+                [prefix stringByAppendingPathComponent:
+                    [@"bin" stringByAppendingPathComponent:kMPCommandName]];
         }
 
         if ([[NSFileManager defaultManager] fileExistsAtPath:macdownPath])
@@ -140,7 +141,8 @@ NS_INLINE NSColor *MPGetInstallationIndicatorColor(BOOL installed)
     // URL for macdown utility in .app bundle
     NSURL *sharedSupportURL = [NSBundle mainBundle].sharedSupportURL;
     NSString *utilityBundlePath =
-        [sharedSupportURL URLByAppendingPathComponent:@"bin/macdown"].path;
+        [sharedSupportURL URLByAppendingPathComponent:
+            [@"bin" stringByAppendingPathComponent:kMPCommandName]].path;
 
     NSFileManager *fm = [NSFileManager defaultManager];
     if ([fm fileExistsAtPath:utilityBundlePath])
@@ -165,7 +167,7 @@ NS_INLINE NSColor *MPGetInstallationIndicatorColor(BOOL installed)
 }
 
 /**
- * Highlights all occurences of "macdown" in the info-text
+ * Highlights every mention of the utility in the info text
  */
 - (void)highlightMacdownInInfo
 {
@@ -181,7 +183,7 @@ NS_INLINE NSColor *MPGetInstallationIndicatorColor(BOOL installed)
     {
         searchRange.length = infoString.length - searchRange.location;
         NSRange foundRange =
-            [infoString rangeOfString:@"macdown"
+            [infoString rangeOfString:kMPCommandName
                               options:NSLiteralSearch range:searchRange];
         
         if (foundRange.location != NSNotFound)

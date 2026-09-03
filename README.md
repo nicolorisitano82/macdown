@@ -71,6 +71,10 @@ character.
   hashtag and not a heading, `1)` numbers a list as `1.` does, a list that
   starts at five is numbered from five, a backslash at the end of a line
   breaks it, and a task marker is accepted in either case.
+* **One window, one tab per open file**, using the system's own tabs — so
+  ⇧⌘\ shows the overview, tabs drag between windows, and a link to a file
+  that is already open goes to the tab it is open in rather than opening it
+  twice.
 * **Writing help that runs on your Mac**: improve, correct, make formal,
   make plain, shorter, longer — over the selection, or the paragraph the
   caret is in. The answer streams in and one undo takes it all back.
@@ -82,6 +86,10 @@ character.
   report, a software test plan, release notes, minutes. Instant, the same
   every time, and there with no model installed. Put your own in the
   Templates folder and they appear in the menu.
+* **Link to a file that does not exist yet.** Select the words the link
+  should say, right-click, and there is an empty Markdown file beside the
+  document, linked, open in its own tab. Named after the selection, so a
+  set of notes grows by writing rather than by filing.
 * **⌘K asks where the link goes**: a web address you type or paste, or a
   file you find by browsing. A file inside the document's folder is written
   as a relative path, so the two keep working when you move them together.
@@ -106,6 +114,15 @@ Writing**.
 * **WikiLinks**: `[[Another note]]` links to a neighbouring document, and
   says so when the file is not there.
 * **A sidebar** with the document outline, for moving around a long file.
+* **The code button asks which kind**: backticks inside the line, or a
+  fenced block marked with a language chosen from a list — and the list
+  holds only the 113 languages this build can actually highlight.
+* **Right-click inside a code block to lay it out** the way its language
+  wants: brackets for the C family and JSON, tags for HTML, and for Python,
+  YAML or a Makefile — where the indentation *is* the syntax — the step
+  only, never the structure. A comment that runs over lines moves whole, so
+  its column of asterisks holds; multi-line strings and code that is
+  aligned rather than indented are left alone.
 
 ### Appearance
 

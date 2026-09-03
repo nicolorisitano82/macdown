@@ -65,6 +65,18 @@ NSString *MPStringByUnescapingHTMLEntities(NSString *value);
 NSString *MPMarkdownLinkTargetForFileURL(NSURL *fileURL,
                                          NSURL *documentURL);
 
+/** The file a name asks for, beside `documentURL`. Nil if it cannot.
+ *
+ * The name comes from whatever was selected in the editor, which is prose
+ * and not a file name: it may hold a slash, a colon, a newline, or three
+ * hundred characters. What comes back is something a folder will accept,
+ * with `.md` on the end, in the document's own directory.
+ *
+ * Nil when the document has never been saved — there is no "beside" then —
+ * or when nothing usable is left of the name.
+ */
+NSURL *MPNewMarkdownFileURLForName(NSString *name, NSURL *documentURL);
+
 BOOL MPCharacterIsWhitespace(unichar character);
 BOOL MPCharacterIsNewline(unichar character);
 BOOL MPStringIsNewline(NSString *str);

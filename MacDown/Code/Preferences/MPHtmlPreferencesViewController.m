@@ -18,6 +18,8 @@ NS_INLINE NSString *MPPrismDefaultThemeName(void)
 
 
 @interface MPHtmlPreferencesViewController ()
+/// The column of sections, kept because its fitting size is the pane's.
+@property (weak, nonatomic) NSStackView *sections;
 @property (weak) NSPopUpButton *stylesheetSelect;
 @property (weak) NSSegmentedControl *stylesheetFunctions;
 @property (weak) NSPopUpButton *highlightingThemeSelect;
@@ -73,20 +75,51 @@ NS_INLINE NSString *MPPrismDefaultThemeName(void)
     stack.orientation = NSUserInterfaceLayoutOrientationVertical;
     stack.alignment = NSLayoutAttributeLeading;
     stack.spacing = 18.0;
+    stack.edgeInsets = NSEdgeInsetsMake(20.0, 20.0, 20.0, 20.0);
     stack.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addSubview:stack];
+
+    /* Seven sections, and it scrolls.
+     *
+     * The pane used to be exactly as tall as its content, and the window
+     * takes its height from the pane — so every switch added made the
+     * window taller, until it was taller than the screen it had to open on
+     * and the bottom of it could not be reached at all.
+     *
+     * Scrolling and a height that can be dragged, rather than dropping
+     * anything or hiding it behind a disclosure: the sections are all
+     * things somebody looks for.
+     */
+    NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSZeroRect];
+    scroll.hasVerticalScroller = YES;
+    scroll.drawsBackground = NO;
+    scroll.autohidesScrollers = YES;
+    scroll.translatesAutoresizingMaskIntoConstraints = NO;
+    scroll.documentView = stack;
+    [self.view addSubview:scroll];
 
     [NSLayoutConstraint activateConstraints:@[
-        [stack.topAnchor constraintEqualToAnchor:self.view.topAnchor
-                                        constant:20.0],
-        [stack.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor
-                                            constant:20.0],
-        [stack.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor
-                                             constant:-20.0],
-        [stack.bottomAnchor
-            constraintLessThanOrEqualToAnchor:self.view.bottomAnchor
-                                     constant:-20.0],
+        [scroll.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+        [scroll.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [scroll.trailingAnchor constraintEqualToAnchor:
+            self.view.trailingAnchor],
+        [scroll.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+
+        [stack.topAnchor constraintEqualToAnchor:
+            scroll.contentView.topAnchor],
+        [stack.leadingAnchor constraintEqualToAnchor:
+            scroll.contentView.leadingAnchor],
+        // The width comes from the clip view, so the rows lay out to the
+        // pane and the scrolling stays vertical only.
+        [stack.widthAnchor constraintEqualToAnchor:
+            scroll.contentView.widthAnchor],
+        // And deliberately NOT the bottom. Pinned there, the document view
+        // is as tall as the clip view and the clip view as tall as the
+        // document — so the content drove the pane's height and the scroll
+        // view scrolled nothing. Measured: 991 points, with a cap of 560
+        // right above it doing nothing at all. Left free, the stack's own
+        // height is the document's, which is what a scroll view is for.
     ]];
+    self.sections = stack;
 
     [self addStyleSectionTo:stack];
     [self addCodeSectionTo:stack];
@@ -98,13 +131,43 @@ NS_INLINE NSString *MPPrismDefaultThemeName(void)
 
     [self updateHighlightingDependents];
 
-    // The window is sized from this view's frame, and the frame it arrives
-    // with is the nib's — which described a pane that no longer exists. Left
-    // alone, the content gets squeezed into the old measurements.
+    /* The size the window opens at.
+     *
+     * Taken from what the sections want, and then capped: the whole point
+     * of the scroll view is that the pane need not be as tall as its
+     * content. The cap is a height that fits a laptop screen with room for
+     * the menu bar and the dock, which is the machine this has to open on.
+     *
+     * The fitting size is asked of the stack and not of the view, because a
+     * view whose only child is a scroll view has no opinion about its own
+     * height at all.
+     */
+    static const CGFloat kMPPaneMaximumHeight = 560.0;
+
     [self.view layoutSubtreeIfNeeded];
-    NSSize needed = self.view.fittingSize;
+    NSSize needed = self.sections.fittingSize;
     if (needed.width > 0.0 && needed.height > 0.0)
-        self.view.frame = NSMakeRect(0.0, 0.0, needed.width, needed.height);
+    {
+        self.view.frame = NSMakeRect(0.0, 0.0, needed.width,
+            MIN(needed.height, kMPPaneMaximumHeight));
+    }
+}
+
+/** Lets the window be dragged taller, which MASPreferences asks about.
+ *
+ * It reads these to decide the window's maximum size and whether to show a
+ * resize indicator at all. Height only: the rows are a column of switches,
+ * and stretching that sideways gives a reader nothing but longer lines to
+ * follow with their eye.
+ */
+- (BOOL)hasResizableHeight
+{
+    return YES;
+}
+
+- (BOOL)hasResizableWidth
+{
+    return NO;
 }
 
 - (void)viewWillAppear
