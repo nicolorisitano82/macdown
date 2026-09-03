@@ -106,7 +106,7 @@
 		852D523C1E260A6400BA7162 /* MPTerminalPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 852D523A1E260A6400BA7162 /* MPTerminalPreferencesViewController.m */; };
 		85E24E5C1E5019C00056E696 /* MPToolbarController.m in Sources */ = {isa = PBXBuildFile; fileRef = 85E24E5B1E5019C00056E696 /* MPToolbarController.m */; };
 		905EF1A9196164CA00FC3CE9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 905EF1A8196164CA00FC3CE9 /* Foundation.framework */; };
-		905EF1B7196164F300FC3CE9 /* macdown in Copy Command Line Utility */ = {isa = PBXBuildFile; fileRef = 905EF1A7196164CA00FC3CE9 /* macdown */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		905EF1B7196164F300FC3CE9 /* macdownext in Copy Command Line Utility */ = {isa = PBXBuildFile; fileRef = 905EF1A7196164CA00FC3CE9 /* macdownext */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		B5C5C1666A506FEA86435D25 /* libPods-macdown-cmd.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 263367245B2D78A42C2F19D7 /* libPods-macdown-cmd.a */; };
 		D0C1A1000000000000000003 /* MPDocxPostProcessing.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000002 /* MPDocxPostProcessing.m */; };
 		D0C1A1000000000000000013 /* MPProseChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1A1000000000000000012 /* MPProseChecker.m */; };
@@ -175,7 +175,7 @@
 			dstPath = bin;
 			dstSubfolderSpec = 12;
 			files = (
-				905EF1B7196164F300FC3CE9 /* macdown in Copy Command Line Utility */,
+				905EF1B7196164F300FC3CE9 /* macdownext in Copy Command Line Utility */,
 			);
 			name = "Copy Command Line Utility";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -553,7 +553,7 @@
 		85E24E5A1E5019C00056E696 /* MPToolbarController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MPToolbarController.h; path = Code/Application/MPToolbarController.h; sourceTree = "<group>"; };
 		85E24E5B1E5019C00056E696 /* MPToolbarController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MPToolbarController.m; path = Code/Application/MPToolbarController.m; sourceTree = "<group>"; };
 		8CDC5EA0050D2F722FB1AADD /* Pods-MacDownTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MacDownTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MacDownTests/Pods-MacDownTests.debug.xcconfig"; sourceTree = "<group>"; };
-		905EF1A7196164CA00FC3CE9 /* macdown */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = macdown; sourceTree = BUILT_PRODUCTS_DIR; };
+		905EF1A7196164CA00FC3CE9 /* macdownext */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = macdownext; sourceTree = BUILT_PRODUCTS_DIR; };
 		905EF1A8196164CA00FC3CE9 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		D0C1A1000000000000000001 /* MPDocxPostProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPDocxPostProcessing.h; sourceTree = "<group>"; };
 		D0C1A1000000000000000002 /* MPDocxPostProcessing.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocxPostProcessing.m; sourceTree = "<group>"; };
@@ -892,7 +892,7 @@
 			children = (
 				1FA6DE211941CC9E000409FB /* MacDown.app */,
 				1FA6DE451941CC9E000409FB /* MacDownTests.xctest */,
-				905EF1A7196164CA00FC3CE9 /* macdown */,
+				905EF1A7196164CA00FC3CE9 /* macdownext */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1104,7 +1104,7 @@
 			);
 			name = "macdown-cmd";
 			productName = "MacDown-cmd";
-			productReference = 905EF1A7196164CA00FC3CE9 /* macdown */;
+			productReference = 905EF1A7196164CA00FC3CE9 /* macdownext */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -2086,7 +2086,7 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				PRODUCT_NAME = macdown;
+				PRODUCT_NAME = macdownext;
 				SKIP_INSTALL = YES;
 			};
 			name = Debug;
@@ -2097,7 +2097,7 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "";
-				PRODUCT_NAME = macdown;
+				PRODUCT_NAME = macdownext;
 				SKIP_INSTALL = YES;
 			};
 			name = Release;

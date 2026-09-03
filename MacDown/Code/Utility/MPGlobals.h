@@ -29,8 +29,20 @@ static NSString * const kMPApplicationBundleIdentifier = @"com.nicolorisitano82.
 
 static NSString * const kMPApplicationSuiteName = @"com.nicolorisitano82.macdown";
 
-static NSString * const MPCommandInstallationPath = @"/usr/local/bin/macdown";
-static NSString * const kMPCommandName = @"macdown";
+/** The shell utility's name, and the one place it is written.
+ *
+ * `macdownext`, not `macdown`. It was kept as `macdown` through the rename
+ * of the application so that what people had typed for years kept working;
+ * that call has been overruled, and the two do not clash now — someone
+ * with the original MacDown installed keeps its `macdown` and gets this
+ * one beside it.
+ *
+ * A symlink already made under the old name is not removed by installing
+ * this one: it goes on pointing at whatever app put it there.
+ */
+static NSString * const kMPCommandName = @"macdownext";
+static NSString * const MPCommandInstallationPath =
+    @"/usr/local/bin/macdownext";
 
 static NSString * const kMPHelpKey = @"help";
 static NSString * const kMPVersionKey = @"version";

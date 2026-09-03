@@ -8,6 +8,7 @@
 
 #import <XCTest/XCTest.h>
 #import "MPUtilities.h"
+#import "MPGlobals.h"
 
 @interface MPUtilityTests : XCTestCase
 @end
@@ -232,6 +233,26 @@
     XCTAssertNil(MPNewMarkdownFileURLForName(@"///", document));
     // Un documento mai salvato non ha un "accanto".
     XCTAssertNil(MPNewMarkdownFileURLForName(@"piano", nil));
+}
+
+#pragma mark - The shell utility's name
+
+/** Two constants that have to agree, and nothing was checking that they do.
+ *
+ * The name is written once and the installation path is built from the same
+ * word; if somebody changes one and not the other, the panel installs a
+ * symlink under a name the app then looks for somewhere else, and says
+ * nothing about it.
+ */
+- (void)testTheCommandNameAndItsPathAgree
+{
+    XCTAssertEqualObjects(kMPCommandName, @"macdownext");
+    XCTAssertEqualObjects(MPCommandInstallationPath.lastPathComponent,
+                          kMPCommandName);
+    XCTAssertTrue([MPCommandInstallationPath hasPrefix:@"/usr/local/bin/"],
+                  @"%@", MPCommandInstallationPath);
+    // E non è quello dell'altra MacDown, che resta accanto senza scontrarsi.
+    XCTAssertNotEqualObjects(kMPCommandName, @"macdown");
 }
 
 @end
