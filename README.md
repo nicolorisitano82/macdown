@@ -123,7 +123,7 @@ Writing**.
 
 ## Installing
 
-Builds are on the [releases page](https://github.com/nicolorisitano82/macdown/releases).
+Builds are on the [releases page](https://github.com/nicolorisitano82/macdown-next/releases).
 Requires macOS 26.
 
 They are **not signed or notarised** — no Developer ID certificate stands
@@ -217,7 +217,7 @@ highlights the editor, [mermaid](https://mermaid.js.org) and
 [MathJax](https://www.mathjax.org) sets the maths.
 
 They have the credit for the parts they do. Problems you run into here are
-still best [reported here](https://github.com/nicolorisitano82/macdown/issues):
+still best [reported here](https://github.com/nicolorisitano82/macdown-next/issues):
 telling apart a fault in this fork, in the MacDown it grew out of, and in
 something underneath is rarely possible from the outside, and it is not the
 reporter's job.

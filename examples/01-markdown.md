@@ -85,10 +85,10 @@ vere, non testo separato da tabulazioni.
 
 ## Collegamenti
 
-Un [collegamento normale](https://github.com/nicolorisitano82/macdown).
+Un [collegamento normale](https://github.com/nicolorisitano82/macdown-next).
 
 Con **Autolink** acceso, anche un indirizzo nudo diventa cliccabile:
-https://github.com/nicolorisitano82/macdown
+https://github.com/nicolorisitano82/macdown-next
 
 ## Note a piè di pagina
 
