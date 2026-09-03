@@ -54,8 +54,11 @@ compilato con `-bundle`, ed è quello che fa lo script.
 
 `Drawio/` — importa un diagramma draw.io e ne fa dei PNG collegati nel
 documento ([come funziona](Drawio/README.md)). Questo **ha** un target
-Xcode, e non perché serva: porta dentro 2,6 MB di visualizzatore draw.io e
-dieci prove che girano sul bundle compilato, quindi viene costruito insieme
-all'applicazione — così non può restare indietro rispetto a lei, e le prove
-hanno sempre qualcosa da caricare. Lo trovi in `dist/Release/` accanto
-all'app.
+Xcode, e non perché serva: porta dentro il visualizzatore di draw.io e le
+sue 97 librerie di forme, quindi viene costruito insieme all'applicazione e
+**ci viaggia dentro**, in `Contents/PlugIns/`. Non si installa.
+
+I plug-in vengono quindi letti da due posti: la cartella qui sopra, e quella
+dentro l'app. Una copia installata a mano ha la precedenza su una che
+arriva con l'applicazione, così se ne può provare una versione nuova senza
+toccare l'app; e quelle dentro l'app non si cestinano — si spengono.

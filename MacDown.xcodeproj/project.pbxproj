@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D1A0000000000000000000BA /* MDDrawioProgress.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000D3 /* MDDrawioProgress.m */; };
+		D1A0000000000000000000BB /* MDDrawioLog.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000D5 /* MDDrawioLog.m */; };
+		D1A0000000000000000000B9 /* Drawio.plugin in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C9 /* Drawio.plugin */; };
 		D1A0000000000000000000B5 /* MDDrawioResources.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000CB /* MDDrawioResources.m */; };
 		D1A0000000000000000000B6 /* stencils in Resources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000CC /* stencils */; };
 		D1A0000000000000000000B7 /* shapes in Resources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000CD /* shapes */; };
@@ -179,6 +182,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		D1A0000000000000000000D2 /* Embed Plug-ins */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				D1A0000000000000000000B9 /* Drawio.plugin in Embed Plug-ins */,
+			);
+			name = "Embed Plug-ins";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		905EF1A5196164CA00FC3CE9 /* Copy Files */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -203,6 +217,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D1A0000000000000000000CF /* MDDrawioProgress.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDDrawioProgress.h; sourceTree = "<group>"; };
+		D1A0000000000000000000D3 /* MDDrawioProgress.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MDDrawioProgress.m; sourceTree = "<group>"; };
+		D1A0000000000000000000D4 /* MDDrawioLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDDrawioLog.h; sourceTree = "<group>"; };
+		D1A0000000000000000000D5 /* MDDrawioLog.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MDDrawioLog.m; sourceTree = "<group>"; };
 		D1A0000000000000000000CA /* MDDrawioResources.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDDrawioResources.h; sourceTree = "<group>"; };
 		D1A0000000000000000000CB /* MDDrawioResources.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MDDrawioResources.m; sourceTree = "<group>"; };
 		D1A0000000000000000000CC /* stencils */ = {isa = PBXFileReference; lastKnownFileType = folder; name = stencils; path = Resources/stencils; sourceTree = "<group>"; };
@@ -701,6 +719,10 @@
 				D1A0000000000000000000C6 /* MDDrawioRenderer.m */,
 				D1A0000000000000000000CA /* MDDrawioResources.h */,
 				D1A0000000000000000000CB /* MDDrawioResources.m */,
+				D1A0000000000000000000CF /* MDDrawioProgress.h */,
+				D1A0000000000000000000D3 /* MDDrawioProgress.m */,
+				D1A0000000000000000000D4 /* MDDrawioLog.h */,
+				D1A0000000000000000000D5 /* MDDrawioLog.m */,
 				D1A0000000000000000000C8 /* viewer.min.js */,
 				D1A0000000000000000000CC /* stencils */,
 				D1A0000000000000000000CD /* shapes */,
@@ -1141,6 +1163,7 @@
 				E7FD807B2106CA8F0087F0A8 /* Transpile Styles */,
 				1FA6DE1F1941CC9E000409FB /* Resources */,
 				1F8A82A81952F19B00B6BF69 /* Update Build Number */,
+				D1A0000000000000000000D2 /* Embed Plug-ins */,
 				905EF1B6196164E300FC3CE9 /* Copy Command Line Utility */,
 				1E02F0A95AAEBCEF65493F5F /* [CP] Copy Pods Resources */,
 				D0C1D00100000000000000B1 /* Copy App To dist */,
@@ -1467,6 +1490,8 @@
 				D1A0000000000000000000B2 /* MDDrawioFile.m in Sources */,
 				D1A0000000000000000000B3 /* MDDrawioRenderer.m in Sources */,
 				D1A0000000000000000000B5 /* MDDrawioResources.m in Sources */,
+				D1A0000000000000000000BA /* MDDrawioProgress.m in Sources */,
+				D1A0000000000000000000BB /* MDDrawioLog.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

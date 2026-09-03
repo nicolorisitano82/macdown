@@ -48,6 +48,44 @@ NSString *MPPathToDataFile(NSString *name, NSString *dirPath)
                                           name]];
 }
 
+NSArray<NSURL *> *MPPlugInBundleURLs(void)
+{
+    NSFileManager *manager = [NSFileManager defaultManager];
+    NSMutableArray *found = [NSMutableArray array];
+    NSMutableSet *names = [NSMutableSet set];
+
+    NSArray *folders = @[
+        [NSURL fileURLWithPath:MPDataDirectory(kMPPlugInsDirectoryName)],
+        // The application's own, which is where the ones it ships with are.
+        // The test bundle lives here too in a test build, and is not a
+        // plug-in: the extension settles that.
+        [NSBundle mainBundle].builtInPlugInsURL,
+    ];
+
+    for (NSURL *folder in folders)
+    {
+        if (!folder)
+            continue;
+        NSArray *entries = [manager contentsOfDirectoryAtURL:folder
+            includingPropertiesForKeys:nil options:0 error:NULL];
+        for (NSURL *entry in [entries sortedArrayUsingComparator:
+                ^NSComparisonResult(NSURL *a, NSURL *b) {
+            return [a.lastPathComponent compare:b.lastPathComponent];
+        }])
+        {
+            if (![entry.pathExtension isEqualToString:kMPPlugInFileExtension])
+                continue;
+            // A copy installed by hand stands in for the one inside, so
+            // that a newer build can be tried without touching the app.
+            if ([names containsObject:entry.lastPathComponent])
+                continue;
+            [names addObject:entry.lastPathComponent];
+            [found addObject:entry];
+        }
+    }
+    return [found copy];
+}
+
 NSArray *MPListEntriesForDirectory(
     NSString *dirName, NSString *(^processor)(NSString *absolutePath))
 {

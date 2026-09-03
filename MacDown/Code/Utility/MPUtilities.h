@@ -18,6 +18,19 @@ extern NSString * const kMPPlugInFileExtension;
 NSString *MPDataDirectory(NSString *relativePath);
 NSString *MPPathToDataFile(NSString *name, NSString *dirPath);
 
+/** Every plug-in bundle the application should load, in the order it will.
+ *
+ * Two places. The folder in Application Support, where a plug-in someone
+ * installed lives; and the application's own PlugIns folder, where the ones
+ * that ship with it are. The second is why a plug-in that comes with
+ * MacDown Next needs no installing at all — hunting through a build folder
+ * for a bundle that looks like a folder was a poor welcome.
+ *
+ * Installed ones come first, so a newer copy of a plug-in that also ships
+ * inside wins by being loaded first.
+ */
+NSArray<NSURL *> *MPPlugInBundleURLs(void);
+
 NSArray *MPListEntriesForDirectory(
     NSString *dirName, NSString *(^processor)(NSString *absolutePath)
 );

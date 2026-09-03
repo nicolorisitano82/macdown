@@ -96,13 +96,11 @@
 
 - (NSArray<MPPlugIn *> *)buildPlugIns
 {
-    NSArray *paths = MPListEntriesForDirectory(kMPPlugInsDirectoryName, nil);
-    NSMutableArray *plugins = [NSMutableArray arrayWithCapacity:paths.count];
-    for (NSString *path in paths)
+    NSArray *urls = MPPlugInBundleURLs();
+    NSMutableArray *plugins = [NSMutableArray arrayWithCapacity:urls.count];
+    for (NSURL *url in urls)
     {
-        if (![path hasExtension:kMPPlugInFileExtension])
-            continue;
-        NSBundle *bundle = [NSBundle bundleWithPath:path];
+        NSBundle *bundle = [NSBundle bundleWithURL:url];
         MPPlugIn *plugin = [[MPPlugIn alloc] initWithBundle:bundle];
         if (!plugin)
             continue;

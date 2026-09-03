@@ -17,6 +17,8 @@
 @property (nonatomic, readonly) NSString *identifier;
 @property (nonatomic, readonly) NSString *version;
 @property (nonatomic, readonly) NSURL *bundleURL;
+/// Whether it ships inside the application rather than being installed.
+@property (nonatomic, readonly) BOOL isBuiltIn;
 
 - (instancetype)initWithBundle:(NSBundle *)bundle;
 - (BOOL)run:(id)sender;

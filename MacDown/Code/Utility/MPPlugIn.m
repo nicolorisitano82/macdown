@@ -63,6 +63,9 @@
     }
 
     self.bundleURL = bundle.bundleURL;
+    NSString *inside = [NSBundle mainBundle].builtInPlugInsURL.path;
+    _isBuiltIn = inside.length
+        && [bundle.bundleURL.path hasPrefix:inside];
     self.version = bundle.infoDictionary[@"CFBundleShortVersionString"];
 
     // The identifier is what the disabled list is keyed on, so it has to

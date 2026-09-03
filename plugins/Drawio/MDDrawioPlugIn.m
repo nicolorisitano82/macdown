@@ -6,6 +6,9 @@
 #import "MDDrawioPlugIn.h"
 #import "MDDrawioFile.h"
 #import "MDDrawioRenderer.h"
+#import "MDDrawioResources.h"
+#import "MDDrawioProgress.h"
+#import "MDDrawioLog.h"
 
 /// What was asked for last time, remembered in the application's defaults.
 static NSString * const kMDScaleKey = @"MDDrawioScale";
@@ -188,6 +191,9 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
 
 @interface MDDrawioPlugIn ()
 @property (strong, nonatomic) MDDrawioRenderer *renderer;
+@property (strong, nonatomic) MDDrawioProgress *progress;
+/// Kept after the import so its window can outlive the alert that offers it.
+@property (strong, nonatomic) MDDrawioLog *log;
 @end
 
 
@@ -228,13 +234,27 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
     if ([panel runModal] != NSModalResponseOK || !panel.URL)
         return YES;   // asked and answered: nothing went wrong
 
+    self.log = [[MDDrawioLog alloc] init];
+    NSNumber *size = nil;
+    [panel.URL getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
+    [self.log noteFormat:@"file: %@ (%@ byte)", panel.URL.path, size];
+
     NSError *error = nil;
     MDDrawioFile *file = [MDDrawioFile fileWithURL:panel.URL error:&error];
     if (!file)
     {
+        [self.log noteFormat:@"non letto: %@ (%@ %ld)",
+            error.localizedDescription, error.domain, (long)error.code];
         [self say:@"Il diagramma non si è potuto leggere"
              text:error.localizedDescription];
         return NO;
+    }
+
+    [self.log noteFormat:@"pagine: %lu", (unsigned long)file.pages.count];
+    for (MDDrawioPage *page in file.pages)
+    {
+        [self.log noteFormat:@"  «%@», modello di %lu caratteri",
+            page.name, (unsigned long)page.xml.length];
     }
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -272,12 +292,16 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
         return NO;
     }
 
+    NSURL *service = options.usesService ? options.service : nil;
+    [self.log noteFormat:@"scala %g, %@", options.scale,
+        service ? [@"export server " stringByAppendingString:
+                    service.absoluteString] : @"disegnato qui"];
+
     self.renderer = [[MDDrawioRenderer alloc]
         initWithBundle:[NSBundle bundleForClass:[self class]]];
 
     [self renderPagesOf:file from:panel.URL into:document editor:editor
-                  scale:options.scale
-                service:options.usesService ? options.service : nil];
+                  scale:options.scale service:service];
     return YES;
 }
 
@@ -297,18 +321,40 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
     NSMutableArray<MDDrawioPage *> *queue = [file.pages mutableCopy];
     NSMutableArray<NSString *> *problems = [NSMutableArray array];
     NSString *stem = source.lastPathComponent.stringByDeletingPathExtension;
+    NSUInteger total = file.pages.count;
+    NSWindow *window = document.windowControllers.firstObject.window;
+
+    self.progress = [[MDDrawioProgress alloc] init];
+    [self.progress showOnWindow:window title:@"Importo il diagramma"];
 
     __block NSUInteger index = 0;
     __block void (^next)(void) = nil;
     void (^step)(void) = ^{
-        if (!queue.count)
+        BOOL stopped = self.progress.isCancelled;
+        if (stopped && queue.count)
         {
+            [self.log noteFormat:@"annullato: %lu pagine non disegnate",
+                (unsigned long)queue.count];
+        }
+
+        if (!queue.count || stopped)
+        {
+            [self.progress finish];
+            self.progress = nil;
+            next = nil;
+
             if (problems.count)
             {
+                [self.log noteFormat:@"finito con %lu problemi",
+                    (unsigned long)problems.count];
                 [self say:@"Non tutte le pagine sono arrivate"
-                     text:[problems componentsJoinedByString:@"\n"]];
+                     text:[problems componentsJoinedByString:@"\n"]
+                  offerLog:YES];
             }
-            next = nil;
+            else
+            {
+                [self.log note:@"finito"];
+            }
             return;
         }
 
@@ -317,22 +363,42 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
         index++;
 
         NSString *label = page.name.length ? page.name
-            : (file.pages.count > 1
+            : (total > 1
                ? [NSString stringWithFormat:@"pagina %lu", (unsigned long)index]
                : stem);
 
+        [self.progress showPage:index of:total named:label];
+        [self.log noteFormat:@"pagina %lu/%lu «%@»: disegno",
+            (unsigned long)index, (unsigned long)total, label];
+
         MDDrawioRenderHandler done = ^(NSData *png, NSError *error) {
+            // What the drawing needed and what it could not get: the one
+            // thing that explains a shape coming out as a rectangle.
+            NSArray *served = self.renderer.resources.servedPaths;
+            NSArray *missing = self.renderer.resources.failedPaths;
+            if (served.count)
+                [self.log noteFormat:@"  serviti: %@",
+                    [served componentsJoinedByString:@", "]];
+            if (missing.count)
+                [self.log noteFormat:@"  NON serviti: %@",
+                    [missing componentsJoinedByString:@", "]];
+
             if (!png)
             {
+                [self.log noteFormat:@"  errore: %@ (%@ %ld)",
+                    error.localizedDescription, error.domain,
+                    (long)error.code];
                 [problems addObject:[NSString stringWithFormat:@"%@: %@",
                     label, error.localizedDescription ?: @"non si è disegnata"]];
             }
             else
             {
+                [self.log noteFormat:@"  %lu byte di PNG",
+                    (unsigned long)png.length];
                 NSString *problem = [self write:png forLabel:label
                                            stem:stem document:document
                                          editor:editor
-                                     manyPages:file.pages.count > 1];
+                                     manyPages:total > 1];
                 if (problem)
                     [problems addObject:problem];
             }
@@ -371,9 +437,13 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
     // picture gets brought up to date, and the link must keep working.
     if (![png writeToURL:file options:NSDataWritingAtomic error:&error])
     {
+        [self.log noteFormat:@"  non scritto in %@: %@ (%@ %ld)",
+            file.path, error.localizedDescription, error.domain,
+            (long)error.code];
         return [NSString stringWithFormat:@"%@: %@", label,
                 error.localizedDescription];
     }
+    [self.log noteFormat:@"  scritto %@", file.path];
 
     NSString *target = [MDDrawioNaming linkTargetForFile:file
                                       besideDocument:document.fileURL];
@@ -384,7 +454,10 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
     // same diagram. The file has just been rewritten, so there is nothing
     // to add: adding it would show the same picture twice.
     if ([editor.string containsString:target])
+    {
+        [self.log noteFormat:@"  già collegato come %@, non ripetuto", target];
         return nil;
+    }
 
     NSRange at = editor.selectedRange;
     if (NSMaxRange(at) > editor.string.length)
@@ -393,17 +466,37 @@ static NSTextView *MDEditorOfDocument(NSDocument *document)
     {
         [editor insertText:markup replacementRange:at];
         editor.selectedRange = NSMakeRange(at.location + markup.length, 0);
+        [self.log noteFormat:@"  collegato come %@", target];
+    }
+    else
+    {
+        [self.log note:@"  l'editor non ha accettato la modifica"];
     }
     return nil;
 }
 
 - (void)say:(NSString *)title text:(NSString *)text
 {
+    [self say:title text:text offerLog:NO];
+}
+
+/** Says what went wrong, and offers what was actually attempted.
+ *
+ * "Non si è potuta disegnare" is true and useless: an import touches a file
+ * it did not write, a renderer it does not control and a folder it may not
+ * be able to write to, and which of those it was is in the log.
+ */
+- (void)say:(NSString *)title text:(NSString *)text offerLog:(BOOL)offerLog
+{
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = title;
     alert.informativeText = text ?: @"";
     [alert addButtonWithTitle:@"OK"];
-    [alert runModal];
+    if (offerLog && self.log)
+        [alert addButtonWithTitle:@"Mostra il log…"];
+
+    if ([alert runModal] == NSAlertSecondButtonReturn && offerLog)
+        [self.log showOnWindow:nil];
 }
 
 @end

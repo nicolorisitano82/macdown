@@ -10,6 +10,8 @@
 #import "MDDrawioRenderer.h"
 #import "MDDrawioPlugIn.h"
 #import "MDDrawioResources.h"
+#import "MDDrawioProgress.h"
+#import "MDDrawioLog.h"
 
 /// The domain, written out rather than linked, for the same reason.
 static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
@@ -279,6 +281,40 @@ static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
     NSURL *aws = [self.plugin URLForResource:@"aws4.xml" withExtension:@"gz"
                                 subdirectory:@"stencils"];
     XCTAssertNotNil(aws);
+}
+
+
+#pragma mark - Saying what is going on
+
+- (void)testTheLogKeepsWhatWasAttempted
+{
+    id log = [[[self classNamed:@"MDDrawioLog"] alloc] init];
+    [log note:@"file: /tmp/rete.drawio"];
+    [log noteFormat:@"pagine: %lu", (unsigned long)3];
+
+    NSString *text = [log text];
+    XCTAssertTrue([text containsString:@"file: /tmp/rete.drawio"]);
+    XCTAssertTrue([text containsString:@"pagine: 3"]);
+    // Two lines, each with the seconds since the import began in front of
+    // it: what one wants from a log of an import is where the time went.
+    NSArray *lines = [text componentsSeparatedByString:@"\n"];
+    XCTAssertEqual(lines.count, 2u);
+    XCTAssertTrue([lines.firstObject hasPrefix:@"  0.0"],
+                  @"manca il tempo: %@", lines.firstObject);
+}
+
+- (void)testTheProgressCountsPagesAndCanBeStopped
+{
+    id progress = [[[self classNamed:@"MDDrawioProgress"] alloc] init];
+    // With no window it stands on its own, which is also what happens for
+    // a document whose window has gone.
+    [progress showOnWindow:nil title:@"Importo il diagramma"];
+    [progress showPage:2 of:5 named:@"Rete interna"];
+
+    XCTAssertFalse([progress isCancelled]);
+    [progress cancel:nil];
+    XCTAssertTrue([progress isCancelled]);
+    [progress finish];
 }
 
 

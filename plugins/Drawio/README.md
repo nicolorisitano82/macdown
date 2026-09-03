@@ -8,11 +8,18 @@ collegarlo quanto vuole, non si vede niente. Questo plug-in disegna.
 
 ## Installarlo
 
-**Menu applicazione › Gestisci plug-in… › +** e scegli `Drawio.plugin`
-(nella cartella `dist/Release/` accanto all'app, o dove l'hai compilato).
-Finisce in `~/Library/Application Support/MacDown/PlugIns/`.
+Non serve: **viaggia dentro l'applicazione**. La voce **Importa un
+diagramma draw.io…** è nel menu dei plug-in appena l'app parte.
 
-Poi la voce **Importa un diagramma draw.io…** è nel menu dei plug-in.
+Cercare a mano un `.plugin` era un cattivo benvenuto: un bundle è una
+cartella, e finché il sistema non sa che quella cartella è un pacchetto, nel
+pannello di scelta si vede una cartella dentro cui entrare e niente da
+scegliere.
+
+Se ne vuoi provare una versione tua senza toccare l'app, mettila in
+`~/Library/Application Support/MacDown/PlugIns/` — da **Gestisci plug-in… ›
++** — e quella copia prende il posto di questa. Quella dentro l'app non si
+può cestinare (tornerebbe alla prossima build): si spegne con la casella.
 
 ## Cosa legge
 
@@ -32,6 +39,33 @@ pagine di diagramma dentro non è quello che uno voleva.
 Reimportare lo stesso diagramma **riscrive** i PNG e non aggiunge un
 secondo collegamento: è così che una figura si aggiorna quando il diagramma
 cambia.
+
+## Mentre lavora, e quando qualcosa non va
+
+Durante l'importazione c'è un foglio che dice **quale pagina** sta
+disegnando, su quante, con il nome della scheda — e un **Annulla** (o Esc):
+le pagine che restano non vengono disegnate, quelle già fatte restano.
+Venti pagine sono venti secondi, e un'applicazione ferma in silenzio sembra
+rotta.
+
+Se qualcosa non arriva, l'avviso ha un pulsante **Mostra il log…**. Dentro
+c'è quello che è stato davvero tentato, con i secondi:
+
+```
+  0.000  file: /Users/…/rete.drawio (18422 byte)
+  0.004  pagine: 2
+  0.004    «Rete», modello di 5120 caratteri
+  0.005  scala 2, disegnato qui
+  0.006  pagina 1/2 «Rete»: disegno
+  0.981    serviti: /index.html, /shapes/mxAWS4.js, /stencils/aws4.xml
+  0.982    NON serviti: /stencils/sap.xml
+  0.983    118422 byte di PNG
+  0.985    scritto /Users/…/rete-Rete.png
+  0.986    collegato come rete-Rete.png
+```
+
+La riga che spiega di più è **NON serviti**: è la sola ragione per cui una
+forma può uscire come un rettangolo.
 
 ## Dove viene disegnato
 
@@ -94,7 +128,7 @@ programma che si distribuisce.
 
 ## Le prove
 
-`MacDownTests/MDDrawioPlugInTests.m`, dodici prove. Girano **sul bundle
+`MacDownTests/MDDrawioPlugInTests.m`, quattordici prove. Girano **sul bundle
 compilato**, caricato per nome come lo carica l'applicazione: quello che
 viene controllato è l'artefatto — la classe principale c'è, il
 visualizzatore è dentro, un diagramma esce come immagine e non come pagina

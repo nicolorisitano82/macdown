@@ -185,22 +185,24 @@ static NSString * const kMPPlugInNameColumn = @"name";
 
 - (void)updateButtons
 {
-    BOOL hasSelection = (self.table.selectedRow >= 0);
-    self.removeButton.enabled = hasSelection;
+    NSInteger row = self.table.selectedRow;
+    BOOL hasSelection = (row >= 0 && row < (NSInteger)self.plugIns.count);
+    // One that ships inside the application is not ours to throw away: it
+    // would come back with the next build, and taking a piece out of an
+    // application is how an application stops working. Switch it off
+    // instead — the checkbox does that, and it lasts.
+    self.removeButton.enabled = hasSelection
+        && !self.plugIns[(NSUInteger)row].isBuiltIn;
 }
 
-/// Read straight from the folder rather than from the running application,
+/// Read straight from the folders rather than from the running application,
 /// so a plug-in dropped in while MacDown is open still shows up here.
 - (NSArray<MPPlugIn *> *)installedPlugIns
 {
-    NSArray *paths = MPListEntriesForDirectory(kMPPlugInsDirectoryName, nil);
     NSMutableArray *found = [NSMutableArray array];
-    for (NSString *path in paths)
+    for (NSURL *url in MPPlugInBundleURLs())
     {
-        if (![path hasSuffix:[@"." stringByAppendingString:
-                kMPPlugInFileExtension]])
-            continue;
-        NSBundle *bundle = [NSBundle bundleWithPath:path];
+        NSBundle *bundle = [NSBundle bundleWithURL:url];
         MPPlugIn *plugin = [[MPPlugIn alloc] initWithBundle:bundle];
         if (plugin)
             [found addObject:plugin];
@@ -245,7 +247,12 @@ static NSString * const kMPPlugInNameColumn = @"name";
 {
     NSOpenPanel *panel = [NSOpenPanel openPanel];
     panel.allowedFileTypes = @[kMPPlugInFileExtension];
-    panel.canChooseDirectories = NO;
+    // A .plugin is a folder that the system usually knows is one file. When
+    // it does not — a fresh build that Launch Services has never seen —
+    // the panel shows it as a folder to walk into and nothing to choose.
+    // This way it can be picked either way round.
+    panel.canChooseDirectories = YES;
+    panel.treatsFilePackagesAsDirectories = NO;
     panel.allowsMultipleSelection = YES;
     panel.message = NSLocalizedString(
         @"Scegli uno o più plug-in da installare.",
