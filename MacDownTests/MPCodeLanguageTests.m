@@ -154,16 +154,16 @@
 
 - (void)testFenceCarriesTheLanguage
 {
-    XCTAssertEqualObjects(MPFencedCodeBlock(@"python", @"print(1)"),
+    XCTAssertEqualObjects(MPTextForFencedCodeBlock(@"python", @"print(1)"),
                           @"```python\nprint(1)\n```");
-    XCTAssertEqualObjects(MPFencedCodeBlock(@"", @""), @"```\n\n```");
-    XCTAssertEqualObjects(MPFencedCodeBlock(nil, @"x"), @"```\nx\n```");
+    XCTAssertEqualObjects(MPTextForFencedCodeBlock(@"", @""), @"```\n\n```");
+    XCTAssertEqualObjects(MPTextForFencedCodeBlock(nil, @"x"), @"```\nx\n```");
 }
 
 - (void)testFenceIsLongerThanAnythingInsideIt
 {
     NSString *body = @"```\ncode\n```";
-    NSString *made = MPFencedCodeBlock(@"markdown", body);
+    NSString *made = MPTextForFencedCodeBlock(@"markdown", body);
     XCTAssertEqualObjects(made, @"````markdown\n```\ncode\n```\n````");
 
     // And what comes out of it is what went in, fences and all.

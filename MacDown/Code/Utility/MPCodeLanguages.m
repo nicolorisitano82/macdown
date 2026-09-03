@@ -116,6 +116,33 @@ NSArray<MPCodeLanguage *> *MPCodeLanguagesFromIndex(
 }
 
 
+/// The alias map the renderer uses, as shipped.
+static NSDictionary *MPShippedCodeAliases(void)
+{
+    static NSDictionary *aliases = nil;
+    static dispatch_once_t token;
+    dispatch_once(&token, ^{
+        NSURL *url = [[NSBundle mainBundle]
+            URLForResource:@"syntax_highlighting" withExtension:@"json"];
+        NSData *json = url ? [NSData dataWithContentsOfURL:url] : nil;
+        NSDictionary *info = json
+            ? [NSJSONSerialization JSONObjectWithData:json options:0
+                                                error:NULL]
+            : nil;
+        aliases = info[@"aliases"] ?: @{};
+    });
+    return aliases;
+}
+
+
+NSString *MPCanonicalCodeLanguage(NSString *written)
+{
+    NSString *name = [(written ?: @"") stringByTrimmingCharactersInSet:
+        [NSCharacterSet whitespaceCharacterSet]].lowercaseString;
+    return MPShippedCodeAliases()[name] ?: name;
+}
+
+
 NSArray<MPCodeLanguage *> *MPAvailableCodeLanguages(void)
 {
     static NSArray *languages = nil;
@@ -148,22 +175,14 @@ NSArray<MPCodeLanguage *> *MPAvailableCodeLanguages(void)
             [available addObject:[name substringWithRange:range]];
         }
 
-        url = [bundle URLForResource:@"syntax_highlighting"
-                       withExtension:@"json"];
-        NSData *json = url ? [NSData dataWithContentsOfURL:url] : nil;
-        NSDictionary *info = json
-            ? [NSJSONSerialization JSONObjectWithData:json options:0
-                                                error:NULL]
-            : nil;
-
         languages = MPCodeLanguagesFromIndex(index, available,
-                                             info[@"aliases"] ?: @{});
+                                             MPShippedCodeAliases());
     });
     return languages;
 }
 
 
-NSString *MPFencedCodeBlock(NSString *language, NSString *body)
+NSString *MPTextForFencedCodeBlock(NSString *language, NSString *body)
 {
     body = body ?: @"";
 
@@ -265,7 +284,7 @@ MPCodeFenceEdit *MPCodeFenceEditForText(NSString *text, NSRange selection,
         ? [chunk substringToIndex:chunk.length - 1] : chunk;
 
     NSString *inside = MPBodyOfFencedCodeBlock(body);
-    NSString *markup = inside ?: MPFencedCodeBlock(language, body);
+    NSString *markup = inside ?: MPTextForFencedCodeBlock(language, body);
     if (endsWithNewline)
         markup = [markup stringByAppendingString:@"\n"];
 
@@ -291,3 +310,143 @@ MPCodeFenceEdit *MPCodeFenceEditForText(NSString *text, NSRange selection,
                                          selected:selected
                                           removes:inside != nil];
 }
+
+
+NSString *MPTitleOfCodeLanguage(NSString *written)
+{
+    NSString *name = MPCanonicalCodeLanguage(written);
+    for (MPCodeLanguage *language in MPAvailableCodeLanguages())
+    {
+        if ([language.identifier isEqualToString:name])
+            return language.title;
+    }
+    return written.length ? written : name;
+}
+
+
+@implementation MPFencedCodeBlock
+
+- (instancetype)initWithRange:(NSRange)range
+                         body:(NSRange)body
+                     language:(NSString *)language
+{
+    self = [super init];
+    if (!self)
+        return nil;
+    _range = range;
+    _bodyRange = body;
+    _language = [language copy];
+    return self;
+}
+
+/// The fence a line opens or closes with: its character and its length.
+static NSUInteger MPFenceRunOnLine(NSString *line, unichar *character)
+{
+    NSUInteger i = 0;
+    while (i < line.length && i < 3
+           && [line characterAtIndex:i] == ' ')
+        i++;   // up to three spaces of indent, as CommonMark allows
+
+    if (i >= line.length)
+        return 0;
+    unichar c = [line characterAtIndex:i];
+    if (c != '`' && c != '~')
+        return 0;
+
+    NSUInteger run = 0;
+    while (i + run < line.length && [line characterAtIndex:i + run] == c)
+        run++;
+    if (run < 3)
+        return 0;
+
+    *character = c;
+    return run;
+}
+
+/// What is written after the fence, up to the first space: the language.
+static NSString *MPInfoStringOnLine(NSString *line, unichar character)
+{
+    NSRange start = [line rangeOfString:
+        [NSString stringWithCharacters:&character length:1]];
+    if (start.location == NSNotFound)
+        return @"";
+    NSUInteger i = start.location;
+    while (i < line.length && [line characterAtIndex:i] == character)
+        i++;
+
+    NSString *rest = [[line substringFromIndex:i]
+        stringByTrimmingCharactersInSet:
+            [NSCharacterSet whitespaceCharacterSet]];
+    NSRange space = [rest rangeOfCharacterFromSet:
+        [NSCharacterSet whitespaceCharacterSet]];
+    if (space.location != NSNotFound)
+        rest = [rest substringToIndex:space.location];
+    return rest;
+}
+
++ (instancetype)blockCoveringIndex:(NSUInteger)index inText:(NSString *)text
+{
+    if (index > text.length)
+        return nil;
+
+    NSUInteger at = 0;
+    BOOL open = NO;
+    unichar fence = 0;
+    NSUInteger fenceLength = 0;
+    NSUInteger blockStart = 0;
+    NSUInteger bodyStart = 0;
+    NSString *language = @"";
+
+    while (at < text.length)
+    {
+        NSUInteger lineStart = 0, lineEnd = 0, contentsEnd = 0;
+        [text getLineStart:&lineStart end:&lineEnd contentsEnd:&contentsEnd
+                  forRange:NSMakeRange(at, 0)];
+        NSString *line = [text substringWithRange:
+            NSMakeRange(lineStart, contentsEnd - lineStart)];
+
+        unichar character = 0;
+        NSUInteger run = MPFenceRunOnLine(line, &character);
+
+        if (!open)
+        {
+            if (run)
+            {
+                open = YES;
+                fence = character;
+                fenceLength = run;
+                blockStart = lineStart;
+                bodyStart = lineEnd;
+                language = MPInfoStringOnLine(line, character);
+            }
+        }
+        // A closing fence carries no language: a run of the same
+        // character, at least as long, and nothing else on the line.
+        else if (run >= fenceLength && character == fence
+                 && !MPInfoStringOnLine(line, character).length)
+        {
+            if (index >= blockStart && index <= contentsEnd)
+            {
+                NSUInteger bodyEnd = MIN(bodyStart, lineStart);
+                if (lineStart > bodyStart)
+                    bodyEnd = lineStart - 1;   // without the newline
+                NSRange body = NSMakeRange(bodyStart,
+                                           bodyEnd - bodyStart);
+                return [[self alloc] initWithRange:
+                            NSMakeRange(blockStart, contentsEnd - blockStart)
+                                              body:body
+                                          language:language];
+            }
+            open = NO;
+            language = @"";
+        }
+
+        if (lineEnd == at)
+            break;
+        at = lineEnd;
+    }
+
+    return nil;
+}
+
+@end

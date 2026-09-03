@@ -298,3 +298,6 @@
 "Inside the line" = "Dentro la riga";
 "A block, highlighted as:" = "Un blocco, evidenziato come:";
 "No language" = "Nessun linguaggio";
+
+/* Code block context menu */
+"Indent as %@" = "Rientra come %@";

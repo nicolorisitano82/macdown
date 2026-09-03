@@ -117,6 +117,11 @@ Writing**.
 * **The code button asks which kind**: backticks inside the line, or a
   fenced block marked with a language chosen from a list — and the list
   holds only the 113 languages this build can actually highlight.
+* **Right-click inside a code block to lay it out** the way its language
+  wants: brackets for the C family and JSON, tags for HTML, and for Python,
+  YAML or a Makefile — where the indentation *is* the syntax — the step
+  only, never the structure. Multi-line strings, comments and code that is
+  aligned rather than indented are left alone.
 
 ### Appearance
 

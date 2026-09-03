@@ -53,7 +53,7 @@ extern NSArray<MPCodeLanguage *> *MPAvailableCodeLanguages(void);
  * No trailing newline: the caller knows whether the text it replaces ended
  * with one.
  */
-extern NSString *MPFencedCodeBlock(NSString *language, NSString *body);
+extern NSString *MPTextForFencedCodeBlock(NSString *language, NSString *body);
 
 /** What is inside `text`, if `text` is one fenced block, otherwise nil.
  *
@@ -86,3 +86,37 @@ extern NSString *MPBodyOfFencedCodeBlock(NSString *text);
 extern MPCodeFenceEdit *MPCodeFenceEditForText(NSString *text,
                                                NSRange selection,
                                                NSString *language);
+
+
+/** A fenced code block in the text, found from a place inside it.
+ *
+ * Shaped like MPTableSource's lookup, and for the same reason: a command
+ * on the menu has to know which construct was clicked, and the text may
+ * have moved on by the time it runs, so it is read again.
+ */
+@interface MPFencedCodeBlock : NSObject
+/// The whole block, both fence lines included.
+@property (readonly, nonatomic) NSRange range;
+/// What lies between the fences, without either newline.
+@property (readonly, nonatomic) NSRange bodyRange;
+/// The language written on the opening fence, as written; empty if none.
+@property (readonly, copy, nonatomic) NSString *language;
+
+/// The block covering `index`, fences included, or nil if there is none.
++ (instancetype)blockCoveringIndex:(NSUInteger)index
+                            inText:(NSString *)text;
+@end
+
+/** The language a written name stands for, through the alias map.
+ *
+ * `js` is JavaScript and `c++` is cpp; a rule looked up under what was
+ * written would miss both.
+ */
+extern NSString *MPCanonicalCodeLanguage(NSString *written);
+
+/** The name a person reads for a written language, e.g. `cpp` is C++.
+ *
+ * What was written comes back when there is no better name for it, so a
+ * menu built on this never shows a blank.
+ */
+extern NSString *MPTitleOfCodeLanguage(NSString *written);
