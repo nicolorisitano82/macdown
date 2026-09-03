@@ -1182,6 +1182,26 @@ static NSString * const kMPSelectionSource =
     NSWindow *window = controller.window;
     window.toolbarStyle = NSWindowToolbarStyleUnified;
 
+    /* One window, one tab per open file.
+     *
+     * The system's own tabs rather than a bar of our own: they are the ones
+     * with the keyboard shortcuts people already know, the overview on
+     * ⇧⌘\, the drag between windows, and the behaviour Finder and Safari
+     * have. A bar of our own would be a month of building the same thing
+     * slightly differently.
+     *
+     * Preferred, not Automatic. Automatic follows the system setting for
+     * whether documents open in tabs, which is "in full screen only" by
+     * default — and this is a feature somebody asked for, not one to be
+     * discovered by chance. One line to defer to the system again.
+     *
+     * All documents share the identifier, so any two of them can be tabs
+     * of each other; the identifier is the only thing keeping unrelated
+     * windows out of the group.
+     */
+    window.tabbingMode = NSWindowTabbingModePreferred;
+    window.tabbingIdentifier = @"com.nicolorisitano82.macdown.document";
+
     [self installSidebarInWindow:window];
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -4043,6 +4063,25 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
  * Where the caret is, not over the document: someone with a page of notes
  * who asks for a report skeleton wants it added, not their notes replaced.
  */
+/** The plus at the end of the tab bar.
+ *
+ * AppKit shows it only if something in the responder chain answers this,
+ * and in a document-based application nothing does by default — so the bar
+ * appears with no way to add to it, which reads as a missing button rather
+ * than as a decision.
+ *
+ * A new untitled document, which joins the group because every document
+ * window shares the tabbing identifier. ⌘T reaches the same code.
+ */
+- (IBAction)newWindowForTab:(id)sender
+{
+    NSError *error = nil;
+    NSDocumentController *controller =
+        [NSDocumentController sharedDocumentController];
+    if (![controller openUntitledDocumentAndDisplay:YES error:&error] && error)
+        [self presentError:error];
+}
+
 - (IBAction)insertDocumentTemplate:(id)sender
 {
     MPDocumentTemplate *template = nil;
@@ -5103,6 +5142,25 @@ NS_INLINE BOOL MPIsMarkdownFileURL(NSURL *url)
     
     if (reachable)
     {
+        /* Already open? Then the link goes to the tab it is open in.
+         *
+         * Before anything else, because the alternative is asking the
+         * document controller to open it and trusting that it notices. It
+         * does notice — but this way the intent is in the code rather than
+         * in a framework's good manners, and -showWindows on a tabbed
+         * document is exactly "select that tab".
+         */
+        if (file)
+        {
+            NSDocument *already = [[NSDocumentController
+                sharedDocumentController] documentForURL:url];
+            if (already)
+            {
+                [already showWindows];
+                return;
+            }
+        }
+
         // A document this application can open, opened here. Handing a
         // neighbouring note to the workspace opens it in whatever holds the
         // extension — which may be another copy of MacDown, or another

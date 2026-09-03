@@ -71,6 +71,10 @@ character.
   hashtag and not a heading, `1)` numbers a list as `1.` does, a list that
   starts at five is numbered from five, a backslash at the end of a line
   breaks it, and a task marker is accepted in either case.
+* **One window, one tab per open file**, using the system's own tabs — so
+  ⇧⌘\ shows the overview, tabs drag between windows, and a link to a file
+  that is already open goes to the tab it is open in rather than opening it
+  twice.
 * **Writing help that runs on your Mac**: improve, correct, make formal,
   make plain, shorter, longer — over the selection, or the paragraph the
   caret is in. The answer streams in and one undo takes it all back.
