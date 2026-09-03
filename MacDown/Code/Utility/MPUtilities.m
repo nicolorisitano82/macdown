@@ -86,7 +86,8 @@ NSArray<NSURL *> *MPPlugInBundleURLsInFolders(NSArray<NSURL *> *folders)
 {
     NSFileManager *manager = [NSFileManager defaultManager];
     NSMutableArray *found = [NSMutableArray array];
-    NSMutableSet *names = [NSMutableSet set];
+    NSMutableDictionary<NSString *, NSMutableArray<NSURL *> *> *byName =
+        [NSMutableDictionary dictionary];
 
     for (NSURL *folder in folders)
     {
@@ -101,13 +102,44 @@ NSArray<NSURL *> *MPPlugInBundleURLsInFolders(NSArray<NSURL *> *folders)
         {
             if (![entry.pathExtension isEqualToString:kMPPlugInFileExtension])
                 continue;
-            // A copy installed by hand stands in for the one inside, so
-            // that a newer build can be tried without touching the app.
-            if ([names containsObject:entry.lastPathComponent])
-                continue;
-            [names addObject:entry.lastPathComponent];
-            [found addObject:entry];
+            NSString *name = entry.lastPathComponent;
+            if (!byName[name])
+                byName[name] = [NSMutableArray array];
+            [byName[name] addObject:entry];
         }
+    }
+
+    /* Two copies of the same plug-in, and the newer one wins.
+     *
+     * "Installed wins" was the first rule, so that a build could be tried
+     * without touching the application. It pins an old copy in silence
+     * instead: install one, rebuild the application with a fixed version
+     * inside it, and the fixed one never runs. The date says which is
+     * which, and it is right for both cases — a copy dropped in to be
+     * tried is newer than the application it is being tried against.
+     */
+    for (NSString *name in [byName.allKeys sortedArrayUsingSelector:
+            @selector(compare:)])
+    {
+        NSArray *copies = byName[name];
+        NSURL *newest = copies.firstObject;
+        NSDate *when = nil;
+        [newest getResourceValue:&when
+                          forKey:NSURLContentModificationDateKey error:NULL];
+
+        for (NSURL *other in copies)
+        {
+            NSDate *date = nil;
+            [other getResourceValue:&date
+                             forKey:NSURLContentModificationDateKey
+                              error:NULL];
+            if (when && date && [date compare:when] == NSOrderedDescending)
+            {
+                newest = other;
+                when = date;
+            }
+        }
+        [found addObject:newest];
     }
     return [found copy];
 }

@@ -35,12 +35,17 @@ static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
 {
     [super setUp];
 
-    // Beside the application, which is what these tests run inside: the
-    // plug-in is built with it, into the same folder. Not beside the test
-    // bundle — a hosted test bundle lives inside the app itself.
-    NSURL *products = [NSBundle mainBundle].bundleURL
-        .URLByDeletingLastPathComponent;
-    NSURL *url = [products URLByAppendingPathComponent:@"Drawio.plugin"];
+    // The copy inside the application, which is the one the application
+    // loads and therefore the one already loaded in this process. Beside
+    // the app is the same build, but a class is loaded once per process and
+    // the tests should be looking at what runs.
+    NSURL *url = [[NSBundle mainBundle].builtInPlugInsURL
+        URLByAppendingPathComponent:@"Drawio.plugin"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:url.path])
+    {
+        url = [[NSBundle mainBundle].bundleURL.URLByDeletingLastPathComponent
+            URLByAppendingPathComponent:@"Drawio.plugin"];
+    }
     self.plugin = [NSBundle bundleWithURL:url];
 
     NSError *error = nil;
@@ -57,6 +62,15 @@ static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
 {
     Class found = NSClassFromString(name);
     XCTAssertNotNil(found, @"%@ non è nel plug-in caricato", name);
+
+    // A class is loaded once per process, so if another copy of the plug-in
+    // was loaded first — one installed by hand, say — that is the code
+    // being tested, whatever this bundle contains. Half an hour went into
+    // a build that was correct and a test that ran an old copy of it.
+    NSString *loaded = [NSBundle bundleForClass:found].bundlePath;
+    XCTAssertEqualObjects(loaded, self.plugin.bundlePath,
+        @"le prove girerebbero su un'altra copia del plug-in, caricata da %@",
+        loaded);
     return found;
 }
 
@@ -281,6 +295,101 @@ static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
     NSURL *aws = [self.plugin URLForResource:@"aws4.xml" withExtension:@"gz"
                                 subdirectory:@"stencils"];
     XCTAssertNotNil(aws);
+}
+
+
+/** A page that draws nothing has to say what state it was in.
+ *
+ * Twice now a guess about why a real diagram timed out has been wrong —
+ * entities in the labels, a shape library that is not in the bundle — and
+ * both times the message said only "non ha disegnato niente". What the page
+ * itself reports is the only thing that shortens that.
+ */
+- (void)testAPageThatDrawsNothingSaysWhatStateItWasIn
+{
+    Class renderer = [self classNamed:@"MDDrawioRenderer"];
+    NSString *page = [renderer pageForXML:@"<mxGraphModel><root/></mxGraphModel>"
+                                     base:@"drawio-res://render"
+                                   viewer:@"/* niente */"];
+
+    // The page keeps whatever it throws, where the waiting loop can ask.
+    XCTAssertTrue([page containsString:@"__errors"]);
+    XCTAssertTrue([page containsString:@"onerror"]);
+
+    // And a viewer that is not there is exactly the case: no SVG appears,
+    // so this is the message a real timeout produces.
+    id drawing = [[renderer alloc] initWithBundle:self.plugin];
+    Class file = [self classNamed:@"MDDrawioFile"];
+    id diagram = [file fileWithData:[@"<mxGraphModel dx=\"10\"><root/>"
+        @"</mxGraphModel>" dataUsingEncoding:NSUTF8StringEncoding] error:NULL];
+
+    XCTestExpectation *done = [self expectationWithDescription:@"risposto"];
+    __block NSError *failure = nil;
+    __block NSData *png = nil;
+    [drawing renderPage:[[diagram pages] firstObject] scale:1.0
+            completion:^(NSData *data, NSError *error) {
+        png = data;
+        failure = error;
+        [done fulfill];
+    }];
+    // A model with nothing in it draws an empty SVG, which is a drawing;
+    // whichever way it goes, it may not hang and it may not say nothing.
+    [self waitForExpectations:@[done] timeout:40.0];
+    if (!png)
+    {
+        XCTAssertGreaterThan(failure.localizedDescription.length, 40u,
+            @"il messaggio non dice niente: %@", failure.localizedDescription);
+    }
+}
+
+
+/** A quotation mark written as `&quot;` must not end the settings.
+ *
+ * draw.io writes `&quot;` inside its styles as a matter of course. Put into
+ * an HTML attribute the parser turns each one back into a quotation mark,
+ * inside a JSON string where a quotation mark ends the string; GraphViewer
+ * catches the parse failure and does nothing, and the page sits there with
+ * no drawing and no complaint. A real diagram did exactly that, for twenty
+ * seconds, and neither of my two guesses about why was right.
+ */
+- (void)testAQuotationMarkInAStyleDoesNotBreakTheSettings
+{
+    Class renderer = [self classNamed:@"MDDrawioRenderer"];
+    NSString *model =
+        @"<mxGraphModel dx=\"400\" dy=\"300\"><root>"
+        @"<mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/>"
+        @"<mxCell id=\"2\" value=\"Rete\" style=\"rounded=1;html=1;"
+        @"fontFamily=&quot;Helvetica&quot;;\" vertex=\"1\" parent=\"1\">"
+        @"<mxGeometry x=\"20\" y=\"20\" width=\"160\" height=\"80\" "
+        @"as=\"geometry\"/></mxCell></root></mxGraphModel>";
+
+    NSString *page = [renderer pageForXML:model base:@"drawio-res://render"
+                                   viewer:@"/* il visualizzatore */"];
+    // Handed over as a string to JavaScript, so no HTML parser sees it.
+    XCTAssertTrue([page containsString:@"setAttribute('data-mxgraph'"]);
+    XCTAssertFalse([page containsString:@"data-mxgraph='"],
+                   @"le impostazioni sono di nuovo in un attributo");
+    // And a label that closes a script tag cannot close this one.
+    XCTAssertFalse([page containsString:@"</script>x"]);
+
+    // Then the whole way: the same style, drawn.
+    Class file = [self classNamed:@"MDDrawioFile"];
+    id diagram = [file fileWithData:[model dataUsingEncoding:NSUTF8StringEncoding]
+                              error:NULL];
+    id drawing = [[renderer alloc] initWithBundle:self.plugin];
+
+    XCTestExpectation *done = [self expectationWithDescription:@"disegnato"];
+    __block NSData *png = nil;
+    __block NSError *failure = nil;
+    [drawing renderPage:[[diagram pages] firstObject] scale:1.0
+            completion:^(NSData *data, NSError *error) {
+        png = data;
+        failure = error;
+        [done fulfill];
+    }];
+    [self waitForExpectations:@[done] timeout:40.0];
+    XCTAssertNil(failure, @"%@", failure.localizedDescription);
+    XCTAssertGreaterThan(png.length, 1000u);
 }
 
 

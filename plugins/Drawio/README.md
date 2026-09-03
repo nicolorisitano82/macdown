@@ -18,8 +18,11 @@ scegliere.
 
 Se ne vuoi provare una versione tua senza toccare l'app, mettila in
 `~/Library/Application Support/MacDown/PlugIns/` — da **Gestisci plug-in… ›
-+** — e quella copia prende il posto di questa. Quella dentro l'app non si
-può cestinare (tornerebbe alla prossima build): si spegne con la casella.
++**. Fra due copie con lo stesso nome viene caricata **la più recente**, e
+quindi una build nuova dell'app riprende il sopravvento da sola: una copia
+installata mesi fa non resta a girare al posto di quella corretta. Quella
+dentro l'app non si può cestinare (tornerebbe alla prossima build): si
+spegne con la casella.
 
 ## Cosa legge
 

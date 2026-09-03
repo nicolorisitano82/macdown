@@ -75,10 +75,28 @@ static const NSTimeInterval kMDPollInterval = 0.1;
                                                    options:0 error:NULL];
     NSString *config = [[NSString alloc] initWithData:json
                                             encoding:NSUTF8StringEncoding];
-    // The attribute is quoted with apostrophes, so any apostrophe inside
-    // the diagram has to stop being one.
-    config = [config stringByReplacingOccurrencesOfString:@"'"
-                                               withString:@"&#39;"];
+
+    /* The attribute is set from JavaScript rather than written into the
+     * HTML, and this is not fussiness.
+     *
+     * Written into an attribute, the text is read by the HTML parser first,
+     * and draw.io writes `&quot;` inside its styles as a matter of course.
+     * The parser turns each of those into a quotation mark, inside a JSON
+     * string where a quotation mark ends the string: the JSON then fails to
+     * parse, GraphViewer catches that and does nothing, and the page sits
+     * there with no drawing and no complaint. Which is what a real diagram
+     * did, for twenty seconds, while two guesses about why went wrong.
+     *
+     * As a JavaScript string literal there is no HTML parsing in the way at
+     * all. `<` is written as an escape so that a label containing a closing
+     * script tag cannot end the script.
+     */
+    NSData *quoted = [NSJSONSerialization dataWithJSONObject:config
+        options:NSJSONWritingFragmentsAllowed error:NULL];
+    NSString *literal = [[NSString alloc] initWithData:quoted
+                                             encoding:NSUTF8StringEncoding];
+    literal = [literal stringByReplacingOccurrencesOfString:@"<"
+                                                 withString:@"\\u003C"];
 
     // What is in the bundle, and what is not. The libraries the viewer
     // loads are; MathJax is not — it is dozens of files loaded on demand,
@@ -100,13 +118,24 @@ static const NSTimeInterval kMDPollInterval = 0.1;
     }
     [addresses appendString:@"window.mxLoadStylesheets=false;"];
 
+    // Anything the viewer throws is kept where it can be asked for: a
+    // drawing that never appears says nothing by itself, and the reason is
+    // usually one line in a console nobody is watching.
+    NSString *watch =
+        @"window.__errors=[];"
+        @"window.onerror=function(m,u,l){window.__errors.push(m+' ('+l+')');};"
+        @"window.addEventListener('unhandledrejection',function(e){"
+        @"window.__errors.push('promise: '+e.reason);});";
+
     return [NSString stringWithFormat:
         @"<!doctype html><html><head><meta charset=\"utf-8\">"
         @"<style>html,body{margin:0;padding:0;background:#fff}</style>"
-        @"<script>%@</script></head><body>"
-        @"<div class=\"mxgraph\" data-mxgraph='%@'></div>"
+        @"<script>%@%@</script></head><body>"
+        @"<div class=\"mxgraph\" id=\"mdgraph\"></div>"
+        @"<script>document.getElementById('mdgraph')"
+        @".setAttribute('data-mxgraph', %@);</script>"
         @"<script>%@</script></body></html>",
-        addresses, config, viewer];
+        watch, addresses, literal, viewer];
 }
 
 - (void)renderPage:(MDDrawioPage *)page
@@ -170,18 +199,29 @@ static const NSTimeInterval kMDPollInterval = 0.1;
  */
 - (void)waitForDrawing
 {
+    // Any SVG on the page, not only one under a div that still carries the
+    // class: the viewer builds its own containers and what matters is that
+    // something was drawn. The rest is for when nothing was.
     NSString *ask =
-        @"(function(){var s=document.querySelector('.mxgraph svg');"
-        @"if(!s) return '';var b=s.getBoundingClientRect();"
-        @"return Math.round(b.width)+'x'+Math.round(b.height);})()";
+        @"JSON.stringify((function(){"
+        @"var s=document.querySelector('svg');"
+        @"var b=s?s.getBoundingClientRect():null;"
+        @"return {w:b?Math.round(b.width):0,h:b?Math.round(b.height):0,"
+        @" svgs:document.querySelectorAll('svg').length,"
+        @" divs:document.querySelectorAll('.mxgraph').length,"
+        @" body:document.body?document.body.scrollHeight:0,"
+        @" errors:(window.__errors||[]).slice(0,4)};})())";
 
     [self.webView evaluateJavaScript:ask completionHandler:
         ^(id result, NSError *error) {
-        NSString *size = [result isKindOfClass:[NSString class]] ? result : @"";
-        NSArray *parts = [size componentsSeparatedByString:@"x"];
-        CGFloat width = parts.count == 2 ? [parts[0] doubleValue] : 0.0;
-        CGFloat height = parts.count == 2 ? [parts[1] doubleValue] : 0.0;
+        NSData *json = [[result isKindOfClass:[NSString class]] ? result : @""
+            dataUsingEncoding:NSUTF8StringEncoding];
+        NSDictionary *state = json.length
+            ? [NSJSONSerialization JSONObjectWithData:json options:0 error:NULL]
+            : nil;
 
+        CGFloat width = [state[@"w"] doubleValue];
+        CGFloat height = [state[@"h"] doubleValue];
         if (width > 0.0 && height > 0.0)
         {
             [self snapshotWidth:width height:height];
@@ -190,17 +230,56 @@ static const NSTimeInterval kMDPollInterval = 0.1;
         if ([self.deadline timeIntervalSinceNow] <= 0.0)
         {
             [self finishWithData:nil error:
-                [NSError errorWithDomain:MDDrawioErrorDomain
-                    code:MDDrawioErrorRenderFailed userInfo:@{
-                    NSLocalizedDescriptionKey: NSLocalizedString(
-                        @"Il visualizzatore non ha disegnato niente entro "
-                        @"venti secondi.", @"Drawio plug-in")}]];
+                [self gaveUpWithState:state pageError:error]];
             return;
         }
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
             (int64_t)(kMDPollInterval * NSEC_PER_SEC)),
             dispatch_get_main_queue(), ^{ [self waitForDrawing]; });
     }];
+}
+
+/// What the page had to say for itself when the time ran out.
+- (NSError *)gaveUpWithState:(NSDictionary *)state
+                   pageError:(NSError *)pageError
+{
+    NSMutableString *said = [NSMutableString stringWithFormat:
+        NSLocalizedString(@"Il visualizzatore non ha disegnato niente entro "
+                          @"%.0f secondi.", @"Drawio plug-in"),
+        kMDRenderTimeout];
+
+    NSArray *errors = state[@"errors"];
+    if ([errors isKindOfClass:[NSArray class]] && errors.count)
+    {
+        [said appendFormat:NSLocalizedString(@" La pagina ha detto: %@",
+                                             @"Drawio plug-in"),
+            [errors componentsJoinedByString:@" / "]];
+    }
+    else if (pageError)
+    {
+        [said appendFormat:@" (%@)", pageError.localizedDescription];
+    }
+    else
+    {
+        // No complaint at all is itself the finding: the viewer was there
+        // and drew nothing, which points at what it could not load.
+        [said appendFormat:NSLocalizedString(
+            @" Nessun errore dalla pagina: %@ SVG, %@ contenitori, "
+            @"altezza %@.", @"Drawio plug-in"),
+            state[@"svgs"] ?: @0, state[@"divs"] ?: @0, state[@"body"] ?: @0];
+    }
+
+    NSArray *missing = self.resources.failedPaths;
+    if (missing.count)
+    {
+        [said appendFormat:NSLocalizedString(
+            @" Non serviti: %@.", @"Drawio plug-in"),
+            [missing componentsJoinedByString:@", "]];
+    }
+
+    return [NSError errorWithDomain:MDDrawioErrorDomain
+        code:MDDrawioErrorRenderFailed userInfo:@{
+        NSLocalizedDescriptionKey: said}];
 }
 
 - (void)snapshotWidth:(CGFloat)width height:(CGFloat)height

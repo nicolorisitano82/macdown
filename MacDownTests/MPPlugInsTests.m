@@ -76,23 +76,52 @@
     return names;
 }
 
-- (void)testOnlyPlugInsAreLoadedAndTheInstalledOneWins
+/// Sets when a copy was last written, which is what decides between two.
+- (void)date:(NSURL *)url to:(NSTimeInterval)secondsFromNow
+{
+    [[NSFileManager defaultManager] setAttributes:@{
+        NSFileModificationDate: [NSDate dateWithTimeIntervalSinceNow:
+            secondsFromNow]}
+        ofItemAtPath:url.path error:NULL];
+}
+
+/** Of two copies of the same plug-in, the newer one is loaded.
+ *
+ * "Installed wins" was the first rule, and it pins an old copy in silence:
+ * install one, rebuild the application with a fixed version inside it, and
+ * the fixed one never runs. Which is exactly what happened — an hour of a
+ * correct build being tested through an old copy in Application Support.
+ */
+- (void)testOnlyPlugInsAreLoadedAndTheNewerCopyWins
 {
     NSURL *installed = [self folderNamed:@"installati"
                                  holding:@[@"Alfa.plugin", @"note.txt"]];
     NSURL *shipped = [self folderNamed:@"in-dotazione"
         holding:@[@"Alfa.plugin", @"Beta.plugin", @"Prove.xctest"]];
 
+    // Only plug-ins, and one row per name.
     NSArray *urls = MPPlugInBundleURLsInFolders(@[installed, shipped]);
     XCTAssertEqualObjects([self namesIn:urls],
                           (@[@"Alfa.plugin", @"Beta.plugin"]));
-    // The Alfa that counts is the installed one, so a newer copy can be
-    // tried without touching the application.
+
+    // A copy dropped in to be tried is newer than the application it is
+    // being tried against, and it wins.
+    [self date:[installed URLByAppendingPathComponent:@"Alfa.plugin"] to:0.0];
+    [self date:[shipped URLByAppendingPathComponent:@"Alfa.plugin"] to:-3600.0];
+    urls = MPPlugInBundleURLsInFolders(@[installed, shipped]);
     XCTAssertEqualObjects([self folderOf:urls],
                           installed.URLByResolvingSymlinksInPath.path);
 
-    // Removed, and the one inside takes its place — which is why the list
-    // says where each row comes from.
+    // A new build of the application is newer than the copy left behind,
+    // and that wins instead — the case the first rule got wrong.
+    [self date:[shipped URLByAppendingPathComponent:@"Alfa.plugin"] to:0.0];
+    [self date:[installed URLByAppendingPathComponent:@"Alfa.plugin"]
+            to:-3600.0];
+    urls = MPPlugInBundleURLsInFolders(@[installed, shipped]);
+    XCTAssertEqualObjects([self folderOf:urls],
+                          shipped.URLByResolvingSymlinksInPath.path);
+
+    // And with the installed one gone there is one copy to choose from.
     [[NSFileManager defaultManager]
         removeItemAtURL:[installed URLByAppendingPathComponent:@"Alfa.plugin"]
                   error:NULL];

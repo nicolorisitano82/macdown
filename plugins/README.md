@@ -59,6 +59,7 @@ sue 97 librerie di forme, quindi viene costruito insieme all'applicazione e
 **ci viaggia dentro**, in `Contents/PlugIns/`. Non si installa.
 
 I plug-in vengono quindi letti da due posti: la cartella qui sopra, e quella
-dentro l'app. Una copia installata a mano ha la precedenza su una che
-arriva con l'applicazione, così se ne può provare una versione nuova senza
-toccare l'app; e quelle dentro l'app non si cestinano — si spengono.
+dentro l'app. Di due copie con lo stesso nome vince **la più recente**: una
+copia messa lì per provarla è più nuova dell'app contro cui la provi, e una
+build nuova dell'app è più recente della copia rimasta lì da prima. Quelle
+dentro l'app non si cestinano — si spengono.
