@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D1A0000000000000000000B5 /* MDDrawioResources.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000CB /* MDDrawioResources.m */; };
+		D1A0000000000000000000B6 /* stencils in Resources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000CC /* stencils */; };
+		D1A0000000000000000000B7 /* shapes in Resources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000CD /* shapes */; };
+		D1A0000000000000000000B8 /* styles in Resources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000CE /* styles */; };
 		D1A0000000000000000000B1 /* MDDrawioPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C2 /* MDDrawioPlugIn.m */; };
 		D1A0000000000000000000B2 /* MDDrawioFile.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C4 /* MDDrawioFile.m */; };
 		D1A0000000000000000000B3 /* MDDrawioRenderer.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C6 /* MDDrawioRenderer.m */; };
@@ -199,6 +203,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D1A0000000000000000000CA /* MDDrawioResources.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDDrawioResources.h; sourceTree = "<group>"; };
+		D1A0000000000000000000CB /* MDDrawioResources.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MDDrawioResources.m; sourceTree = "<group>"; };
+		D1A0000000000000000000CC /* stencils */ = {isa = PBXFileReference; lastKnownFileType = folder; name = stencils; path = Resources/stencils; sourceTree = "<group>"; };
+		D1A0000000000000000000CD /* shapes */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shapes; path = Resources/shapes; sourceTree = "<group>"; };
+		D1A0000000000000000000CE /* styles */ = {isa = PBXFileReference; lastKnownFileType = folder; name = styles; path = Resources/styles; sourceTree = "<group>"; };
 		D1A0000000000000000000C1 /* MDDrawioPlugIn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDDrawioPlugIn.h"; sourceTree = "<group>"; };
 		D1A0000000000000000000C2 /* MDDrawioPlugIn.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "MDDrawioPlugIn.m"; sourceTree = "<group>"; };
 		D1A0000000000000000000C3 /* MDDrawioFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDDrawioFile.h"; sourceTree = "<group>"; };
@@ -690,7 +699,12 @@
 				D1A0000000000000000000C4 /* MDDrawioFile.m */,
 				D1A0000000000000000000C5 /* MDDrawioRenderer.h */,
 				D1A0000000000000000000C6 /* MDDrawioRenderer.m */,
+				D1A0000000000000000000CA /* MDDrawioResources.h */,
+				D1A0000000000000000000CB /* MDDrawioResources.m */,
 				D1A0000000000000000000C8 /* viewer.min.js */,
+				D1A0000000000000000000CC /* stencils */,
+				D1A0000000000000000000CD /* shapes */,
+				D1A0000000000000000000CE /* styles */,
 				D1A0000000000000000000C7 /* Info.plist */,
 			);
 			name = Drawio;
@@ -1257,6 +1271,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				D1A0000000000000000000B4 /* viewer.min.js in Resources */,
+				D1A0000000000000000000B6 /* stencils in Resources */,
+				D1A0000000000000000000B7 /* shapes in Resources */,
+				D1A0000000000000000000B8 /* styles in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1449,6 +1466,7 @@
 				D1A0000000000000000000B1 /* MDDrawioPlugIn.m in Sources */,
 				D1A0000000000000000000B2 /* MDDrawioFile.m in Sources */,
 				D1A0000000000000000000B3 /* MDDrawioRenderer.m in Sources */,
+				D1A0000000000000000000B5 /* MDDrawioResources.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

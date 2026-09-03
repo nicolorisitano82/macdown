@@ -59,3 +59,11 @@ extern NSString *MDDrawioXMLFromCompactPayload(NSString *payload);
 
 /// The `mxfile` a draw.io PNG carries in its text chunks, or nil.
 extern NSString *MDDrawioXMLFromPNG(NSData *png);
+
+/** Inflates `data`, or nil if it does not inflate.
+ *
+ * `raw` for a stream with no header, which is what a page of a diagram is;
+ * without it a gzip or zlib header is expected and read, which is what the
+ * shape libraries in this bundle are stored with.
+ */
+extern NSData *MDDrawioInflate(NSData *data, BOOL raw);

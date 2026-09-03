@@ -9,6 +9,7 @@
 #import "MDDrawioFile.h"
 #import "MDDrawioRenderer.h"
 #import "MDDrawioPlugIn.h"
+#import "MDDrawioResources.h"
 
 /// The domain, written out rather than linked, for the same reason.
 static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
@@ -218,45 +219,66 @@ static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
 }
 
 
-/** Nothing is reached for unless it is asked for.
+/** Every address in the page points back into the plug-in.
  *
- * The viewer's own defaults put eight addresses on diagrams.net, and the
- * big shape libraries are files it fetches from them. Emptying two of the
- * eight — which is what this did at first — is the same as emptying none:
- * a diagram drawn with the AWS library would have gone out for its
- * stencils while the plug-in claimed to be working offline.
+ * The viewer's own defaults put eight of them on diagrams.net. Two were
+ * pointed elsewhere at first, which is the same as none: a diagram drawn
+ * with the AWS library would have gone out for its stencils while the
+ * plug-in claimed to be working offline. So all eight are named here, and
+ * none of them may mention the site.
  */
-- (void)testThePageAsksForNothingUnlessTheStencilsAreWanted
+- (void)testThePageReachesForNothingOutside
 {
     Class renderer = [self classNamed:@"MDDrawioRenderer"];
-    NSString *xml = @"<mxGraphModel><root/></mxGraphModel>";
+    NSString *page = [renderer pageForXML:@"<mxGraphModel><root/></mxGraphModel>"
+                                     base:@"drawio-res://render"
+                                   viewer:@"/* il visualizzatore */"];
 
-    NSString *offline = [renderer pageForXML:xml stencils:NO
-                                      viewer:@"/* il visualizzatore */"];
-    XCTAssertFalse([offline containsString:@"diagrams.net"],
+    XCTAssertFalse([page containsString:@"diagrams.net"],
                    @"la pagina si porta dietro un indirizzo remoto");
-    for (NSString *name in @[@"PROXY_URL", @"STYLE_PATH", @"SHAPES_PATH",
-                             @"STENCIL_PATH", @"DRAW_MATH_URL",
+
+    // The six that have something in the bundle to point at.
+    for (NSString *name in @[@"STYLE_PATH", @"SHAPES_PATH", @"STENCIL_PATH",
                              @"GRAPH_IMAGE_PATH", @"mxImageBasePath",
                              @"mxBasePath"])
     {
-        // Named and emptied, every one: an address left out is an address
-        // left at the viewer's default, which is remote.
-        NSString *emptied = [NSString stringWithFormat:@"window.%@=''", name];
-        XCTAssertTrue([offline containsString:emptied],
-                      @"%@ non è stato svuotato", name);
+        NSString *set = [NSString stringWithFormat:
+            @"window.%@='drawio-res://render/", name];
+        XCTAssertTrue([page containsString:set],
+                      @"%@ non punta dentro il plug-in", name);
     }
+    // And the two that have nothing: the proxy, and MathJax, which is
+    // dozens of files loaded on demand and is not carried.
+    XCTAssertTrue([page containsString:@"window.PROXY_URL='';"]);
+    XCTAssertTrue([page containsString:@"window.DRAW_MATH_URL='';"]);
 
-    // And when they are wanted, they point somewhere.
-    NSString *fetching = [renderer pageForXML:xml stencils:YES
-                                       viewer:@"/* il visualizzatore */"];
-    XCTAssertTrue([fetching containsString:
-        @"window.STENCIL_PATH='https://viewer.diagrams.net/stencils'"]);
+    // The diagram goes in as data for the viewer, and the viewer goes in
+    // whole rather than as a src there is nothing to resolve.
+    XCTAssertTrue([page containsString:@"class=\"mxgraph\""]);
+    XCTAssertTrue([page containsString:@"mxGraphModel"]);
+    XCTAssertTrue([page containsString:@"il visualizzatore"]);
+}
 
-    // The diagram goes in as data for the viewer, whichever way round.
-    XCTAssertTrue([offline containsString:@"class=\"mxgraph\""]);
-    XCTAssertTrue([offline containsString:@"mxGraphModel"]);
-    XCTAssertTrue([offline containsString:@"il visualizzatore"]);
+- (void)testTheShapeLibrariesAreInTheBundle
+{
+    // Counted by walking, since some libraries sit in folders of their own
+    // — android/, cisco_safe/, veeam/ — and the bundle's own lookup does
+    // not go into them.
+    NSUInteger found = 0;
+    NSDirectoryEnumerator *walk = [[NSFileManager defaultManager]
+        enumeratorAtURL:self.plugin.resourceURL
+        includingPropertiesForKeys:nil options:0 errorHandler:NULL];
+    for (NSURL *file in walk)
+    {
+        if ([file.pathExtension isEqualToString:@"gz"])
+            found++;
+    }
+    // Ninety-odd files: 23 MB of drawn shapes stored as 3 MB.
+    XCTAssertGreaterThan(found, 90u);
+
+    NSURL *aws = [self.plugin URLForResource:@"aws4.xml" withExtension:@"gz"
+                                subdirectory:@"stencils"];
+    XCTAssertNotNil(aws);
 }
 
 
@@ -326,7 +348,7 @@ static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
     XCTestExpectation *done = [self expectationWithDescription:@"disegnato"];
     __block NSData *png = nil;
     __block NSError *failure = nil;
-    [drawing renderPage:page scale:2.0 stencils:NO
+    [drawing renderPage:page scale:2.0
             completion:^(NSData *data, NSError *error) {
         png = data;
         failure = error;
@@ -360,6 +382,54 @@ static NSString * const kMDExpectedDomain = @"MDDrawioErrorDomain";
         }
     }
     XCTAssertGreaterThan(inked, 20u, @"la pagina è venuta bianca");
+}
+
+/** A shape from a library is drawn from the copy inside the plug-in.
+ *
+ * The AWS shapes are not in the viewer: they are in `stencils/aws4.xml`,
+ * six megabytes and a half of XML, stored gzipped here and inflated as it
+ * is handed over. Which is worth proving separately, because a diagram
+ * whose stencil never arrived still draws — as a plain rectangle, and the
+ * picture looks plausible.
+ */
+- (void)testAShapeLibraryIsServedFromInsideThePlugIn
+{
+    Class file = [self classNamed:@"MDDrawioFile"];
+    NSString *xml =
+        @"<mxfile><diagram name=\"AWS\"><mxGraphModel dx=\"400\" dy=\"300\">"
+        @"<root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/>"
+        @"<mxCell id=\"2\" style=\"sketch=0;outlineConnect=0;fontColor=#232F3E;"
+        @"fillColor=#ED7100;strokeColor=#ffffff;dashed=0;html=1;aspect=fixed;"
+        @"shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2;\" "
+        @"vertex=\"1\" parent=\"1\"><mxGeometry x=\"20\" y=\"20\" "
+        @"width=\"78\" height=\"78\" as=\"geometry\"/></mxCell>"
+        @"</root></mxGraphModel></diagram></mxfile>";
+
+    id diagram = [file fileWithData:[xml dataUsingEncoding:NSUTF8StringEncoding]
+                              error:NULL];
+    id page = [[diagram pages] firstObject];
+
+    Class renderer = [self classNamed:@"MDDrawioRenderer"];
+    id drawing = [[renderer alloc] initWithBundle:self.plugin];
+
+    XCTestExpectation *done = [self expectationWithDescription:@"disegnato"];
+    __block NSData *png = nil;
+    [drawing renderPage:page scale:1.0
+            completion:^(NSData *data, NSError *error) {
+        png = data;
+        [done fulfill];
+    }];
+    [self waitForExpectations:@[done] timeout:30.0];
+    XCTAssertGreaterThan(png.length, 1000u);
+
+    id resources = [drawing resources];
+    // Handed over, not merely asked for: the two lists are kept apart
+    // exactly so this can be said.
+    XCTAssertTrue([[resources servedPaths]
+        containsObject:@"/stencils/aws4.xml"],
+        @"la libreria AWS non è stata servita: %@", [resources servedPaths]);
+    XCTAssertEqualObjects([resources failedPaths], @[],
+        @"qualcosa è stato chiesto e non c'era");
 }
 
 @end

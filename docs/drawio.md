@@ -83,10 +83,53 @@ silenzio invece di una richiesta non fatta. La prova lo ha preso: elenca gli
 otto nomi e pretende `window.NOME=''` per ognuno.
 
 Quello che si perde svuotandoli sono le librerie di forme grandi, che il
-visualizzatore non porta dentro. Quindi c'è una casella, spenta di suo, per
-scaricarle: il diagramma resta qui, escono le richieste dei file di forme.
-Ed è una scelta migliore dell'export server per questo problema — lì il
-diagramma lo mandi tutto.
+visualizzatore non porta dentro.
+
+---
+
+## Allora portiamocele dentro
+
+Ventitré megabyte, 97 file: `stencils/*.xml` e `shapes/*.js` — AWS, Cisco,
+Azure, GCP, BPMN, Kubernetes, mockup, e le altre novanta. Gzippati sono
+**3,3 megabyte**: XML di forme disegnate si comprime a un settimo. Stanno
+nel plug-in e vengono gonfiati mentre li si serve.
+
+Quali file, non l'ho deciso io: sono **quelli nominati nel codice del
+visualizzatore**. Lo script li estrae da lì con una regex su
+`STENCIL_PATH+"…"`, `SHAPES_PATH+"…"`, `STYLE_PATH+"…"`. Una lista scritta a
+mano sarebbe stata vecchia la prima volta che draw.io aggiunge una libreria.
+
+Uno di quei percorsi, `stencils/sap.xml`, **non c'è più sul sito**: risponde
+404. Il visualizzatore chiede e tira avanti; ora lo script fa lo stesso e lo
+dice, invece di fermarsi e non portare dentro niente.
+
+### Non `file:`, uno schema suo
+
+`file:` non funziona: una pagina caricata da una stringa non ha un'origine
+da cui leggere un file locale, e `allowingReadAccessToURL:` dà accesso a una
+cartella sola — la pagina temporanea e le risorse del bundle sono due. E
+copiare le librerie in una cartella temporanea per ogni figura è peggio che
+leggerle dove sono.
+
+Quindi `WKURLSchemeHandler` e uno schema del plug-in, `drawio-res://`. La
+pagina passa da lì anche lei, così pagina e librerie condividono l'origine e
+le XHR del visualizzatore non sono cross-origin — un rifiuto lì sarebbe
+silenzioso. Niente di quello schema può uscire dalle risorse del bundle:
+i `..` sono respinti e il percorso risolto deve stare sotto la radice.
+
+Con le librerie dentro, la casella «scaricale da diagrams.net» non ha più
+ragione di esistere, e l'ho tolta.
+
+### La prova che conta
+
+Un diagramma con due forme AWS, e poi la domanda giusta: `stencils/aws4.xml`
+è stato **servito** o solo **chiesto**? Nel gestore le due liste sono
+separate per questo. Un diagramma il cui stencil non è arrivato si disegna
+comunque — come un rettangolo — e la figura sembra plausibile.
+
+Servito, e insieme a lui `shapes/mxAWS4.js`. Nessun fallimento. E guardando
+il PNG: il chip di EC2 e il secchio di S3, bianchi sull'arancio e sul verde,
+disegnati da 6,5 MB di XML che stanno nel plug-in in 1 MB.
 
 ---
 

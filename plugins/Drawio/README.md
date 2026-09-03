@@ -35,29 +35,44 @@ cambia.
 
 ## Dove viene disegnato
 
-**Su questo Mac** — è l'impostazione predefinita. Il visualizzatore di
-draw.io viaggia dentro il plug-in (2,6 MB di JavaScript, Apache 2.0, JGraph
-Ltd) e disegna in un WebKit. Il diagramma **non esce dalla macchina**.
+**Su questo Mac** — è l'impostazione predefinita, e **non serve
+connessione**. Dentro il plug-in ci sono:
 
-Il visualizzatore però tiene otto indirizzi propri, tutti su
+| | |
+|---|---|
+| `viewer.min.js` | il visualizzatore di draw.io, 2,6 MB |
+| `stencils/`, `shapes/`, `styles/` | **97 librerie di forme**, 23 MB di XML tenuti gzippati in 3,3 MB |
+
+Sono le librerie che il visualizzatore non porta dentro e andrebbe a
+scaricare: AWS, Cisco, Azure, GCP, BPMN, Kubernetes, mockup, e le altre
+novanta. Quali esattamente non è una lista scritta a mano — sono quelle
+nominate nel codice del visualizzatore, estratte da lì da
+`Tools/fetch_drawio_viewer.sh`.
+
+Il visualizzatore tiene otto indirizzi propri, tutti su
 `viewer.diagrams.net`: `PROXY_URL`, `STYLE_PATH`, `SHAPES_PATH`,
 `STENCIL_PATH`, `DRAW_MATH_URL`, `GRAPH_IMAGE_PATH`, `mxImageBasePath`,
-`mxBasePath`. Nella pagina che il plug-in costruisce sono **svuotati tutti
-e otto**, quindi la pagina non chiede niente a nessuno e il disegno funziona
-senza connessione.
+`mxBasePath`. Nella pagina che il plug-in costruisce **tutti e otto**
+puntano dentro il bundle — tranne il proxy e MathJax, che sono vuoti.
 
-Il prezzo è che le librerie di forme grandi — AWS, Cisco, Azure, BPMN — non
-sono dentro il visualizzatore: sono file che lui scarica quando un diagramma
-le chiede. Senza quei file una forma di quelle viene disegnata come un
-rettangolo. Per questo c'è la casella **«Scarica da diagrams.net le
-librerie di forme che servono»**, spenta di suo: accesa, vengono scaricati
-quei file — il diagramma non viene mandato da nessuna parte, ma da cosa
-chiede si capisce cosa contiene.
+Le librerie vengono servite da uno **schema URL suo**, `drawio-res://`, non
+da `file:`: una pagina caricata da una stringa non ha un'origine da cui
+leggere un file locale, e copiare le librerie in una cartella temporanea per
+ogni figura è peggio che leggerle dove sono. Anche la pagina passa da lì,
+così pagina e librerie condividono l'origine e le richieste XHR del
+visualizzatore non sono cross-origin. Niente di quello schema può uscire
+dalle risorse del bundle.
+
+L'unica cosa non portata dentro è **MathJax**: sono decine di file caricati
+su richiesta, e la matematica dentro un diagramma è abbastanza rara da non
+portarsi dietro tutto quello. Una formula in un diagramma resta senza
+comporre.
 
 **Su un export server tuo** — l'indirizzo lo indichi nel foglio; viene
-ricordato. Serve per le librerie di forme che si portano dietro immagini da
-scaricare. È l'API del servlet di draw.io (`format`, `xml`, `scale`), quella
-che parla anche l'immagine docker `jgraph/export-server`:
+ricordato. Con le librerie già dentro serve poco, ma resta la strada per
+chi ne ha uno e vuole passare da lì. È l'API del servlet di draw.io
+(`format`, `xml`, `scale`), quella che parla anche l'immagine docker
+`jgraph/export-server`:
 
 ```bash
 docker run -it --rm -p 8000:8000 jgraph/export-server
@@ -79,17 +94,29 @@ programma che si distribuisce.
 
 ## Le prove
 
-`MacDownTests/MDDrawioPlugInTests.m`, dieci prove. Girano **sul bundle
+`MacDownTests/MDDrawioPlugInTests.m`, dodici prove. Girano **sul bundle
 compilato**, caricato per nome come lo carica l'applicazione: quello che
 viene controllato è l'artefatto — la classe principale c'è, il
 visualizzatore è dentro, un diagramma esce come immagine e non come pagina
 bianca — non una copia dei sorgenti compilata nei test.
 
-## Aggiornare il visualizzatore
+Una di quelle prove è la sola che dica se le librerie funzionano davvero:
+un diagramma con una forma AWS, e poi la domanda se `stencils/aws4.xml` è
+stato **servito** e non solo **chiesto**. Le due liste nel gestore sono
+tenute separate esattamente per questo: un diagramma il cui stencil non è
+arrivato si disegna comunque — come un rettangolo — e la figura sembra
+plausibile.
+
+## Aggiornare il visualizzatore e le librerie
 
 ```bash
 Tools/fetch_drawio_viewer.sh
 ```
 
-È committato invece di essere scaricato dalla build: una build che ha
+Scarica il visualizzatore, estrae dal suo codice i percorsi delle librerie
+che sa chiedere, le scarica e le gzippa. Un paio non ci sono più sul sito
+(`stencils/sap.xml`); lo script lo dice e tira avanti, come fa il
+visualizzatore.
+
+È tutto committato invece di essere scaricato dalla build: una build che ha
 bisogno della rete è una build che fallisce in treno.

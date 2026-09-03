@@ -24,16 +24,18 @@ NSString * const MDDrawioErrorDomain = @"MDDrawioErrorDomain";
 @end
 
 
-/// Raw deflate, the way `pako.deflateRaw` leaves it: no zlib header.
-static NSData *MDInflateRaw(NSData *data)
+NSData *MDDrawioInflate(NSData *data, BOOL raw)
 {
     if (!data.length)
         return nil;
 
     z_stream stream;
     memset(&stream, 0, sizeof(stream));
-    // Negative window bits: no header and no checksum to look for.
-    if (inflateInit2(&stream, -MAX_WBITS) != Z_OK)
+    // Negative window bits: no header and no checksum to look for, which
+    // is how `pako.deflateRaw` leaves a page of a diagram. Plus 32: read
+    // whichever header is there, gzip or zlib.
+    int window = raw ? -MAX_WBITS : (MAX_WBITS + 32);
+    if (inflateInit2(&stream, window) != Z_OK)
         return nil;
 
     stream.next_in = (Bytef *)data.bytes;
@@ -68,7 +70,7 @@ NSString *MDDrawioXMLFromCompactPayload(NSString *payload)
 
     NSData *deflated = [[NSData alloc] initWithBase64EncodedString:trimmed
         options:NSDataBase64DecodingIgnoreUnknownCharacters];
-    NSData *raw = MDInflateRaw(deflated);
+    NSData *raw = MDDrawioInflate(deflated, YES);
     if (!raw)
         return nil;
 

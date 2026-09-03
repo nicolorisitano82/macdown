@@ -108,12 +108,13 @@ Writing**.
 
 * **A draw.io importer**, as a real plug-in (`Drawio.plugin`): pick a
   `.drawio` file and every page in it becomes a PNG beside the document,
-  linked where the caret is. Drawn by draw.io's own viewer, which travels
-  inside the plug-in — **the diagram never leaves the Mac**, and with the
-  viewer's eight remote addresses emptied the page asks nothing of anybody.
-  The big shape libraries can be fetched when wanted, or an export server of
-  your own used instead. Compressed pages, editable PNGs and editable SVGs
-  are all read. See
+  linked where the caret is. Drawn by draw.io's own viewer **and its 97
+  shape libraries** — AWS, Cisco, Azure, GCP, BPMN and the rest — all of
+  which travel inside the plug-in, 23 MB of them stored as 3. Every address
+  in the page points back into the bundle, so **nothing is sent and nothing
+  is fetched**: it draws with no connection at all. An export server of your
+  own can be used instead. Compressed pages, editable PNGs and editable
+  SVGs are all read. See
   [plugins/Drawio/README.md](plugins/Drawio/README.md).
 
 ### Writing
