@@ -199,6 +199,49 @@ NSString *MPMarkdownLinkTargetForFileURL(NSURL *fileURL,
     return [path stringByAddingPercentEncodingWithAllowedCharacters:allowed];
 }
 
+NSURL *MPNewMarkdownFileURLForName(NSString *name, NSURL *documentURL)
+{
+    NSURL *directory = documentURL.URLByDeletingLastPathComponent;
+    if (!directory || !documentURL)
+        return nil;
+
+    // Everything a folder will not take, and the whitespace that a
+    // selection drags along with it.
+    NSMutableCharacterSet *forbidden = [NSMutableCharacterSet
+        characterSetWithCharactersInString:@"/\\:*?\"<>|"];
+    [forbidden formUnionWithCharacterSet:
+        [NSCharacterSet controlCharacterSet]];
+    [forbidden formUnionWithCharacterSet:
+        [NSCharacterSet newlineCharacterSet]];
+
+    NSString *clean = [[name componentsSeparatedByCharactersInSet:forbidden]
+        componentsJoinedByString:@" "];
+    // Runs of spaces collapse: a selection spanning a line break would
+    // otherwise leave a gap in the middle of the name.
+    while ([clean rangeOfString:@"  "].location != NSNotFound)
+        clean = [clean stringByReplacingOccurrencesOfString:@"  "
+                                                 withString:@" "];
+    clean = [clean stringByTrimmingCharactersInSet:
+        [NSCharacterSet whitespaceCharacterSet]];
+    // A leading dot hides the file, which is never what a link meant.
+    while ([clean hasPrefix:@"."])
+        clean = [[clean substringFromIndex:1] stringByTrimmingCharactersInSet:
+            [NSCharacterSet whitespaceCharacterSet]];
+    if (!clean.length)
+        return nil;
+
+    // Long enough for anybody, short enough for every file system.
+    if (clean.length > 120)
+        clean = [clean substringToIndex:120];
+
+    NSString *extension = clean.pathExtension.lowercaseString;
+    if (![extension isEqualToString:@"md"]
+            && ![extension isEqualToString:@"markdown"])
+        clean = [clean stringByAppendingPathExtension:@"md"];
+
+    return [directory URLByAppendingPathComponent:clean];
+}
+
 NSString *MPStringByUnescapingHTMLEntities(NSString *value)
 {
     if (!value.length || [value rangeOfString:@"&"].location == NSNotFound)

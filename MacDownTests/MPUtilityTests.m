@@ -156,4 +156,82 @@
         hasPrefix:@"file://"], @"Notebook non sta dentro Note");
 }
 
+#pragma mark - The file a new link makes
+
+/// The selection is prose, and a folder will not take prose as a name.
+- (void)testASelectionBecomesAFileNameBesideTheDocument
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+    NSURL *made = MPNewMarkdownFileURLForName(@"Piano di test", document);
+    XCTAssertEqualObjects(made.path, @"/Users/x/Note/Piano di test.md");
+}
+
+- (void)testWhatAFolderWillNotTakeIsTakenOut
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+
+    // Una barra farebbe una cartella, i due punti un volume.
+    XCTAssertEqualObjects(
+        MPNewMarkdownFileURLForName(@"prima/seconda", document).lastPathComponent,
+        @"prima seconda.md");
+    XCTAssertEqualObjects(
+        MPNewMarkdownFileURLForName(@"a: b", document).lastPathComponent,
+        @"a b.md");
+    // Una selezione su due righe porta con sé l'interruzione.
+    XCTAssertEqualObjects(
+        MPNewMarkdownFileURLForName(@"prima\nseconda", document).lastPathComponent,
+        @"prima seconda.md");
+    // E gli spazi non si accumulano in mezzo.
+    XCTAssertEqualObjects(
+        MPNewMarkdownFileURLForName(@"a  \n  b", document).lastPathComponent,
+        @"a b.md");
+}
+
+/// A name that is already a Markdown file keeps its extension, not two.
+- (void)testTheExtensionIsNotDoubled
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+    XCTAssertEqualObjects(
+        MPNewMarkdownFileURLForName(@"piano.md", document).lastPathComponent,
+        @"piano.md");
+    XCTAssertEqualObjects(
+        MPNewMarkdownFileURLForName(@"piano.markdown", document).lastPathComponent,
+        @"piano.markdown");
+    // Ma un punto in mezzo non è un'estensione da rispettare.
+    XCTAssertEqualObjects(
+        MPNewMarkdownFileURLForName(@"versione 1.2", document).lastPathComponent,
+        @"versione 1.2.md");
+}
+
+/// A leading dot hides the file, which a link never meant to do.
+- (void)testItDoesNotMakeAHiddenFile
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+    XCTAssertEqualObjects(
+        MPNewMarkdownFileURLForName(@".nascosto", document).lastPathComponent,
+        @"nascosto.md");
+}
+
+- (void)testALongSelectionIsCutToSomethingAFileSystemTakes
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+    NSString *long_ = [@"" stringByPaddingToLength:400 withString:@"a"
+                                startingAtIndex:0];
+    NSString *name =
+        MPNewMarkdownFileURLForName(long_, document).lastPathComponent;
+    XCTAssertTrue(name.length <= 124, @"%lu", (unsigned long)name.length);
+    XCTAssertTrue([name hasSuffix:@".md"]);
+}
+
+/// Nothing to name it after, and nowhere to put it: both answer nil.
+- (void)testWhatCannotBeNamedIsRefused
+{
+    NSURL *document = [NSURL fileURLWithPath:@"/Users/x/Note/nota.md"];
+    XCTAssertNil(MPNewMarkdownFileURLForName(@"", document));
+    XCTAssertNil(MPNewMarkdownFileURLForName(@"   \n  ", document));
+    XCTAssertNil(MPNewMarkdownFileURLForName(@"///", document));
+    // Un documento mai salvato non ha un "accanto".
+    XCTAssertNil(MPNewMarkdownFileURLForName(@"piano", nil));
+}
+
 @end

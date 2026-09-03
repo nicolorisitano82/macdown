@@ -604,7 +604,29 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 - (NSMenu *)menuForEvent:(NSEvent *)event
 {
     NSMenu *menu = [super menuForEvent:event];
-    if (!self.tableMenuEnabled || !menu)
+    if (!menu)
+        return menu;
+
+    /* The note that leads somewhere before there is anything there.
+     *
+     * At the top, and only with something selected, because the selection
+     * is both the name of the file and the words of the link — with nothing
+     * selected there is nothing to call it. Target nil so it walks the
+     * responder chain to the document, which is what knows where its own
+     * folder is.
+     */
+    if (self.selectedRange.length > 0)
+    {
+        NSMenuItem *link = [[NSMenuItem alloc] initWithTitle:
+            NSLocalizedString(@"Link to a New Markdown File",
+                              @"Editor context menu")
+            action:@selector(linkToNewMarkdownFile:) keyEquivalent:@""];
+        link.target = nil;
+        [menu insertItem:link atIndex:0];
+        [menu insertItem:[NSMenuItem separatorItem] atIndex:1];
+    }
+
+    if (!self.tableMenuEnabled)
         return menu;
 
     NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];

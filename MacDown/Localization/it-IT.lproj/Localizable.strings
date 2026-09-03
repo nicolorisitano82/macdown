@@ -282,3 +282,11 @@
 "the document's folder" = "la cartella del documento";
 "the tag carries no src" = "il tag non porta alcun src";
 "Writes the image data inline instead of linking the file, so the document no longer depends on it. Note that some sites, GitHub among them, strip inline image data." = "Scrive i dati dell'immagine nel testo invece di collegare il file, così il documento non dipende più da esso. Attenzione: alcuni siti, GitHub fra questi, rimuovono i dati immagine incorporati.";
+
+/* Collega a un nuovo file */
+"A new file is made in the same folder as this one, and this one has no folder yet." = "Il nuovo file viene creato nella stessa cartella di questo, e questo non ha ancora una cartella.";
+"A new, empty Markdown file beside this one" = "Un nuovo file Markdown vuoto, accanto a questo";
+"Link to a New Markdown File" = "Collega a un nuovo file Markdown";
+"Save this document first" = "Salva prima questo documento";
+"Select the words the link should say, and they will name the file too." = "Seleziona le parole che il collegamento deve dire: daranno il nome anche al file.";
+"That leaves nothing to name the file after" = "Non resta niente con cui chiamare il file";

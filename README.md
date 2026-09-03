@@ -86,6 +86,10 @@ character.
   report, a software test plan, release notes, minutes. Instant, the same
   every time, and there with no model installed. Put your own in the
   Templates folder and they appear in the menu.
+* **Link to a file that does not exist yet.** Select the words the link
+  should say, right-click, and there is an empty Markdown file beside the
+  document, linked, open in its own tab. Named after the selection, so a
+  set of notes grows by writing rather than by filing.
 * **⌘K asks where the link goes**: a web address you type or paste, or a
   file you find by browsing. A file inside the document's folder is written
   as a relative path, so the two keep working when you move them together.
