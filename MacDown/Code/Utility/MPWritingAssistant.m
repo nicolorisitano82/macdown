@@ -4,6 +4,7 @@
 //
 
 #import "MPWritingAssistant.h"
+#import <NaturalLanguage/NaturalLanguage.h>
 
 const MPWritingCommand MPWritingCommandsInOrder[6] = {
     MPWritingCommandImprove,
@@ -40,68 +41,89 @@ const NSUInteger MPWritingCommandCount = 6;
 
 #pragma mark - What the model is told
 
++ (NSString *)languageNameOfText:(NSString *)text
+{
+    if (text.length < 12)
+        return nil;     // Too little to tell, and a wrong guess is worse.
+
+    NLLanguageRecognizer *recogniser = [[NLLanguageRecognizer alloc] init];
+    [recogniser processString:text];
+    NSString *code = recogniser.dominantLanguage;
+    if (!code.length)
+        return nil;
+
+    // In English, because that is the language the instruction is written
+    // in, and the one the model was given the name in when this was tried.
+    NSLocale *english = [NSLocale localeWithLocaleIdentifier:@"en_US"];
+    return [english localizedStringForLanguageCode:code];
+}
+
 /** The instruction for a command.
  *
  * Written to be read by a small model, which is what these will mostly be:
- * one sentence saying what to do, one saying what not to, and a plain
- * demand for the text and nothing else. A model given room to comment will
- * comment, and its commentary would land in the document.
+ * one sentence saying what to do, and a plain demand for the text and
+ * nothing else. A model given room to comment will comment, and its
+ * commentary would land in the document.
  *
- * The language is not named. A model told to answer in Italian will answer
- * in Italian even when the paragraph is in English, and the language of the
- * text is the one thing the text itself already says.
+ * Not translated, and that is a decision from measurement rather than
+ * laziness. Asked the same thing with the instruction in English and in
+ * Italian, the model answered the same way both times: what it follows is
+ * the named output language below, not the language it was asked in. One
+ * wording to keep good instead of twenty-six.
+ *
+ * The naming is the part that matters. An earlier version said "answer in
+ * the same language as the text" and hedged with "keeping its meaning":
+ * the model returned an Italian paragraph completely unchanged. With the
+ * hedging removed it rewrote it — into Spanish. Told "the text is in
+ * Italian, and your answer must be in Italian", it rewrites it in Italian.
  */
 + (NSString *)instructionForCommand:(MPWritingCommand)command
+                         inLanguage:(NSString *)language
 {
-    NSString *ending = NSLocalizedString(
-        @" Answer with the rewritten text only: no preamble, no commentary, "
-        @"no quotation marks around it. Keep the Markdown formatting that is "
-        @"already there, and answer in the same language as the text.",
-        @"Writing command instruction");
-
     NSString *opening = nil;
     switch (command)
     {
         case MPWritingCommandImprove:
-            opening = NSLocalizedString(
-                @"You are an editor. Rewrite the text so it reads better, "
-                @"keeping its meaning and its facts exactly as they are.",
-                @"Writing command instruction");
+            opening = @"You are an editor. Rewrite the text so that it reads "
+                       "better: change the wording, keep the facts.";
             break;
         case MPWritingCommandCorrect:
-            opening = NSLocalizedString(
-                @"You are a proofreader. Correct spelling, agreement and "
-                @"punctuation. Change nothing else: not the wording, not the "
-                @"order, not the register.",
-                @"Writing command instruction");
+            opening = @"You are a proofreader. Correct the spelling, the "
+                       "agreement and the punctuation, and change nothing "
+                       "else.";
             break;
         case MPWritingCommandFormal:
-            opening = NSLocalizedString(
-                @"You are an editor. Rewrite the text in a formal, impersonal "
-                @"register, as a report would be written, keeping its meaning.",
-                @"Writing command instruction");
+            opening = @"You are an editor. Rewrite the text in a formal, "
+                       "impersonal register, as a report would be written: "
+                       "change the wording, keep the facts.";
             break;
         case MPWritingCommandPlain:
-            opening = NSLocalizedString(
-                @"You are an editor. Rewrite the text in plain language: "
-                @"short sentences, everyday words, no jargon, same meaning.",
-                @"Writing command instruction");
+            opening = @"You are an editor. Rewrite the text in plain "
+                       "language: short sentences, everyday words, no "
+                       "jargon.";
             break;
         case MPWritingCommandShorter:
-            opening = NSLocalizedString(
-                @"You are an editor. Say the same thing in fewer words. Drop "
-                @"what repeats and what adds nothing; keep every fact.",
-                @"Writing command instruction");
+            opening = @"You are an editor. Say the same thing in fewer "
+                       "words. Drop what repeats and what adds nothing, and "
+                       "keep every fact.";
             break;
         case MPWritingCommandLonger:
-            opening = NSLocalizedString(
-                @"You are an editor. Develop the text into a fuller "
-                @"paragraph, staying on what it says and inventing no facts, "
-                @"no figures and no names.",
-                @"Writing command instruction");
+            opening = @"You are an editor. Develop the text into a fuller "
+                       "paragraph, staying on what it says and inventing no "
+                       "facts, no figures and no names.";
             break;
     }
-    return [opening stringByAppendingString:ending];
+
+    NSMutableString *instruction = [opening mutableCopy];
+    if (language.length)
+    {
+        [instruction appendFormat:@" The text is in %@, and your answer must "
+                                   @"be in %@.", language, language];
+    }
+    [instruction appendString:@" Answer with the rewritten text only, with "
+                              @"no preamble and no quotation marks, keeping "
+                              @"any Markdown formatting."];
+    return instruction;
 }
 
 + (NSString *)titleForCommand:(MPWritingCommand)command
@@ -200,7 +222,9 @@ const NSUInteger MPWritingCommandCount = 6;
 
     __weak MPWritingAssistant *weakSelf = self;
     [self.generator generateWithInstruction:
-        [[self class] instructionForCommand:command]
+        [[self class] instructionForCommand:command
+                                 inLanguage:[[self class]
+                                     languageNameOfText:text]]
                                      onText:text
                                     onChunk:^(NSString *piece) {
         [weakSelf appendPiece:piece];

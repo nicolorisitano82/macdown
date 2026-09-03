@@ -39,8 +39,21 @@ extern const NSUInteger MPWritingCommandCount;
 /// True between starting a command and its completion. One at a time.
 @property (readonly, nonatomic, getter=isWorking) BOOL working;
 
-/// What the model is told. Readable and testable on purpose.
-+ (NSString *)instructionForCommand:(MPWritingCommand)command;
+/** What the model is told, with the language of the text named in it.
+ *
+ * `language` is the English name of a language — "Italian" — and it is not
+ * decoration. Measured on a 3B model: told to "answer in the same language
+ * as the text", it rewrote an Italian paragraph into Spanish. Told the
+ * language by name, it answers in it, for Italian, English and German.
+ *
+ * Nil `language` leaves the naming out, which is the best that can be done
+ * when the text is too short to tell.
+ */
++ (NSString *)instructionForCommand:(MPWritingCommand)command
+                         inLanguage:(NSString *)language;
+
+/// The English name of the language a piece of text is written in, or nil.
++ (NSString *)languageNameOfText:(NSString *)text;
 
 /// What the menu item says.
 + (NSString *)titleForCommand:(MPWritingCommand)command;

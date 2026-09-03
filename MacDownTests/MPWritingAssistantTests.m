@@ -184,7 +184,8 @@
     {
         MPWritingCommand command = MPWritingCommandsInOrder[i];
         NSString *instruction =
-            [MPWritingAssistant instructionForCommand:command];
+            [MPWritingAssistant instructionForCommand:command
+                                           inLanguage:@"Italian"];
         NSString *title = [MPWritingAssistant titleForCommand:command];
 
         XCTAssertTrue(instruction.length > 40, @"%@", title);
@@ -208,6 +209,63 @@
     XCTAssertEqual([self.generator.lastInstruction
         rangeOfString:@"Ignora"].location, (NSUInteger)NSNotFound,
         @"il documento non entra nell'istruzione");
+}
+
+
+/** The output language is named, because saying "the same language" failed.
+ *
+ * Measured on a 3B model. "Answer in the same language as the text", with a
+ * clause asking it to keep the meaning, gave the Italian paragraph back
+ * completely unchanged. Without the clause it rewrote it into Spanish.
+ * Named, it answers in the language named.
+ */
+- (void)testTheInstructionNamesTheLanguage
+{
+    NSString *instruction =
+        [MPWritingAssistant instructionForCommand:MPWritingCommandFormal
+                                       inLanguage:@"Italian"];
+    XCTAssertNotEqual([instruction rangeOfString:@"in Italian"].location,
+                      (NSUInteger)NSNotFound, @"%@", instruction);
+    XCTAssertEqual([instruction rangeOfString:@"same language"].location,
+                   (NSUInteger)NSNotFound,
+                   @"la formula che non funzionava non deve tornare");
+}
+
+/// With no language known, the naming is left out rather than guessed.
+- (void)testWithoutALanguageItSaysNothingAboutOne
+{
+    NSString *instruction =
+        [MPWritingAssistant instructionForCommand:MPWritingCommandFormal
+                                       inLanguage:nil];
+    XCTAssertEqual([instruction rangeOfString:@"your answer must be in"].location,
+                   (NSUInteger)NSNotFound);
+    XCTAssertTrue(instruction.length > 40);
+}
+
+- (void)testTheLanguageIsRecognised
+{
+    XCTAssertEqualObjects([MPWritingAssistant languageNameOfText:
+        @"Il collaudo è andato bene, non abbiamo trovato problemi grossi."],
+        @"Italian");
+    XCTAssertEqualObjects([MPWritingAssistant languageNameOfText:
+        @"The test went fine and we found no significant problems at all."],
+        @"English");
+    // Too short to tell: better nothing than a wrong guess.
+    XCTAssertNil([MPWritingAssistant languageNameOfText:@"ok"]);
+}
+
+/// And the command actually sends it, not just knows how to build it.
+- (void)testTheCommandSendsTheNamedLanguage
+{
+    self.textView.string = @"Il collaudo è andato bene, non abbiamo trovato "
+                            @"problemi grossi, due cose piccole da sistemare.";
+    self.textView.selectedRange = NSMakeRange(0, self.textView.string.length);
+
+    [self.assistant runCommand:MPWritingCommandFormal
+                    onTextView:self.textView completion:nil];
+    XCTAssertNotEqual([self.generator.lastInstruction
+        rangeOfString:@"in Italian"].location, (NSUInteger)NSNotFound,
+        @"%@", self.generator.lastInstruction);
 }
 
 

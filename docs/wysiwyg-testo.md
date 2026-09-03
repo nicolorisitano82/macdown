@@ -473,6 +473,15 @@ e se cade, non cade solo lei.
 
 ---
 
+## Un diario a parte
+
+L'aiuto alla scrittura con un modello locale ha il suo:
+[l'aiuto alla scrittura, in locale](ai-locale.md). Sta fuori da qui perché
+non riguarda come il testo viene disegnato, che è l'argomento di questo
+documento.
+
+---
+
 ## Dove andare da qui
 
 Le fasi coprono il testo e le tabelle. Quello che resta smetterebbe di

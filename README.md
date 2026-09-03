@@ -159,6 +159,13 @@ The following editor themes and CSS files are extracted from [Mou](http://mouapp
 * GitHub
 * GitHub2
 
+## Notes on the design
+
+Two journals of the work, in Italian: [the editor's text rendering](docs/wysiwyg-testo.md)
+and [the local writing help](docs/ai-locale.md). They are written for
+whoever picks a piece of this up next — what was measured, and the several
+times the measuring contradicted me.
+
 ## Development
 
 ### Requirements

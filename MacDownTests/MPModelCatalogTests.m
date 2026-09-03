@@ -113,8 +113,15 @@
     XCTAssertFalse([[MPModelDownloader sharedDownloader]
         startDownloadOfListing:listing error:&error]);
     XCTAssertEqual(error.code, MPModelDownloaderErrorNoRoom);
-    XCTAssertTrue([error.localizedDescription rangeOfString:@"room"].location
-                  != NSNotFound, @"%@", error.localizedDescription);
+    // The code, and that something was said — not the words. This asserted
+    // the English "room" and failed the day the message was translated,
+    // which is the test being wrong rather than the message.
+    XCTAssertTrue(error.localizedDescription.length > 20,
+                  @"%@", error.localizedDescription);
+    XCTAssertNotEqual([error.localizedDescription
+        rangeOfString:@"966" options:0].location, (NSUInteger)NSNotFound,
+        @"la dimensione chiesta deve comparire: %@",
+        error.localizedDescription);
 }
 
 /// What cannot be offered is refused on being read, not half-shown.
