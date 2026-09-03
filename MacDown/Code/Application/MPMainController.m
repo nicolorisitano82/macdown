@@ -21,6 +21,7 @@
 #import "MPTerminalPreferencesViewController.h"
 #import "MPDocument.h"
 #import "MPDocumentTemplate.h"
+#import "MPModelsWindowController.h"
 
 
 static NSString * const kMPTreatLastSeenStampKey = @"treatLastSeenStamp";
@@ -195,6 +196,11 @@ NS_INLINE void treat()
                action:@selector(revealTemplatesFolder:) keyEquivalent:@""];
     reveal.target = self;
     [menu addItem:reveal];
+}
+
+- (IBAction)showModelsPanel:(id)sender
+{
+    [[MPModelsWindowController sharedController] showPanel];
 }
 
 /// Opens the folder, which is how a reader adds one of their own.

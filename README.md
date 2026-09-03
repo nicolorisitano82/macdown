@@ -71,6 +71,15 @@ character.
   hashtag and not a heading, `1)` numbers a list as `1.` does, a list that
   starts at five is numbered from five, a backslash at the end of a line
   breaks it, and a task marker is accepted in either case.
+* **Writing help that runs on your Mac**: improve, correct, make formal,
+  make plain, shorter, longer — over the selection, or the paragraph the
+  caret is in. The answer streams in and one undo takes it all back.
+  Nothing is sent anywhere: a GGUF model runs locally through llama.cpp,
+  and the Models panel downloads and installs one without any other tool.
+* **Document templates written by hand**, not generated: a commissioning
+  report, a software test plan, release notes, minutes. Instant, the same
+  every time, and there with no model installed. Put your own in the
+  Templates folder and they appear in the menu.
 * **⌘K asks where the link goes**: a web address you type or paste, or a
   file you find by browsing. A file inside the document's folder is written
   as a relative path, so the two keep working when you move them together.

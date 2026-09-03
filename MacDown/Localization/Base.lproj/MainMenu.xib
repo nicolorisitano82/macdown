@@ -31,6 +31,11 @@
                                     <action selector="showPreferencesWindow:" target="eq0-c4-vgQ" id="EzD-HO-Qqf"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Models…" id="mdw-models-item">
+                                <connections>
+                                    <action selector="showModelsPanel:" target="-1" id="mdw-models-c"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="wFC-TO-SCJ"/>
                             <menuItem title="Services" id="NMo-om-nkz">
                                 <modifierMask key="keyEquivalentModifierMask"/>
