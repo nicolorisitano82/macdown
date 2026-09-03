@@ -6,7 +6,7 @@ that survive the trip, diagrams you can zoom, a maths editor, a sidebar,
 and a prose checker.
 
 The source is at
-[github.com/nicolorisitano82/macdown](https://github.com/nicolorisitano82/macdown).
+[github.com/nicolorisitano82/macdown-next](https://github.com/nicolorisitano82/macdown-next).
 
 ## Building it
 
@@ -14,10 +14,12 @@ You will need Xcode 26 or later, for the macOS 26 SDK — the deployment
 target is macOS 26.0, so an older SDK will not build this. The Command Line
 Tools cannot stand in for Xcode.
 
-    git clone https://github.com/nicolorisitano82/macdown.git
-    cd macdown
+    git clone https://github.com/nicolorisitano82/macdown-next.git
+    cd macdown-next
     git submodule update --init
     pod install
+    make -C Dependency/peg-markdown-highlight
+    Tools/build_llama.sh
 
 Then open `MacDown.xcworkspace` — the workspace, not the project, which on
 its own has no pods. CocoaPods is easiest from Homebrew; the Ruby that ships
@@ -56,7 +58,7 @@ without touching any code or rebuilding.
 ## Reporting something broken
 
 Open an issue on
-[this repository](https://github.com/nicolorisitano82/macdown/issues),
+[this repository](https://github.com/nicolorisitano82/macdown-next/issues),
 whatever it turns out to be. Whether a fault comes from this fork, from the
 MacDown it grew out of, or from one of the libraries underneath is rarely
 obvious from the outside, and working that out belongs to whoever picks the

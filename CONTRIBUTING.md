@@ -45,9 +45,9 @@ The exception is a URL in a comment that cannot be shortened. Many can:
 StackOverflow drops its title slug, and a GitHub commit hash can be cut to
 its first seven characters, so all of these are the same page:
 
-    https://github.com/nicolorisitano82/macdown/commit/1612abb9dbd24113751958777a49cffc6767989c
-    https://github.com/nicolorisitano82/macdown/commit/1612abb9dbd24
-    https://github.com/nicolorisitano82/macdown/commit/1612abb
+    https://github.com/nicolorisitano82/macdown-next/commit/1612abb9dbd24113751958777a49cffc6767989c
+    https://github.com/nicolorisitano82/macdown-next/commit/1612abb9dbd24
+    https://github.com/nicolorisitano82/macdown-next/commit/1612abb
 
 ### Braces and blocks
 

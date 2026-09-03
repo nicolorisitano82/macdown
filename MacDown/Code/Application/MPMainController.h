@@ -9,6 +9,9 @@
 #import <Foundation/Foundation.h>
 @class MPPreferences;
 
+/// The tag on Format › Insert Template, so a test can find the same menu.
+extern const NSInteger kMPTemplateMenuTag;
+
 @interface MPMainController : NSObject <NSApplicationDelegate>
 
 @property (nonatomic, readonly) MPPreferences *preferences;

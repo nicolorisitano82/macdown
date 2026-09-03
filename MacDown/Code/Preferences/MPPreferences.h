@@ -89,6 +89,16 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
  * is the worse surprise.
  */
 @property (assign) BOOL exportFetchesRemoteImages;
+
+/** Whether the writing commands are offered at all.
+ *
+ * On, because they are the reason someone would install a model; and a
+ * switch, because someone who never wants them should not have a submenu
+ * of things that do nothing. With it off the commands go away and the
+ * Models panel stays — a model already downloaded is still theirs to
+ * manage or delete.
+ */
+@property (assign) BOOL editorWritingHelp;
 /// Whether pasting formatted text writes the Markdown that means the same.
 @property (assign) BOOL editorPasteAsMarkdown;
 /// Whether a pipe table's columns are drawn lined up, source untouched.

@@ -71,6 +71,17 @@ character.
   hashtag and not a heading, `1)` numbers a list as `1.` does, a list that
   starts at five is numbered from five, a backslash at the end of a line
   breaks it, and a task marker is accepted in either case.
+* **Writing help that runs on your Mac**: improve, correct, make formal,
+  make plain, shorter, longer — over the selection, or the paragraph the
+  caret is in. The answer streams in and one undo takes it all back.
+  Nothing is sent anywhere: a GGUF model runs locally through llama.cpp,
+  and the Models panel downloads and installs one without any other tool —
+  from a short curated list, or from any address you paste. Turn the whole
+  thing off in the preferences if you would rather not have it.
+* **Document templates written by hand**, not generated: a commissioning
+  report, a software test plan, release notes, minutes. Instant, the same
+  every time, and there with no model installed. Put your own in the
+  Templates folder and they appear in the menu.
 * **⌘K asks where the link goes**: a web address you type or paste, or a
   file you find by browsing. A file inside the document's folder is written
   as a relative path, so the two keep working when you move them together.
@@ -112,7 +123,7 @@ Writing**.
 
 ## Installing
 
-Builds are on the [releases page](https://github.com/nicolorisitano82/macdown/releases).
+Builds are on the [releases page](https://github.com/nicolorisitano82/macdown-next/releases).
 Requires macOS 26.
 
 They are **not signed or notarised** — no Developer ID certificate stands
@@ -148,6 +159,13 @@ The following editor themes and CSS files are extracted from [Mou](http://mouapp
 * GitHub
 * GitHub2
 
+## Notes on the design
+
+Two journals of the work, in Italian: [the editor's text rendering](docs/wysiwyg-testo.md)
+and [the local writing help](docs/ai-locale.md). They are written for
+whoever picks a piece of this up next — what was measured, and the several
+times the measuring contradicted me.
+
 ## Development
 
 ### Requirements
@@ -179,10 +197,14 @@ After cloning the repository, run the following inside the repository root:
     git submodule update --init
     pod install
     make -C Dependency/peg-markdown-highlight
+    Tools/build_llama.sh
 
 and open `MacDown.xcworkspace` — the workspace, not the project; the project
 alone has no pods. The first command fetches the dependency submodules, the
-second installs the CocoaPods dependencies.
+second installs the CocoaPods dependencies, and the last two build the
+dependencies that come with their own build system — the editor's highlighter
+and llama.cpp, which the writing commands generate through. `Tools/build_llama.sh`
+needs `cmake` and takes about fifteen seconds.
 
 If a build fails later on after pulling, the same two commands usually
 account for it:
@@ -202,7 +224,7 @@ highlights the editor, [mermaid](https://mermaid.js.org) and
 [MathJax](https://www.mathjax.org) sets the maths.
 
 They have the credit for the parts they do. Problems you run into here are
-still best [reported here](https://github.com/nicolorisitano82/macdown/issues):
+still best [reported here](https://github.com/nicolorisitano82/macdown-next/issues):
 telling apart a fault in this fork, in the MacDown it grew out of, and in
 something underneath is rarely possible from the outside, and it is not the
 reporter's job.

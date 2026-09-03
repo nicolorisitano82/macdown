@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "note": "Sizes and addresses were checked against the servers, not written from memory. A wrong size here is a progress bar that lies and a disk-space check that passes when it should not.",
+  "models": [
+    {
+      "name": "Qwen2.5 3B Instruct",
+      "file": "qwen2.5-3b-instruct-q4_k_m.gguf",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf",
+      "bytes": 2104932768,
+      "parameters": "3B",
+      "quantisation": "Q4_K_M",
+      "recommended": true,
+      "note": "The smallest that rewrites prose without breaking it. Measured on Italian: it keeps the meaning and the register, and answers a sentence in about a third of a second."
+    },
+    {
+      "name": "Llama 3.2 3B Instruct",
+      "file": "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+      "url": "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+      "bytes": 2019377696,
+      "parameters": "3B",
+      "quantisation": "Q4_K_M",
+      "recommended": false,
+      "note": "The same size and speed as the one above, from a different family. Worth having if you prefer the way it writes."
+    },
+    {
+      "name": "Qwen2.5 7B Instruct",
+      "file": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+      "url": "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+      "bytes": 4683074240,
+      "parameters": "7B",
+      "quantisation": "Q4_K_M",
+      "recommended": false,
+      "note": "Better at long paragraphs and at holding a register, and slower in proportion. Wants around 8 GB of memory free while it runs."
+    },
+    {
+      "name": "Qwen2.5 0.5B Instruct",
+      "file": "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf",
+      "bytes": 491400032,
+      "parameters": "0.5B",
+      "quantisation": "Q4_K_M",
+      "recommended": false,
+      "note": "Half a gigabyte, to see the machinery work. Not good enough to write with: asked to make a sentence formal, it turned a commissioning test into a competition and invented a word. Kept in the list because it downloads in a minute and proves the rest is working."
+    }
+  ]
+}

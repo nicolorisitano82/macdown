@@ -20,6 +20,8 @@
 #import "MPHtmlPreferencesViewController.h"
 #import "MPTerminalPreferencesViewController.h"
 #import "MPDocument.h"
+#import "MPDocumentTemplate.h"
+#import "MPModelsWindowController.h"
 
 
 static NSString * const kMPTreatLastSeenStampKey = @"treatLastSeenStamp";
@@ -91,7 +93,7 @@ NS_INLINE void treat()
 }
 
 
-@interface MPMainController ()
+@interface MPMainController () <NSMenuDelegate>
 @property (readonly) NSWindowController *preferencesWindowController;
 @end
 
@@ -121,6 +123,105 @@ NS_INLINE void treat()
         setEventHandler:self
             andSelector:@selector(openUrlSchemeAppleEvent:withReplyEvent:)
           forEventClass:kInternetEventClass andEventID:kAEGetURL];
+
+    [self takeChargeOfTheTemplateMenu];
+}
+
+/** Makes this the keeper of the template submenu.
+ *
+ * What is in it is which files are installed, and that is known when the
+ * menu opens and not when the nib was drawn — a reader who drops a
+ * template into their folder should find it there without relaunching.
+ *
+ * Here rather than in the document because there is one menu bar for every
+ * window; the items aim at the first responder, so it is still the document
+ * in front that inserts.
+ */
+/// The tag the nib puts on Format › Insert Template.
+const NSInteger kMPTemplateMenuTag = 9001;
+
+- (void)takeChargeOfTheTemplateMenu
+{
+    NSMenu *submenu = [self templateSubmenu];
+    submenu.delegate = self;
+}
+
+/** Finds the template submenu by its tag.
+ *
+ * The first version of this walk also required `item.action == NULL`,
+ * reasoning that an item which only opens a submenu does nothing itself.
+ * It does: AppKit gives it `submenuAction:`. So nothing matched, the
+ * delegate was never set, and the menu shipped exactly as the nib drew it
+ * — empty. The identifier it also looked for was innocent, and is in the
+ * compiled nib; I checked, after blaming it in a comment.
+ *
+ * A tag rather than a title, because a title is localised out from under
+ * a lookup like this one.
+ */
+- (NSMenu *)templateSubmenu
+{
+    for (NSMenuItem *top in [NSApp mainMenu].itemArray)
+    {
+        for (NSMenuItem *item in top.submenu.itemArray)
+        {
+            if (item.tag == kMPTemplateMenuTag && item.submenu)
+                return item.submenu;
+        }
+    }
+    return nil;
+}
+
+- (void)menuNeedsUpdate:(NSMenu *)menu
+{
+    if (menu != [self templateSubmenu])
+        return;
+
+    [menu removeAllItems];
+    NSArray<MPDocumentTemplate *> *templates =
+        [MPDocumentTemplate installedTemplates];
+
+    for (MPDocumentTemplate *template in templates)
+    {
+        NSMenuItem *item = [[NSMenuItem alloc]
+            initWithTitle:template.name
+                   action:@selector(insertDocumentTemplate:)
+            keyEquivalent:@""];
+        item.representedObject = template;
+        // Nil target, so it walks the responder chain to the document that
+        // is in front, and greys out when there is none.
+        item.target = nil;
+        [menu addItem:item];
+    }
+
+    if (!templates.count)
+    {
+        NSMenuItem *empty = [[NSMenuItem alloc]
+            initWithTitle:NSLocalizedString(@"No Templates Installed",
+                                            @"Template menu")
+                   action:NULL keyEquivalent:@""];
+        empty.enabled = NO;
+        [menu addItem:empty];
+    }
+
+    [menu addItem:[NSMenuItem separatorItem]];
+    NSMenuItem *reveal = [[NSMenuItem alloc]
+        initWithTitle:NSLocalizedString(@"Reveal Templates Folder",
+                                        @"Template menu")
+               action:@selector(revealTemplatesFolder:) keyEquivalent:@""];
+    reveal.target = self;
+    [menu addItem:reveal];
+}
+
+- (IBAction)showModelsPanel:(id)sender
+{
+    [[MPModelsWindowController sharedController] showPanel];
+}
+
+/// Opens the folder, which is how a reader adds one of their own.
+- (IBAction)revealTemplatesFolder:(id)sender
+{
+    NSURL *folder = [MPDocumentTemplate customDirectory];
+    [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[folder]];
 }
 
 // Open a file from a browser with url of the form :

@@ -39,6 +39,9 @@
 #import "MPEpubExport.h"
 #import "MPDocxPostProcessing.h"
 #import "MPRemoteImageFetch.h"
+#import "MPModelStore.h"
+#import "MPWritingAssistant.h"
+#import "MPDocumentTemplate.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -254,6 +257,12 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
  * and comes back a different height.
  */
 @property (assign) NSTimeInterval lastTypedAt;
+/// Made on the first writing command, and only then.
+@property (strong) MPWritingAssistant *writingAssistant;
+/// Says what the writing help is doing, while it is doing it.
+@property (strong) NSView *writingStatus;
+@property (strong) NSTextField *writingStatusLabel;
+@property (strong) NSProgressIndicator *writingSpinner;
 /// Where the editor stood when the current burst of typing began.
 @property (assign) CGFloat editorTopWhenTypingBegan;
 /// Whether a keystroke is recent enough that the panes should sit still.
@@ -1486,10 +1495,40 @@ static NSString * const kMPSelectionSource =
                          contextInfo:(void *)invocation];
 }
 
+/// The writing commands, for validation: all of them want the same things.
+NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
+{
+    return action == @selector(improveWriting:)
+        || action == @selector(correctWriting:)
+        || action == @selector(makeWritingFormal:)
+        || action == @selector(makeWritingPlain:)
+        || action == @selector(makeWritingShorter:)
+        || action == @selector(makeWritingLonger:);
+}
+
 - (BOOL)validateUserInterfaceItem:(id<NSValidatedUserInterfaceItem>)item
 {
     BOOL result = [super validateUserInterfaceItem:item];
     SEL action = item.action;
+
+    if (MPIsWritingCommandAction(action))
+    {
+        // Switched off, and they are not offered at all.
+        if (!self.preferences.editorWritingHelp)
+            return NO;
+        // Something to work on, a model to work with, and not already busy.
+        NSRange range =
+            [MPWritingAssistant rangeForCommandInTextView:self.editor];
+        return range.location != NSNotFound && range.length > 0
+            && [MPModelStore sharedStore].selectedModel != nil
+            && !self.writingAssistant.isWorking;
+    }
+    if (action == @selector(stopWritingHelp:))
+    {
+        return self.preferences.editorWritingHelp
+            && self.writingAssistant.isWorking;
+    }
+
     if (action == @selector(toggleToolbar:))
     {
         NSMenuItem *it = ((NSMenuItem *)item);
@@ -3817,6 +3856,225 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
  * for: those two are what make it a table rather than lines with bars in
  * them, and counting them would be asking the reader to know that.
  */
+#pragma mark - Writing help
+
+/** A spinner and a line of words, beside the word count.
+ *
+ * Because the wait had nothing to show for it. The model takes a moment to
+ * open, and on a machine that has never compiled the Metal shaders the
+ * first command takes three and a half seconds — for all of which the
+ * application looked as though it had ignored the request. A wait that is
+ * accounted for is a wait; an unaccounted one is a fault.
+ *
+ * Built here rather than in the nib: it is two views, and a nib would be
+ * one more file to keep in step with twenty-six localisations.
+ */
+- (void)buildWritingStatusIfNeeded
+{
+    if (self.writingStatus)
+        return;
+
+    NSPopUpButton *counter = self.wordCountWidget;
+    NSView *strip = counter.superview;
+    if (!strip)
+        return;
+
+    NSProgressIndicator *spinner =
+        [[NSProgressIndicator alloc] initWithFrame:NSZeroRect];
+    spinner.style = NSProgressIndicatorStyleSpinning;
+    spinner.controlSize = NSControlSizeSmall;
+    spinner.indeterminate = YES;
+    spinner.displayedWhenStopped = NO;
+    spinner.translatesAutoresizingMaskIntoConstraints = NO;
+
+    NSTextField *label = [NSTextField labelWithString:@""];
+    label.font = [NSFont systemFontOfSize:11.0];
+    label.textColor = [NSColor secondaryLabelColor];
+    label.lineBreakMode = NSLineBreakByTruncatingTail;
+    label.translatesAutoresizingMaskIntoConstraints = NO;
+
+    NSStackView *row = [[NSStackView alloc] initWithFrame:NSZeroRect];
+    row.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    row.alignment = NSLayoutAttributeCenterY;
+    row.spacing = 6.0;
+    row.translatesAutoresizingMaskIntoConstraints = NO;
+    [row addView:spinner inGravity:NSStackViewGravityLeading];
+    [row addView:label inGravity:NSStackViewGravityLeading];
+    row.hidden = YES;
+
+    [strip addSubview:row];
+    [NSLayoutConstraint activateConstraints:@[
+        [row.leadingAnchor constraintEqualToAnchor:counter.trailingAnchor
+                                          constant:12.0],
+        [row.centerYAnchor constraintEqualToAnchor:counter.centerYAnchor],
+        [row.trailingAnchor constraintLessThanOrEqualToAnchor:
+            strip.trailingAnchor constant:-12.0],
+    ]];
+
+    self.writingStatus = row;
+    self.writingStatusLabel = label;
+    self.writingSpinner = spinner;
+}
+
+- (void)showWritingStatus:(NSString *)text
+{
+    [self buildWritingStatusIfNeeded];
+    self.writingStatusLabel.stringValue = text ?: @"";
+    self.writingStatus.hidden = NO;
+    [self.writingSpinner startAnimation:nil];
+}
+
+- (void)hideWritingStatus
+{
+    [self.writingSpinner stopAnimation:nil];
+    self.writingStatus.hidden = YES;
+    self.writingStatusLabel.stringValue = @"";
+}
+
+/// "Making it shorter…", from the command's own menu title.
+- (NSString *)workingTitleForCommand:(MPWritingCommand)command
+{
+    return [NSString stringWithFormat:NSLocalizedString(@"%@…",
+        @"Writing help in progress"),
+        [MPWritingAssistant titleForCommand:command]];
+}
+
+/** Runs a writing command, loading the model first if it is not loaded.
+ *
+ * The loading is somebody else's business — one model serves every window
+ * — and it happens off the main thread, so the first command after a cold
+ * start answers a moment later than the rest. Nothing is shown for that
+ * moment on purpose: a progress sheet for half a second is worse than a
+ * half-second wait.
+ */
+- (void)runWritingCommand:(MPWritingCommand)command
+{
+    // Two waits, and they are told apart on screen: opening the model is
+    // one thing and answering is another, and a reader who sees only a
+    // spinner cannot tell a slow model from a stuck one.
+    MPModelStore *store = [MPModelStore sharedStore];
+    [self showWritingStatus:store.isGeneratorLoaded
+        ? [self workingTitleForCommand:command]
+        : NSLocalizedString(@"Opening the model…", @"Writing help")];
+
+    __weak MPDocument *weakSelf = self;
+    [store generatorWithCompletion:
+        ^(id<MPTextGenerator> generator, NSError *error) {
+        MPDocument *document = weakSelf;
+        if (!document)
+            return;
+        if (!generator)
+        {
+            [document hideWritingStatus];
+            [document presentWritingError:error];
+            return;
+        }
+        [document showWritingStatus:
+            [document workingTitleForCommand:command]];
+
+        if (document.writingAssistant.generator != generator)
+        {
+            document.writingAssistant =
+                [[MPWritingAssistant alloc] initWithGenerator:generator];
+        }
+        BOOL started = [document.writingAssistant runCommand:command
+                                   onTextView:document.editor
+                                   completion:^(NSError *failure) {
+            [document hideWritingStatus];
+            // Cancelling is the reader's own doing and needs no telling.
+            if (failure && failure.code != MPTextGeneratorErrorCancelled)
+                [document presentWritingError:failure];
+        }];
+        // Refused — nothing to work on, or one already running — and the
+        // spinner would otherwise turn for a command that never began.
+        if (!started)
+            [document hideWritingStatus];
+    }];
+}
+
+- (void)presentWritingError:(NSError *)error
+{
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"The writing command could not run",
+                                          @"Writing help failure");
+    alert.informativeText = error.localizedDescription
+        ?: NSLocalizedString(@"No reason was given.",
+                             @"Writing help failure");
+    [alert beginSheetModalForWindow:self.windowForSheet completionHandler:nil];
+}
+
+- (IBAction)improveWriting:(id)sender
+{
+    [self runWritingCommand:MPWritingCommandImprove];
+}
+
+- (IBAction)correctWriting:(id)sender
+{
+    [self runWritingCommand:MPWritingCommandCorrect];
+}
+
+- (IBAction)makeWritingFormal:(id)sender
+{
+    [self runWritingCommand:MPWritingCommandFormal];
+}
+
+- (IBAction)makeWritingPlain:(id)sender
+{
+    [self runWritingCommand:MPWritingCommandPlain];
+}
+
+- (IBAction)makeWritingShorter:(id)sender
+{
+    [self runWritingCommand:MPWritingCommandShorter];
+}
+
+- (IBAction)makeWritingLonger:(id)sender
+{
+    [self runWritingCommand:MPWritingCommandLonger];
+}
+
+- (IBAction)stopWritingHelp:(id)sender
+{
+    [self.writingAssistant cancel];
+}
+
+/** Puts a template in, on lines of its own.
+ *
+ * Where the caret is, not over the document: someone with a page of notes
+ * who asks for a report skeleton wants it added, not their notes replaced.
+ */
+- (IBAction)insertDocumentTemplate:(id)sender
+{
+    MPDocumentTemplate *template = nil;
+    if ([sender respondsToSelector:@selector(representedObject)])
+        template = [sender representedObject];
+
+    NSString *markdown = template.markdown;
+    if (!markdown.length)
+        return;
+
+    NSRange selection = self.editor.selectedRange;
+    NSString *text = self.editor.string;
+    NSMutableString *insertion = [NSMutableString string];
+
+    // A blank line before it unless it is already at the start of one, and
+    // one after, so it is a block and not a continuation of a sentence.
+    NSRange line = [text lineRangeForRange:NSMakeRange(selection.location, 0)];
+    if (selection.location != line.location)
+        [insertion appendString:@"\n\n"];
+    [insertion appendString:markdown];
+    if (![markdown hasSuffix:@"\n"])
+        [insertion appendString:@"\n"];
+
+    [self.editor insertText:insertion replacementRange:selection];
+    // At the top of what was inserted: the first field is what gets filled
+    // in, and it is easier to walk down from there than to find the way back.
+    self.editor.selectedRange =
+        NSMakeRange(selection.location + (selection.location != line.location
+                                          ? 2 : 0), 0);
+    [self.editor scrollRangeToVisible:self.editor.selectedRange];
+}
+
 - (IBAction)insertTable:(id)sender
 {
     static NSUInteger lastRows = 3;
