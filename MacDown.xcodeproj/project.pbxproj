@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D1A0000000000000000000B1 /* MDDrawioPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C2 /* MDDrawioPlugIn.m */; };
+		D1A0000000000000000000B2 /* MDDrawioFile.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C4 /* MDDrawioFile.m */; };
+		D1A0000000000000000000B3 /* MDDrawioRenderer.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C6 /* MDDrawioRenderer.m */; };
+		D1A0000000000000000000B4 /* viewer.min.js in Resources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000C8 /* viewer.min.js */; };
 		D0C1F00300000000000000D1 /* MPBlockStyler.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1F00100000000000000D1 /* MPBlockStyler.m */; };
 		D0C1E00300000000000000C1 /* MPMarkerHider.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1E00100000000000000C1 /* MPMarkerHider.m */; };
 		D0C1C00300000000000000A1 /* MPSemanticStyler.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C1C00100000000000000A1 /* MPSemanticStyler.m */; };
@@ -89,6 +93,7 @@
 		F55A342A5A01CEBCC9F60017 /* MPWritingAssistantTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310017 /* MPWritingAssistantTests.m */; };
 		F55A342A5A01CEBCC9F60043 /* MPCodeLanguageTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310044 /* MPCodeLanguageTests.m */; };
 		F55A342A5A01CEBCC9F60045 /* MPCodeIndenterTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310047 /* MPCodeIndenterTests.m */; };
+		F55A342A5A01CEBCC9F60046 /* MDDrawioPlugInTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310048 /* MDDrawioPlugInTests.m */; };
 		F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */; };
 		F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310036 /* MPModelCatalogTests.m */; };
 		F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310037 /* MPTemplateMenuTests.m */; };
@@ -132,6 +137,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		D1A0000000000000000000F2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1FA6DE191941CC9E000409FB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D1A0000000000000000000E1;
+			remoteInfo = Drawio;
+		};
 		1F4574781A2D87D500DFA5FF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1FCD71131A20BA3A00C028B5 /* version.xcodeproj */;
@@ -187,6 +199,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D1A0000000000000000000C1 /* MDDrawioPlugIn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDDrawioPlugIn.h"; sourceTree = "<group>"; };
+		D1A0000000000000000000C2 /* MDDrawioPlugIn.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "MDDrawioPlugIn.m"; sourceTree = "<group>"; };
+		D1A0000000000000000000C3 /* MDDrawioFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDDrawioFile.h"; sourceTree = "<group>"; };
+		D1A0000000000000000000C4 /* MDDrawioFile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "MDDrawioFile.m"; sourceTree = "<group>"; };
+		D1A0000000000000000000C5 /* MDDrawioRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDDrawioRenderer.h"; sourceTree = "<group>"; };
+		D1A0000000000000000000C6 /* MDDrawioRenderer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "MDDrawioRenderer.m"; sourceTree = "<group>"; };
+		D1A0000000000000000000C7 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
+		D1A0000000000000000000C8 /* viewer.min.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = "Resources/viewer.min.js"; sourceTree = "<group>"; };
+		D1A0000000000000000000C9 /* Drawio.plugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Drawio.plugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C1F00100000000000000D1 /* MPBlockStyler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPBlockStyler.m; sourceTree = "<group>"; };
 		D0C1F00200000000000000D1 /* MPBlockStyler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPBlockStyler.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310034 /* MPModelsWindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPModelsWindowController.h; sourceTree = "<group>"; };
@@ -531,6 +552,7 @@
 		7DA2311453239F0973310017 /* MPWritingAssistantTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPWritingAssistantTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310044 /* MPCodeLanguageTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPCodeLanguageTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310047 /* MPCodeIndenterTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPCodeIndenterTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310048 /* MDDrawioPlugInTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MDDrawioPlugInTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPDocumentTemplateTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310036 /* MPModelCatalogTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPModelCatalogTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310037 /* MPTemplateMenuTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTemplateMenuTests.m; sourceTree = "<group>"; };
@@ -659,6 +681,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D1A0000000000000000000D1 /* Drawio */ = {
+			isa = PBXGroup;
+			children = (
+				D1A0000000000000000000C1 /* MDDrawioPlugIn.h */,
+				D1A0000000000000000000C2 /* MDDrawioPlugIn.m */,
+				D1A0000000000000000000C3 /* MDDrawioFile.h */,
+				D1A0000000000000000000C4 /* MDDrawioFile.m */,
+				D1A0000000000000000000C5 /* MDDrawioRenderer.h */,
+				D1A0000000000000000000C6 /* MDDrawioRenderer.m */,
+				D1A0000000000000000000C8 /* viewer.min.js */,
+				D1A0000000000000000000C7 /* Info.plist */,
+			);
+			name = Drawio;
+			path = plugins/Drawio;
+			sourceTree = "<group>";
+		};
 		1F0D9D5D194AC7CF008E1856 /* Extension */ = {
 			isa = PBXGroup;
 			children = (
@@ -891,6 +929,7 @@
 			isa = PBXGroup;
 			children = (
 				1F8A83551953453100B6BF69 /* Dependency */,
+				D1A0000000000000000000D1 /* Drawio */,
 				1FCDC9EB1944F89B00B1F966 /* MacDown */,
 				1FCDCA2F1944F96E00B1F966 /* MacDownTests */,
 				905EF1AA196164CA00FC3CE9 /* macdown-cmd */,
@@ -904,6 +943,7 @@
 		1FA6DE221941CC9E000409FB /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				D1A0000000000000000000C9 /* Drawio.plugin */,
 				1FA6DE211941CC9E000409FB /* MacDown.app */,
 				1FA6DE451941CC9E000409FB /* MacDownTests.xctest */,
 				905EF1A7196164CA00FC3CE9 /* macdownext */,
@@ -995,6 +1035,7 @@
 				7DA2311453239F0973310017 /* MPWritingAssistantTests.m */,
 				7DA2311453239F0973310044 /* MPCodeLanguageTests.m */,
 				7DA2311453239F0973310047 /* MPCodeIndenterTests.m */,
+				7DA2311453239F0973310048 /* MDDrawioPlugInTests.m */,
 				7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */,
 				7DA2311453239F0973310036 /* MPModelCatalogTests.m */,
 				7DA2311453239F0973310037 /* MPTemplateMenuTests.m */,
@@ -1059,6 +1100,22 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		D1A0000000000000000000E1 /* Drawio */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D1A0000000000000000000E2 /* Build configuration list for PBXNativeTarget "Drawio" */;
+			buildPhases = (
+				D1A0000000000000000000E5 /* Sources */,
+				D1A0000000000000000000E6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Drawio;
+			productName = Drawio;
+			productReference = D1A0000000000000000000C9 /* Drawio.plugin */;
+			productType = "com.apple.product-type.bundle";
+		};
 		1FA6DE201941CC9E000409FB /* MacDown */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1FA6DE551941CC9E000409FB /* Build configuration list for PBXNativeTarget "MacDown" */;
@@ -1079,6 +1136,7 @@
 			dependencies = (
 				905EF1B5196164DD00FC3CE9 /* PBXTargetDependency */,
 				1FE2197819534A5D00DB931F /* PBXTargetDependency */,
+				D1A0000000000000000000F1 /* PBXTargetDependency */,
 			);
 			name = MacDown;
 			productName = MarkPad;
@@ -1186,6 +1244,7 @@
 			projectRoot = "";
 			targets = (
 				1FA6DE201941CC9E000409FB /* MacDown */,
+				D1A0000000000000000000E1 /* Drawio */,
 				1FA6DE441941CC9E000409FB /* MacDownTests */,
 				905EF1A6196164CA00FC3CE9 /* macdown-cmd */,
 			);
@@ -1193,6 +1252,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		D1A0000000000000000000E6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1A0000000000000000000B4 /* viewer.min.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		1FA6DE1F1941CC9E000409FB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1253,7 +1320,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "DEST=\"$SRCROOT/dist/$CONFIGURATION\"\n# Per configuration, so a Debug build cannot quietly replace the Release\n# one you thought you were running.\nmkdir -p \"$DEST\"\nrm -rf \"$DEST/$FULL_PRODUCT_NAME\"\ncp -R \"$BUILT_PRODUCTS_DIR/$FULL_PRODUCT_NAME\" \"$DEST/\"\n# The version goes on here, at the very end, and by an explicit path.\n# Stamped earlier it does not survive: the build system writes the\n# Info.plist again after the script phases have run, and the app was\n# shipping as 0.1.\nPLIST=\"$DEST/$FULL_PRODUCT_NAME/Contents/Info.plist\"\nSHORT=$(\"$SRCROOT/Tools/short_version.sh\")\nBUNDLE=$(cd \"$SRCROOT\" && git rev-list --count HEAD)\nBUILD=$(cd \"$SRCROOT\" && git describe --tags --always --dirty=+)\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $SHORT\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUNDLE\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Add :CFBundleBuildVersion string $BUILD\" \"$PLIST\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Set :CFBundleBuildVersion $BUILD\" \"$PLIST\"\necho \"note: dist copy stamped $SHORT ($BUNDLE)\"\necho \"note: copied $FULL_PRODUCT_NAME to dist/$CONFIGURATION\"\n";
+			shellScript = "DEST=\"$SRCROOT/dist/$CONFIGURATION\"\n# Per configuration, so a Debug build cannot quietly replace the Release\n# one you thought you were running.\nmkdir -p \"$DEST\"\nrm -rf \"$DEST/$FULL_PRODUCT_NAME\"\ncp -R \"$BUILT_PRODUCTS_DIR/$FULL_PRODUCT_NAME\" \"$DEST/\"\n# The plug-ins built alongside go too: one is installed through the\n# plug-in manager, which asks for a .plugin to point at.\nfor PLUGIN in \"$BUILT_PRODUCTS_DIR\"/*.plugin; do\n    [ -e \"$PLUGIN\" ] || continue\n    rm -rf \"$DEST/$(basename \"$PLUGIN\")\"\n    cp -R \"$PLUGIN\" \"$DEST/\"\ndone\n# The version goes on here, at the very end, and by an explicit path.\n# Stamped earlier it does not survive: the build system writes the\n# Info.plist again after the script phases have run, and the app was\n# shipping as 0.1.\nPLIST=\"$DEST/$FULL_PRODUCT_NAME/Contents/Info.plist\"\nSHORT=$(\"$SRCROOT/Tools/short_version.sh\")\nBUNDLE=$(cd \"$SRCROOT\" && git rev-list --count HEAD)\nBUILD=$(cd \"$SRCROOT\" && git describe --tags --always --dirty=+)\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $SHORT\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUNDLE\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Add :CFBundleBuildVersion string $BUILD\" \"$PLIST\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Set :CFBundleBuildVersion $BUILD\" \"$PLIST\"\necho \"note: dist copy stamped $SHORT ($BUNDLE)\"\necho \"note: copied $FULL_PRODUCT_NAME to dist/$CONFIGURATION\"\n";
 		};
 		1E02F0A95AAEBCEF65493F5F /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1375,6 +1442,16 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		D1A0000000000000000000E5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1A0000000000000000000B1 /* MDDrawioPlugIn.m in Sources */,
+				D1A0000000000000000000B2 /* MDDrawioFile.m in Sources */,
+				D1A0000000000000000000B3 /* MDDrawioRenderer.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		1FA6DE1D1941CC9E000409FB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1457,6 +1534,7 @@
 				F55A342A5A01CEBCC9F60017 /* MPWritingAssistantTests.m in Sources */,
 				F55A342A5A01CEBCC9F60043 /* MPCodeLanguageTests.m in Sources */,
 				F55A342A5A01CEBCC9F60045 /* MPCodeIndenterTests.m in Sources */,
+				F55A342A5A01CEBCC9F60046 /* MDDrawioPlugInTests.m in Sources */,
 				F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */,
 				F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */,
@@ -1481,6 +1559,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		D1A0000000000000000000F1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D1A0000000000000000000E1 /* Drawio */;
+			targetProxy = D1A0000000000000000000F2 /* PBXContainerItemProxy */;
+		};
 		1F4574791A2D87D500DFA5FF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = version;
@@ -1845,6 +1928,58 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		D1A0000000000000000000E3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INFOPLIST_FILE = "plugins/Drawio/Info.plist";
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					Cocoa,
+					"-framework",
+					WebKit,
+					"-lz",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.nicolorisitano82.macdown.drawio";
+				PRODUCT_NAME = Drawio;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = plugin;
+			};
+			name = Debug;
+		};
+		D1A0000000000000000000E4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INFOPLIST_FILE = "plugins/Drawio/Info.plist";
+				MACH_O_TYPE = mh_bundle;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					Cocoa,
+					"-framework",
+					WebKit,
+					"-lz",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.nicolorisitano82.macdown.drawio";
+				PRODUCT_NAME = Drawio;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = plugin;
+			};
+			name = Release;
+		};
 		1FA6DE531941CC9E000409FB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2036,6 +2171,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8CDC5EA0050D2F722FB1AADD /* Pods-MacDownTests.debug.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/plugins/Drawio",
+				);
 				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/MacDown Next.app/Contents/MacOS/MacDown Next";
 				CLANG_ENABLE_MODULES = NO;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -2070,6 +2209,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0D0EC0DE9FEA22F962083921 /* Pods-MacDownTests.release.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/plugins/Drawio",
+				);
 				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/MacDown Next.app/Contents/MacOS/MacDown Next";
 				CLANG_ENABLE_MODULES = NO;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -2125,6 +2268,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		D1A0000000000000000000E2 /* Build configuration list for PBXNativeTarget "Drawio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1A0000000000000000000E3 /* Debug */,
+				D1A0000000000000000000E4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		1FA6DE1C1941CC9E000409FB /* Build configuration list for PBXProject "MacDown" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

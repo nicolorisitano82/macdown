@@ -49,3 +49,13 @@ Poi riavvia MacDown Next, perché i plug-in vengono letti una volta sola.
 
 Non serve un target Xcode: un `.plugin` è un Info.plist più un binario
 compilato con `-bundle`, ed è quello che fa lo script.
+
+## Quello che c'è nel progetto
+
+`Drawio/` — importa un diagramma draw.io e ne fa dei PNG collegati nel
+documento ([come funziona](Drawio/README.md)). Questo **ha** un target
+Xcode, e non perché serva: porta dentro 2,6 MB di visualizzatore draw.io e
+dieci prove che girano sul bundle compilato, quindi viene costruito insieme
+all'applicazione — così non può restare indietro rispetto a lei, e le prove
+hanno sempre qualcosa da caricare. Lo trovi in `dist/Release/` accanto
+all'app.
