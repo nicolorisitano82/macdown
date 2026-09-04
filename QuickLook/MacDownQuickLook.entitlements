@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Quick Look only loads sandboxed extensions, and inside the sandbox
+	     the document arrives on its own: the pictures kept beside it are
+	     out of reach. Reading the home folder is what lets a preview show
+	     the figures a document points at. Nothing is written, and the page
+	     itself may not reach the network, so what is read stays on screen. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+	<array>
+		<string>/</string>
+	</array>
+</dict>
+</plist>

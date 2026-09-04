@@ -7,6 +7,21 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D2B0000000000000000000B0 /* MDQuickLookProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A1 /* MDQuickLookProvider.m */; };
+		D2B0000000000000000000B1 /* MDPreviewPage.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A3 /* MDPreviewPage.m */; };
+		D2B0000000000000000000B2 /* autolink.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A7 /* autolink.c */; };
+		D2B0000000000000000000B3 /* buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A8 /* buffer.c */; };
+		D2B0000000000000000000B4 /* document.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A9 /* document.c */; };
+		D2B0000000000000000000B5 /* escape.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000AA /* escape.c */; };
+		D2B0000000000000000000B6 /* html.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000AB /* html.c */; };
+		D2B0000000000000000000B7 /* html_blocks.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000AC /* html_blocks.c */; };
+		D2B0000000000000000000B8 /* html_smartypants.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000AD /* html_smartypants.c */; };
+		D2B0000000000000000000B9 /* stack.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000AE /* stack.c */; };
+		D2B0000000000000000000BA /* version.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000AF /* version.c */; };
+		D2B0000000000000000000BB /* GitHub2.css in Resources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A5 /* GitHub2.css */; };
+		D2B0000000000000000000BC /* MacDownQuickLook.appex in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A6 /* MacDownQuickLook.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D2B0000000000000000000C6 /* MDPreviewPageTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000C5 /* MDPreviewPageTests.m */; };
+		D2B0000000000000000000C7 /* MDPreviewPage.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A3 /* MDPreviewPage.m */; };
 		F55A342A5A01CEBCC9F60063 /* MPLinkPreview.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310073 /* MPLinkPreview.m */; };
 		F55A342A5A01CEBCC9F60064 /* MPLinkPreviewViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310075 /* MPLinkPreviewViewController.m */; };
 		F55A342A5A01CEBCC9F60065 /* MPLinkPreviewTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310076 /* MPLinkPreviewTests.m */; };
@@ -154,6 +169,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		D2B0000000000000000000F0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1FA6DE191941CC9E000409FB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D2B0000000000000000000E0;
+			remoteInfo = MacDownQuickLook;
+		};
 		D1A0000000000000000000F2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1FA6DE191941CC9E000409FB /* Project object */;
@@ -199,6 +221,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				D1A0000000000000000000B9 /* Drawio.plugin in Embed Plug-ins */,
+				D2B0000000000000000000BC /* MacDownQuickLook.appex in Embed Plug-ins */,
 			);
 			name = "Embed Plug-ins";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -227,6 +250,24 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D2B0000000000000000000A0 /* MDQuickLookProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDQuickLookProvider.h"; sourceTree = "<group>"; };
+		D2B0000000000000000000A1 /* MDQuickLookProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "MDQuickLookProvider.m"; sourceTree = "<group>"; };
+		D2B0000000000000000000A2 /* MDPreviewPage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDPreviewPage.h"; sourceTree = "<group>"; };
+		D2B0000000000000000000A3 /* MDPreviewPage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "MDPreviewPage.m"; sourceTree = "<group>"; };
+		D2B0000000000000000000C8 /* MacDownQuickLook.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = "MacDownQuickLook.entitlements"; sourceTree = "<group>"; };
+		D2B0000000000000000000A4 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "Info.plist"; sourceTree = "<group>"; };
+		D2B0000000000000000000A5 /* GitHub2.css */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.css; name = GitHub2.css; path = "MacDown/Resources/Styles/GitHub2.css"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000A6 /* MacDownQuickLook.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MacDownQuickLook.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D2B0000000000000000000A7 /* autolink.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = autolink.c; path = "Dependency/hoedown/src/autolink.c"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000A8 /* buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = buffer.c; path = "Dependency/hoedown/src/buffer.c"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000A9 /* document.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = document.c; path = "Dependency/hoedown/src/document.c"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000AA /* escape.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = escape.c; path = "Dependency/hoedown/src/escape.c"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000AB /* html.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = html.c; path = "Dependency/hoedown/src/html.c"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000AC /* html_blocks.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = html_blocks.c; path = "Dependency/hoedown/src/html_blocks.c"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000AD /* html_smartypants.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = html_smartypants.c; path = "Dependency/hoedown/src/html_smartypants.c"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000AE /* stack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = stack.c; path = "Dependency/hoedown/src/stack.c"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000AF /* version.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = version.c; path = "Dependency/hoedown/src/version.c"; sourceTree = SOURCE_ROOT; };
+		D2B0000000000000000000C5 /* MDPreviewPageTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "MDPreviewPageTests.m"; sourceTree = "<group>"; };
 		7DA2311453239F0973310072 /* MPLinkPreview.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPLinkPreview.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310073 /* MPLinkPreview.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPLinkPreview.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310074 /* MPLinkPreviewViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPLinkPreviewViewController.h; sourceTree = "<group>"; };
@@ -734,6 +775,37 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D2B0000000000000000000C0 /* QuickLook */ = {
+			isa = PBXGroup;
+			children = (
+				D2B0000000000000000000A0 /* MDQuickLookProvider.h */,
+				D2B0000000000000000000A1 /* MDQuickLookProvider.m */,
+				D2B0000000000000000000A2 /* MDPreviewPage.h */,
+				D2B0000000000000000000A3 /* MDPreviewPage.m */,
+				D2B0000000000000000000A5 /* GitHub2.css */,
+				D2B0000000000000000000C1 /* hoedown */,
+				D2B0000000000000000000C8 /* MacDownQuickLook.entitlements */,
+				D2B0000000000000000000A4 /* Info.plist */,
+			);
+			path = QuickLook;
+			sourceTree = "<group>";
+		};
+		D2B0000000000000000000C1 /* hoedown */ = {
+			isa = PBXGroup;
+			children = (
+				D2B0000000000000000000A7 /* autolink.c */,
+				D2B0000000000000000000A8 /* buffer.c */,
+				D2B0000000000000000000A9 /* document.c */,
+				D2B0000000000000000000AA /* escape.c */,
+				D2B0000000000000000000AB /* html.c */,
+				D2B0000000000000000000AC /* html_blocks.c */,
+				D2B0000000000000000000AD /* html_smartypants.c */,
+				D2B0000000000000000000AE /* stack.c */,
+				D2B0000000000000000000AF /* version.c */,
+			);
+			name = hoedown;
+			sourceTree = "<group>";
+		};
 		D1A0000000000000000000D1 /* Drawio */ = {
 			isa = PBXGroup;
 			children = (
@@ -1004,6 +1076,7 @@
 			children = (
 				1F8A83551953453100B6BF69 /* Dependency */,
 				D1A0000000000000000000D1 /* Drawio */,
+				D2B0000000000000000000C0 /* QuickLook */,
 				1FCDC9EB1944F89B00B1F966 /* MacDown */,
 				1FCDCA2F1944F96E00B1F966 /* MacDownTests */,
 				905EF1AA196164CA00FC3CE9 /* macdown-cmd */,
@@ -1019,6 +1092,7 @@
 			children = (
 				D1A0000000000000000000C9 /* Drawio.plugin */,
 				1FA6DE211941CC9E000409FB /* MacDown.app */,
+				D2B0000000000000000000A6 /* MacDownQuickLook.appex */,
 				1FA6DE451941CC9E000409FB /* MacDownTests.xctest */,
 				905EF1A7196164CA00FC3CE9 /* macdownext */,
 			);
@@ -1098,6 +1172,7 @@
 		1FCDCA2F1944F96E00B1F966 /* MacDownTests */ = {
 			isa = PBXGroup;
 			children = (
+				D2B0000000000000000000C5 /* MDPreviewPageTests.m */,
 				1FF1420319A8A24800CF8A6A /* MPUtilityTests.m */,
 				7DA2311453239F097331E216 /* MPTableSourceTests.m */,
 				7DA2311453239F0973310001 /* MPMarkerHiderTests.m */,
@@ -1178,6 +1253,22 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		D2B0000000000000000000E0 /* MacDownQuickLook */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D2B0000000000000000000E1 /* Build configuration list for PBXNativeTarget "MacDownQuickLook" */;
+			buildPhases = (
+				D2B0000000000000000000D0 /* Sources */,
+				D2B0000000000000000000D1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacDownQuickLook;
+			productName = MacDownQuickLook;
+			productReference = D2B0000000000000000000A6 /* MacDownQuickLook.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		D1A0000000000000000000E1 /* Drawio */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D1A0000000000000000000E2 /* Build configuration list for PBXNativeTarget "Drawio" */;
@@ -1216,6 +1307,7 @@
 				905EF1B5196164DD00FC3CE9 /* PBXTargetDependency */,
 				1FE2197819534A5D00DB931F /* PBXTargetDependency */,
 				D1A0000000000000000000F1 /* PBXTargetDependency */,
+				D2B0000000000000000000F1 /* PBXTargetDependency */,
 			);
 			name = MacDown;
 			productName = MarkPad;
@@ -1324,6 +1416,7 @@
 			targets = (
 				1FA6DE201941CC9E000409FB /* MacDown */,
 				D1A0000000000000000000E1 /* Drawio */,
+				D2B0000000000000000000E0 /* MacDownQuickLook */,
 				1FA6DE441941CC9E000409FB /* MacDownTests */,
 				905EF1A6196164CA00FC3CE9 /* macdown-cmd */,
 			);
@@ -1331,6 +1424,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		D2B0000000000000000000D1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D2B0000000000000000000BB /* GitHub2.css in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D1A0000000000000000000E6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1524,6 +1625,24 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		D2B0000000000000000000D0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D2B0000000000000000000B0 /* MDQuickLookProvider.m in Sources */,
+				D2B0000000000000000000B1 /* MDPreviewPage.m in Sources */,
+				D2B0000000000000000000B2 /* autolink.c in Sources */,
+				D2B0000000000000000000B3 /* buffer.c in Sources */,
+				D2B0000000000000000000B4 /* document.c in Sources */,
+				D2B0000000000000000000B5 /* escape.c in Sources */,
+				D2B0000000000000000000B6 /* html.c in Sources */,
+				D2B0000000000000000000B7 /* html_blocks.c in Sources */,
+				D2B0000000000000000000B8 /* html_smartypants.c in Sources */,
+				D2B0000000000000000000B9 /* stack.c in Sources */,
+				D2B0000000000000000000BA /* version.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D1A0000000000000000000E5 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1614,6 +1733,8 @@
 			files = (
 				1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */,
 				1F51C9A5194565050015A96F /* MPPreferencesTests.m in Sources */,
+				D2B0000000000000000000C6 /* MDPreviewPageTests.m in Sources */,
+				D2B0000000000000000000C7 /* MDPreviewPage.m in Sources */,
 				1FF1420419A8A24800CF8A6A /* MPUtilityTests.m in Sources */,
 				F55A342A5A01CEBCC9F68E3A /* MPTableSourceTests.m in Sources */,
 				F55A342A5A01CEBCC9F60001 /* MPMarkerHiderTests.m in Sources */,
@@ -1654,6 +1775,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		D2B0000000000000000000F1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D2B0000000000000000000E0 /* MacDownQuickLook */;
+			targetProxy = D2B0000000000000000000F0 /* PBXContainerItemProxy */;
+		};
 		D1A0000000000000000000F1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D1A0000000000000000000E1 /* Drawio */;
@@ -2023,6 +2149,64 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		D2B0000000000000000000E2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_ENTITLEMENTS = "QuickLook/MacDownQuickLook.entitlements";
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Dependency/hoedown/src";
+				INFOPLIST_FILE = "QuickLook/Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.nicolorisitano82.macdown-debug.quicklook";
+				PRODUCT_NAME = MacDownQuickLook;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = appex;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-e",
+					_NSExtensionMain,
+					"-framework",
+					QuickLookUI,
+					"-framework",
+					UniformTypeIdentifiers,
+				);
+			};
+			name = Debug;
+		};
+		D2B0000000000000000000E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_ENTITLEMENTS = "QuickLook/MacDownQuickLook.entitlements";
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Dependency/hoedown/src";
+				INFOPLIST_FILE = "QuickLook/Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.nicolorisitano82.macdown.quicklook";
+				PRODUCT_NAME = MacDownQuickLook;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = appex;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-e",
+					_NSExtensionMain,
+					"-framework",
+					QuickLookUI,
+					"-framework",
+					UniformTypeIdentifiers,
+				);
+			};
+			name = Release;
+		};
 		D1A0000000000000000000E3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2363,6 +2547,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		D2B0000000000000000000E1 /* Build configuration list for PBXNativeTarget "MacDownQuickLook" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D2B0000000000000000000E2 /* Debug */,
+				D2B0000000000000000000E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		D1A0000000000000000000E2 /* Build configuration list for PBXNativeTarget "Drawio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

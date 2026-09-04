@@ -4,8 +4,9 @@ Seguito dello [studio di Bear](da-bear.md), messo in ordine di lavoro. Ogni
 voce dice **dove siamo** e **quanto costa**, e le fasi sono in ordine di
 quanto cambiano la giornata di chi tiene una cartella di verbali.
 
-Stato al 4 settembre 2026: master a `5a59df4`, 209 prove; la piegatura sul
-ramo `piegatura`, 231 prove, con un difetto aperto.
+Stato al 4 settembre 2026: master a `9734c8b`, 209 prove; la piegatura sul
+ramo `piegatura`, 231 prove, con un difetto aperto; le due anteprime sul ramo
+`anteprime`, 236 prove.
 
 ---
 
@@ -29,7 +30,8 @@ ramo `piegatura`, 231 prove, con un difetto aperto.
 | Modalità sola lettura | **da fare** | — | bassa |
 | Fuoco / macchina da scrivere | **da fare** | — | bassa |
 | To-do che si riordinano | **da fare** | — | bassa |
-| Anteprima del documento collegato | **da fare** | — | bassa |
+| Anteprima del documento collegato | **fatta** — cartolina dopo cinque secondi sul link | ramo `anteprime` | — |
+| Anteprima nel Finder (Quick Look) | **fatta** — estensione dentro l'app | ramo `anteprime` | — |
 | Server MCP con perimetro | **da fare** | — | alta |
 | Web clipper | **da fare** | — | media |
 | Tag come organizzazione | **no** — l'equivalente su file è il front-matter | — | — |
@@ -74,9 +76,10 @@ reale di chi scrive documentazione.
 I backlink hanno aperto la strada: la cartella diventa qualcosa che si
 percorre. Queste due la completano.
 
-1. **Anteprima del documento collegato.** Passando su un `[[wikilink]]` o su
-   un link relativo: titolo e prime righe in un popover. Trasforma un elenco
-   di file in una rete leggibile. *Bassa-media.*
+1. ~~**Anteprima del documento collegato.**~~ **Fatta** sul ramo `anteprime`,
+   nell'anteprima invece che nell'editor: puntatore fermo cinque secondi su un
+   link e si apre una cartolina con titolo e prime righe. Insieme è arrivata
+   l'anteprima dei `.md` nel Finder. Diario: [le due anteprime](anteprime.md).
 2. **Elenco della cartella per front-matter.** L'equivalente onesto dei tag
    di Bear: il front-matter Jekyll lo leggiamo già, manca un pannello che
    mostri i documenti vicini per campo — `stato: bozza`, `cliente: X`.

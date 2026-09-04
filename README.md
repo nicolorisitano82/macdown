@@ -207,10 +207,12 @@ The following editor themes and CSS files are extracted from [Mou](http://mouapp
 
 ## Notes on the design
 
-Two journals of the work, in Italian: [the editor's text rendering](docs/wysiwyg-testo.md)
-and [the local writing help](docs/ai-locale.md). They are written for
-whoever picks a piece of this up next — what was measured, and the several
-times the measuring contradicted me.
+Journals of the work, in Italian: [the editor's text rendering](docs/wysiwyg-testo.md),
+[the local writing help](docs/ai-locale.md) and
+[the two previews](docs/anteprime.md) — the card under the pointer and the
+one Finder draws. They are written for whoever picks a piece of this up
+next — what was measured, and the several times the measuring contradicted
+me.
 
 ## Development
 
