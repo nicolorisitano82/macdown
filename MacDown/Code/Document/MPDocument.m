@@ -192,6 +192,16 @@ NS_INLINE NSString *MPRectStringForAutosaveName(NSString *name)
 
 /// The list of flagged words, while it is open.
 @property (strong, nonatomic) NSPopover *prosePopover;
+
+/** Whether this document is being read rather than written.
+ *
+ * Per document and not remembered: a verbale that has been signed is read
+ * today and may be corrected tomorrow, and a lock that outlives the
+ * session is a lock somebody has to remember about.
+ */
+@property (assign, nonatomic) BOOL readOnly;
+@property (strong, nonatomic)
+    NSTitlebarAccessoryViewController *readOnlyBadge;
 /// The list of documents that cite this one, while it is open.
 @property (strong, nonatomic) NSPopover *backlinkPopover;
 /// How many the last tally found, so the menu item knows whether to offer.
@@ -1717,6 +1727,21 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
     // Nowhere to look until the document has a folder to be in.
     if (action == @selector(showBacklinks:))
         return self.fileURL != nil;
+
+    if (action == @selector(toggleReadOnly:))
+    {
+        // The protocol says nothing about being an object one can ask.
+        if ([(id)item isKindOfClass:[NSMenuItem class]])
+        {
+            ((NSMenuItem *)item).state = self.readOnly
+                ? NSControlStateValueOn : NSControlStateValueOff;
+        }
+        return YES;
+    }
+    // What edits is refused while the document is being read. The text view
+    // refuses what is typed; this refuses what is commanded.
+    if (self.readOnly && MPActionEditsTheDocument(action))
+        return NO;
 
     if (action == @selector(stopWritingHelp:))
     {
@@ -4939,6 +4964,97 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
     [popover showRelativeToRect:top ofView:anchor
                  preferredEdge:NSRectEdgeMaxY];
 }
+
+#pragma mark - Reading rather than writing
+
+/** Stops the document being changed, and says so.
+ *
+ * An evidence file that is closed, or a report that has been signed, is not
+ * meant to be edited — and the only defence until now was remembering that.
+ * Nothing is written to the file and nothing is remembered: it is a state
+ * of this window, for as long as it is open.
+ */
+- (IBAction)toggleReadOnly:(id)sender
+{
+    self.readOnly = !self.readOnly;
+    self.editor.editable = !self.readOnly;
+    // A caret blinking in a document that refuses to change is a lie.
+    self.editor.selectable = YES;
+    [self updateReadOnlyBadge];
+    MPNote(@"sola lettura: %@", self.readOnly ? @"accesa" : @"spenta");
+}
+
+/// The badge in the title bar, made once and hidden when it is not wanted.
+- (void)updateReadOnlyBadge
+{
+    NSWindow *window = self.windowForSheet;
+    if (!window)
+        return;
+
+    if (!self.readOnlyBadge)
+    {
+        NSTextField *label = [NSTextField labelWithString:
+            NSLocalizedString(@"Sola lettura", @"Read-only badge")];
+        label.font = [NSFont systemFontOfSize:[NSFont smallSystemFontSize]];
+        label.textColor = [NSColor secondaryLabelColor];
+        label.frame = NSMakeRect(6.0, 4.0, 88.0, 16.0);
+
+        NSImageView *lock = [NSImageView imageViewWithImage:
+            [NSImage imageWithSystemSymbolName:@"lock.fill"
+                      accessibilityDescription:nil]
+                ?: [NSImage imageNamed:NSImageNameLockLockedTemplate]];
+        lock.contentTintColor = [NSColor secondaryLabelColor];
+        lock.frame = NSMakeRect(96.0, 4.0, 14.0, 16.0);
+
+        NSView *holder = [[NSView alloc] initWithFrame:
+            NSMakeRect(0.0, 0.0, 118.0, 24.0)];
+        [holder addSubview:label];
+        [holder addSubview:lock];
+
+        NSTitlebarAccessoryViewController *badge =
+            [[NSTitlebarAccessoryViewController alloc] init];
+        badge.view = holder;
+        badge.layoutAttribute = NSLayoutAttributeRight;
+        self.readOnlyBadge = badge;
+        [window addTitlebarAccessoryViewController:badge];
+    }
+    self.readOnlyBadge.hidden = !self.readOnly;
+}
+
+/** Whether a command would change the document.
+ *
+ * The text view refuses what is typed into it, but not what is done to it:
+ * `insertText:replacementRange:` is the programmatic path and does not ask
+ * whether the view is editable. So the commands that edit are named here
+ * and refused while the document is being read. Named rather than guessed:
+ * a list that has to be added to when a command is added is a list that
+ * says out loud what edits.
+ */
+static BOOL MPActionEditsTheDocument(SEL action)
+{
+    static NSSet *editing = nil;
+    static dispatch_once_t token;
+    dispatch_once(&token, ^{
+        editing = [NSSet setWithArray:@[
+            @"toggleStrong:", @"toggleEmphasis:", @"toggleUnderline:",
+            @"toggleHighlight:", @"toggleStrikethrough:", @"toggleComment:",
+            @"toggleInlineCode:", @"insertCode:", @"insertCodeBlock:",
+            @"toggleLink:", @"toggleImage:", @"insertTable:",
+            @"toggleBlockquote:", @"toggleUnorderedList:",
+            @"toggleOrderedList:", @"indent:", @"unindent:",
+            @"convertToH1:", @"convertToH2:", @"convertToH3:",
+            @"convertToH4:", @"convertToH5:", @"convertToH6:",
+            @"convertToParagraph:", @"insertNewParagraph:",
+            @"showMathEditor:", @"insertTemplate:",
+            @"linkToNewMarkdownFile:",
+            @"improveWriting:", @"correctWriting:", @"makeWritingFormal:",
+            @"makeWritingPlain:", @"makeWritingShorter:",
+            @"makeWritingLonger:",
+        ]];
+    });
+    return [editing containsObject:NSStringFromSelector(action)];
+}
+
 
 /** Which documents in this folder cite this one.
  *
