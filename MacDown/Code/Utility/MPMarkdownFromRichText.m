@@ -44,10 +44,19 @@
  * taken back.
  */
 @property (assign, nonatomic) NSUInteger pendingBreaks;
+/// How deep inside a heading the parser is. A heading is one line, and
+/// pages put whole paragraphs inside them.
+@property (assign, nonatomic) NSUInteger headingDepth;
+/// Where the hashes of the heading being written end, so an empty one can
+/// be taken back out.
+@property (assign, nonatomic) NSUInteger headingStart;
 
 /// True from `<li>` until the item has some text, so the block tags a page
 /// puts inside its items do not push the text off the bullet.
 @property (assign, nonatomic) BOOL atItemStart;
+/// Where the bullet of the item being written ends, so an item with
+/// nothing in it can be taken back out.
+@property (assign, nonatomic) NSUInteger itemStart;
 
 /// Set while inside <pre>, which keeps its own whitespace and its own text.
 @property (strong, nonatomic) NSMutableString *preformatted;
@@ -112,6 +121,15 @@
 {
     if (self.cell || self.preformatted)
         return;
+    if (self.headingDepth)
+    {
+        // A heading is one line. Pages wrap their headline in a `<p>` — a
+        // live blog on repubblica.it does exactly that — and taken at face
+        // value the break would leave the hashes alone on their own line,
+        // which is a heading in no Markdown at all.
+        [self write:@" "];
+        return;
+    }
     self.pendingBreaks = MAX(self.pendingBreaks, count);
 }
 
@@ -136,6 +154,45 @@
     }
     [self.out appendString:prefix];
 }
+
+/** Tidies the line a heading just wrote.
+ *
+ * The spaces put in where breaks were asked for pile up at both ends, and a
+ * heading whose text was all pictures and links to nowhere ends up as bare
+ * hashes — worse than nothing, since the next parser to read the file will
+ * see a paragraph beginning with `##`.
+ */
+- (void)closeHeadingText
+{
+    if (self.headingDepth || self.headingStart > self.out.length)
+        return;
+
+    NSRange written = NSMakeRange(self.headingStart,
+                                  self.out.length - self.headingStart);
+    NSString *text = [self.out substringWithRange:written];
+    NSCharacterSet *blank = [NSCharacterSet whitespaceAndNewlineCharacterSet];
+    NSString *tidy = [text stringByTrimmingCharactersInSet:blank];
+    // Runs of spaces inside it, from the breaks that were turned into one.
+    while ([tidy containsString:@"  "])
+    {
+        tidy = [tidy stringByReplacingOccurrencesOfString:@"  "
+                                               withString:@" "];
+    }
+
+    if (!tidy.length)
+    {
+        // Nothing to head: take the hashes back out as well.
+        NSUInteger from = self.headingStart;
+        while (from > 0 && [self.out characterAtIndex:from - 1] != '\n')
+            from--;
+        [self.out deleteCharactersInRange:
+            NSMakeRange(from, self.out.length - from)];
+        self.pendingBreaks = 0;
+        return;
+    }
+    [self.out replaceCharactersInRange:written withString:tidy];
+}
+
 
 - (void)write:(NSString *)text
 {
@@ -202,6 +259,42 @@
             [sink deleteCharactersInRange:
                 NSMakeRange(mark.contentStart - mark.openingLength,
                             mark.openingLength)];
+        return;
+    }
+
+    /* Spaces inside the marks are moved outside them.
+     *
+     * Pages write `<strong>Meloni </strong>` all the time, and `**Meloni **`
+     * is not bold in any Markdown: the closing marker has to sit against a
+     * word. So the padding is taken out from between the marks and put back
+     * around them, which reads the same and renders.
+     */
+    NSCharacterSet *blank = [NSCharacterSet whitespaceCharacterSet];
+    NSString *tidy = [content stringByTrimmingCharactersInSet:blank];
+    if (tidy.length != content.length)
+    {
+        NSUInteger before = 0;
+        while (before < content.length
+               && [blank characterIsMember:[content characterAtIndex:before]])
+            before++;
+        NSUInteger after = content.length - tidy.length - before;
+
+        NSRange whole = NSMakeRange(mark.contentStart,
+                                    sink.length - mark.contentStart);
+        [sink replaceCharactersInRange:whole withString:tidy];
+        // The space that was inside the marks now sits before them.
+        if (before && mark.contentStart >= mark.openingLength)
+        {
+            [sink insertString:[@"" stringByPaddingToLength:before
+                withString:@" " startingAtIndex:0]
+                       atIndex:mark.contentStart - mark.openingLength];
+        }
+        [self write:mark.closing];
+        if (after)
+        {
+            [self write:[@"" stringByPaddingToLength:after withString:@" "
+                                     startingAtIndex:0]];
+        }
         return;
     }
     [self write:mark.closing];
@@ -308,7 +401,33 @@
     [self write:level.ordered
         ? [NSString stringWithFormat:@"%lu. ", (unsigned long)level.index]
         : @"- "];
+    self.itemStart = self.out.length;
     self.atItemStart = YES;
+}
+
+
+/** An item with nothing in it is taken back out.
+ *
+ * Pages build their share buttons and their menus as lists of empty items
+ * with a picture in the CSS, and a clipping full of bullets pointing at
+ * nothing is a clipping nobody reads twice.
+ */
+- (void)closeItem
+{
+    if (self.cell || self.preformatted || self.itemStart > self.out.length)
+        return;
+
+    NSString *written = [self.out substringFromIndex:self.itemStart];
+    if ([written stringByTrimmingCharactersInSet:
+         [NSCharacterSet whitespaceAndNewlineCharacterSet]].length)
+        return;
+
+    NSUInteger from = self.itemStart;
+    while (from > 0 && [self.out characterAtIndex:from - 1] != '\n')
+        from--;
+    [self.out deleteCharactersInRange:
+        NSMakeRange(from, self.out.length - from)];
+    self.pendingBreaks = 0;
 }
 
 - (void)openCell
@@ -486,6 +605,8 @@
         for (NSUInteger i = 0; i < level; i++)
             [hashes appendString:@"#"];
         [self write:[hashes stringByAppendingString:@" "]];
+        self.headingStart = self.out.length;
+        self.headingDepth++;
         return;
     }
     if ([self isParagraphish:name])
@@ -603,7 +724,14 @@
     if ([name isEqualToString:@"pre"])
         return [self closePreformatted];
 
-    if ([self isHeading:name] || [self isParagraphish:name])
+    if ([self isHeading:name])
+    {
+        if (self.headingDepth)
+            self.headingDepth--;
+        [self closeHeadingText];
+        return [self requestBlockBreak];
+    }
+    if ([self isParagraphish:name])
         return [self requestBlockBreak];
 
     if ([name isEqualToString:@"blockquote"])
@@ -612,6 +740,8 @@
             self.quoteDepth--;
         return [self requestBreaks:2];
     }
+    if ([name isEqualToString:@"li"])
+        return [self closeItem];
     if ([name isEqualToString:@"ul"] || [name isEqualToString:@"ol"])
         return [self closeList];
 

@@ -69,6 +69,82 @@
 
 #pragma mark - What the page is called
 
+#pragma mark - Headings that pages wrap in a paragraph
+
+- (void)testAHeadlineInsideAParagraphStaysOnItsLine
+{
+    // What a live blog on repubblica.it actually serves.
+    NSString *html = @"<html><head><title>Diretta</title></head><body>"
+        @"<h2 class=\"liveblog__post__title\"><p>Gli studenti in corteo: "
+        @"“Per Fratelli d’Italia la democrazia può aspettare”</p>\n</h2>\n"
+        @"<p>Oggi il governo celebra a Bari la sua longevità.</p>"
+        @"</body></html>";
+    NSString *clipped = MPClippedMarkdown(html,
+        [NSURL URLWithString:@"https://esempio.it/diretta"], [NSDate date]);
+
+    XCTAssertTrue([clipped containsString:
+        @"## Gli studenti in corteo: “Per Fratelli d’Italia la democrazia "
+        @"può aspettare”"], @"%@", clipped);
+    // The bug: hashes on a line of their own, which is a heading nowhere.
+    XCTAssertFalse([clipped containsString:@"##\n"], @"%@", clipped);
+    XCTAssertFalse([clipped containsString:@"## \n"], @"%@", clipped);
+}
+
+- (void)testAHeadingWithNothingInItDoesNotBecomeBareHashes
+{
+    NSString *html = @"<html><head><title>Vuoto</title></head><body>"
+        @"<h2><p> </p></h2><p>Il testo.</p></body></html>";
+    NSString *clipped = MPClippedMarkdown(html,
+        [NSURL URLWithString:@"https://esempio.it/x"], [NSDate date]);
+
+    XCTAssertFalse([clipped containsString:@"\n##"], @"%@", clipped);
+    XCTAssertTrue([clipped containsString:@"Il testo."], @"%@", clipped);
+}
+
+- (void)testAHeadingBrokenAcrossParagraphsIsPutBackTogether
+{
+    NSString *html = @"<h3><p>Prima parte</p><p>seconda parte</p></h3>"
+        @"<p>Testo.</p>";
+    NSString *clipped = MPClippedMarkdown(html,
+        [NSURL URLWithString:@"https://esempio.it/x"], [NSDate date]);
+    XCTAssertTrue([clipped containsString:@"### Prima parte seconda parte"],
+                  @"%@", clipped);
+}
+
+
+- (void)testEmphasisIsNotPaddedFromTheInside
+{
+    // `<strong>Meloni </strong>` is everywhere, and `**Meloni **` is bold
+    // in no Markdown at all: the marker has to sit against a word.
+    NSString *html = @"<p>La premier <strong>Giorgia Meloni </strong>"
+                     @"ha parlato.</p>";
+    NSString *clipped = MPClippedMarkdown(html,
+        [NSURL URLWithString:@"https://esempio.it/x"], [NSDate date]);
+
+    XCTAssertTrue([clipped containsString:@"**Giorgia Meloni** ha parlato."],
+                  @"%@", clipped);
+    // The marks sit against the words, not around the padding.
+    XCTAssertFalse([clipped containsString:@"Meloni **"], @"%@", clipped);
+    XCTAssertFalse([clipped containsString:@"** Giorgia"], @"%@", clipped);
+}
+
+
+- (void)testBulletsPointingAtNothingAreNotKept
+{
+    // Share buttons, built as a list of empty items with a picture in the
+    // CSS. Faithfully converted they are five bullets saying nothing.
+    NSString *html = @"<p>Testo dell'articolo.</p>"
+        @"<ul class=\"share\"><li><a href=\"#\"></a></li>"
+        @"<li><a href=\"#\"> </a></li><li>Voce vera</li></ul>";
+    NSString *clipped = MPClippedMarkdown(html,
+        [NSURL URLWithString:@"https://esempio.it/x"], [NSDate date]);
+
+    XCTAssertTrue([clipped containsString:@"- Voce vera"], @"%@", clipped);
+    XCTAssertFalse([clipped containsString:@"- \n"], @"%@", clipped);
+    XCTAssertFalse([clipped containsString:@"-  "], @"%@", clipped);
+}
+
+
 #pragma mark - Addresses
 
 - (void)testRelativeAddressesAreResolvedAgainstThePage
