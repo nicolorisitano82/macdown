@@ -399,6 +399,62 @@
     [[NSFileManager defaultManager] removeItemAtURL:file error:NULL];
 }
 
+/** The triangle has to be visible against the editor's own background.
+ *
+ * Twice it was not: a system label colour is dark when macOS is light, and
+ * the editor's theme can be dark at the same time — a dark triangle on a
+ * dark margin. Measured against the background it is drawn on, which is
+ * the only thing that settles it.
+ */
+- (void)testTheTriangleStandsOutFromTheBackgroundItIsDrawnOn
+{
+    NSString *text = @"# Uno\n\nA.\nB.\n";
+    MPEditorView *view = [[MPEditorView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 400.0, 200.0)];
+    view.string = text;
+    view.textContainerInset = NSMakeSize(24.0, 8.0);
+
+    // A dark theme, which is the case that failed: light text on a dark
+    // ground while the system may be in either mode.
+    NSColor *ground = [NSColor colorWithCalibratedWhite:0.12 alpha:1.0];
+    view.backgroundColor = ground;
+    view.textColor = [NSColor colorWithCalibratedWhite:0.92 alpha:1.0];
+
+    [self.folder updateWithText:text];
+    view.sectionFolder = self.folder;
+
+    NSBitmapImageRep *canvas =
+        [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+    XCTAssertEqual(view.foldMarks.count, 1u);
+
+    // The brightest pixel where the triangle was drawn, against the
+    // background it sits on. Read off the samples: asking a colour for its
+    // brightness means knowing its colour space, and bytes do not care.
+    NSRect rect = [view.foldMarks.firstObject[@"rect"] rectValue];
+    const unsigned char *bytes = canvas.bitmapData;
+    NSInteger scale = canvas.pixelsWide / (NSInteger)NSWidth(view.bounds);
+    unsigned char brightest = 0;
+    for (NSInteger y = NSMinY(rect) * scale; y < NSMaxY(rect) * scale; y++)
+    {
+        for (NSInteger x = NSMinX(rect) * scale; x < NSMaxX(rect) * scale; x++)
+        {
+            if (x < 0 || y < 0
+                    || x >= canvas.pixelsWide || y >= canvas.pixelsHigh)
+                continue;
+            const unsigned char *pixel =
+                bytes + y * canvas.bytesPerRow + x * canvas.samplesPerPixel;
+            brightest = MAX(brightest, pixel[0]);
+        }
+    }
+
+    // The ground is 0.12 white, about 31 of 255. Anything drawn on it has
+    // to be plainly lighter than that, and half-strength ink is about 130.
+    XCTAssertGreaterThan(brightest, 90,
+        @"il triangolo non si distingue dal fondo (max %d su 255)",
+        (int)brightest);
+}
+
 - (void)testTheInnermostSectionIsTheOneAsked
 {
     NSString *text = @"# Uno\n\nA.\n\n## Due\n\nB.\n";

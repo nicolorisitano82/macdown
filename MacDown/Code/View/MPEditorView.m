@@ -284,6 +284,11 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         return;
 
     NSSize inset = self.textContainerInset;
+    // The theme's ink, not the system's label colour. The editor can be
+    // dark while macOS is light, and a system grey is then a dark triangle
+    // on a dark margin — which is what the first two attempts were. The
+    // quotation bars two functions above had this right all along.
+    NSColor *ink = self.textColor ?: [NSColor textColor];
     // Against the text's edge, and never off the left of the view when the
     // inset is narrow.
     CGFloat size = 9.0;
@@ -309,12 +314,10 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         BOOL folded = [self.sectionFolder isFolded:section];
         CGFloat y = inset.height + NSMidY(fragment) - size / 2.0;
 
-        // A shade lighter while the section is open, and plain when it is
-        // folded, where it is the only sign that anything is missing. Not
-        // fainter than this: quaternary at nine points on a dark theme is a
-        // disclosure triangle nobody can find, which was the first try.
-        [(folded ? [NSColor secondaryLabelColor]
-                 : [NSColor tertiaryLabelColor]) setFill];
+        // Half-strength while the section is open — a column of triangles
+        // should not compete with the writing — and nearly full when it is
+        // folded, where it is the only sign that anything is missing.
+        [[ink colorWithAlphaComponent:folded ? 0.75 : 0.45] setFill];
 
         NSBezierPath *triangle = [NSBezierPath bezierPath];
         if (folded)
@@ -391,9 +394,11 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
                                       @"A folded section of one line");
         }
 
+        NSColor *ink = self.textColor ?: [NSColor textColor];
         NSDictionary *style = @{
             NSFontAttributeName: font,
-            NSForegroundColorAttributeName: [NSColor secondaryLabelColor],
+            NSForegroundColorAttributeName:
+                [ink colorWithAlphaComponent:0.7],
         };
         NSSize size = [label sizeWithAttributes:style];
         NSRect pill = NSMakeRect(inset.width + NSMaxX(used) + 8.0,
@@ -401,7 +406,7 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
                                      + (NSHeight(used) - size.height) / 2.0,
                                  size.width + 12.0, size.height + 2.0);
 
-        [[NSColor quaternaryLabelColor] setFill];
+        [[ink colorWithAlphaComponent:0.15] setFill];
         [[NSBezierPath bezierPathWithRoundedRect:pill xRadius:4.0 yRadius:4.0]
             fill];
         [label drawAtPoint:NSMakePoint(NSMinX(pill) + 6.0, NSMinY(pill))
