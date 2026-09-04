@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F55A342A5A01CEBCC9F60049 /* MPBacklinks.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310053 /* MPBacklinks.m */; };
+		F55A342A5A01CEBCC9F60050 /* MPBacklinksViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310055 /* MPBacklinksViewController.m */; };
+		F55A342A5A01CEBCC9F60051 /* MPBacklinkTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310056 /* MPBacklinkTests.m */; };
 		F55A342A5A01CEBCC9F60047 /* MPProseIssuesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310050 /* MPProseIssuesViewController.m */; };
 		F55A342A5A01CEBCC9F60048 /* MPPlugInsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310051 /* MPPlugInsTests.m */; };
 		D1A0000000000000000000BA /* MDDrawioProgress.m in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000000000000000000D3 /* MDDrawioProgress.m */; };
@@ -219,6 +222,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7DA2311453239F0973310052 /* MPBacklinks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPBacklinks.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310053 /* MPBacklinks.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPBacklinks.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310054 /* MPBacklinksViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPBacklinksViewController.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310055 /* MPBacklinksViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPBacklinksViewController.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310056 /* MPBacklinkTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPBacklinkTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310049 /* MPProseIssuesViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPProseIssuesViewController.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310050 /* MPProseIssuesViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPProseIssuesViewController.m; sourceTree = "<group>"; };
 		D1A0000000000000000000CF /* MDDrawioProgress.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MDDrawioProgress.h; sourceTree = "<group>"; };
@@ -800,6 +808,8 @@
 				7DA2311453239F0973310016 /* MPWritingAssistant.m */,
 				7DA2311453239F0973310042 /* MPCodeLanguages.h */,
 				7DA2311453239F0973310043 /* MPCodeLanguages.m */,
+				7DA2311453239F0973310052 /* MPBacklinks.h */,
+				7DA2311453239F0973310053 /* MPBacklinks.m */,
 				7DA2311453239F0973310045 /* MPCodeIndenter.h */,
 				7DA2311453239F0973310046 /* MPCodeIndenter.m */,
 				7DA2311453239F0973310010 /* MPTextGenerator.h */,
@@ -872,6 +882,8 @@
 				1F396E6519B0EA17000D3EFC /* MPEditorView.m */,
 				7DA2311453239F0973310049 /* MPProseIssuesViewController.h */,
 				7DA2311453239F0973310050 /* MPProseIssuesViewController.m */,
+				7DA2311453239F0973310054 /* MPBacklinksViewController.h */,
+				7DA2311453239F0973310055 /* MPBacklinksViewController.m */,
 				7DA2311453239F0973310034 /* MPModelsWindowController.h */,
 				7DA2311453239F0973310035 /* MPModelsWindowController.m */,
 				D0C1A1000000000000000021 /* MPMathEditorController.h */,
@@ -1080,6 +1092,7 @@
 				7DA2311453239F0973310047 /* MPCodeIndenterTests.m */,
 				7DA2311453239F0973310048 /* MDDrawioPlugInTests.m */,
 				7DA2311453239F0973310051 /* MPPlugInsTests.m */,
+				7DA2311453239F0973310056 /* MPBacklinkTests.m */,
 				7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */,
 				7DA2311453239F0973310036 /* MPModelCatalogTests.m */,
 				7DA2311453239F0973310037 /* MPTemplateMenuTests.m */,
@@ -1512,6 +1525,7 @@
 				D0C1C00300000000000000A1 /* MPSemanticStyler.m in Sources */,
 				1F396E6619B0EA17000D3EFC /* MPEditorView.m in Sources */,
 				F55A342A5A01CEBCC9F60047 /* MPProseIssuesViewController.m in Sources */,
+				F55A342A5A01CEBCC9F60050 /* MPBacklinksViewController.m in Sources */,
 				F55A342A5A01CEBCC9F60035 /* MPModelsWindowController.m in Sources */,
 				1F0D9D7A194AC7F7008E1856 /* MPMarkdownPreferencesViewController.m in Sources */,
 				1F0D9D7D194AC7F7008E1856 /* MPPreferencesViewController.m in Sources */,
@@ -1537,6 +1551,7 @@
 				F55A342A5A01CEBCC9F60014 /* MPModelStore.m in Sources */,
 				F55A342A5A01CEBCC9F60016 /* MPWritingAssistant.m in Sources */,
 				F55A342A5A01CEBCC9F60042 /* MPCodeLanguages.m in Sources */,
+				F55A342A5A01CEBCC9F60049 /* MPBacklinks.m in Sources */,
 				F55A342A5A01CEBCC9F60044 /* MPCodeIndenter.m in Sources */,
 				F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */,
 				F55A342A5A01CEBCC9F60003 /* MPRemoteImageFetch.m in Sources */,
@@ -1588,6 +1603,7 @@
 				F55A342A5A01CEBCC9F60045 /* MPCodeIndenterTests.m in Sources */,
 				F55A342A5A01CEBCC9F60046 /* MDDrawioPlugInTests.m in Sources */,
 				F55A342A5A01CEBCC9F60048 /* MPPlugInsTests.m in Sources */,
+				F55A342A5A01CEBCC9F60051 /* MPBacklinkTests.m in Sources */,
 				F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */,
 				F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */,

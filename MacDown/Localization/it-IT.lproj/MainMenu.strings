@@ -355,6 +355,9 @@
 /* Class = "NSMenuItem"; title = "List Prose Issues…"; ObjectID = "prs-02-lst"; */
 "prs-02-lst.title" = "Elenca i problemi di prosa…";
 
+/* Class = "NSMenuItem"; title = "Links to This Document…"; ObjectID = "bkl-01-lst"; */
+"bkl-01-lst.title" = "Chi collega questo documento…";
+
 /* Class = "NSMenuItem"; title = "Show Sidebar"; ObjectID = "sbr-01-itm"; */
 "sbr-01-itm.title" = "Mostra barra laterale";
 

@@ -44,6 +44,8 @@
 #import "MPDocumentTemplate.h"
 #import "MPCodeLanguages.h"
 #import "MPProseIssuesViewController.h"
+#import "MPBacklinksViewController.h"
+#import "MPBacklinks.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -189,6 +191,8 @@ NS_INLINE NSString *MPRectStringForAutosaveName(NSString *name)
 
 /// The list of flagged words, while it is open.
 @property (strong, nonatomic) NSPopover *prosePopover;
+/// The list of documents that cite this one, while it is open.
+@property (strong, nonatomic) NSPopover *backlinkPopover;
 /// How many the last tally found, so the menu item knows whether to offer.
 @property (assign, nonatomic) NSUInteger proseIssueCount;
 
@@ -1708,6 +1712,10 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
         return self.editor.proseHighlightsEnabled
             && self.proseIssueCount > 0;
     }
+
+    // Nowhere to look until the document has a folder to be in.
+    if (action == @selector(showBacklinks:))
+        return self.fileURL != nil;
 
     if (action == @selector(stopWritingHelp:))
     {
@@ -4929,6 +4937,117 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
     top.size.height = 1.0;
     [popover showRelativeToRect:top ofView:anchor
                  preferredEdge:NSRectEdgeMaxY];
+}
+
+/** Which documents in this folder cite this one.
+ *
+ * A link says where it goes and nothing says what points here, so this was
+ * a `grep`. The folder is read again on each asking rather than watched:
+ * the answer is wanted a few times a day, and a watcher on a tree of
+ * documents is a thing to get wrong.
+ */
+- (IBAction)showBacklinks:(id)sender
+{
+    if (self.backlinkPopover.isShown)
+    {
+        [self.backlinkPopover close];
+        return;
+    }
+    if (!self.fileURL)
+        return;
+
+    NSURL *folder = self.fileURL.URLByDeletingLastPathComponent;
+    __weak MPDocument *document = self;
+    [MPBacklinkFinder findLinksTo:self.fileURL inFolder:folder
+                       completion:^(NSArray<MPBacklink *> *found,
+                                    NSUInteger read) {
+        [document showBacklinkList:found counted:read];
+    }];
+}
+
+- (void)showBacklinkList:(NSArray<MPBacklink *> *)found
+                 counted:(NSUInteger)read
+{
+    __weak MPDocument *document = self;
+    MPBacklinksViewController *list = [[MPBacklinksViewController alloc]
+        initWithBacklinks:found counted:read chosen:^(MPBacklink *link) {
+        [document goToBacklink:link];
+    }];
+
+    NSPopover *popover = [[NSPopover alloc] init];
+    popover.contentViewController = list;
+    popover.behavior = NSPopoverBehaviorTransient;
+    popover.contentSize = list.view.frame.size;
+    self.backlinkPopover = popover;
+
+    NSView *anchor = self.editor;
+    NSRect top = anchor.visibleRect;
+    top.size.height = 1.0;
+    [popover showRelativeToRect:top ofView:anchor
+                 preferredEdge:NSRectEdgeMaxY];
+}
+
+/// Opens the document that cites this one, at the line that does the citing.
+- (void)goToBacklink:(MPBacklink *)link
+{
+    [self.backlinkPopover close];
+
+    NSDocumentController *controller =
+        [NSDocumentController sharedDocumentController];
+    [controller openDocumentWithContentsOfURL:link.documentURL display:YES
+        completionHandler:^(NSDocument *opened, BOOL wasOpen, NSError *error) {
+        if (error)
+        {
+            [self presentError:error];
+            return;
+        }
+        if ([opened isKindOfClass:[MPDocument class]])
+            [(MPDocument *)opened goToRange:link.range];
+    }];
+}
+
+/** Shows a place in this document and selects it.
+ *
+ * Called on a document that has just been opened as well as on this one, so
+ * it waits for the text to be there: a document displays before its
+ * contents have been put in the editor, and a range set against an empty
+ * editor is a caret at the start.
+ */
+- (void)goToRange:(NSRange)range
+{
+    if (NSMaxRange(range) > self.editor.string.length)
+    {
+        // The text is not in yet. One turn of the run loop is what the
+        // opening takes; more than a second means it was never coming.
+        static const NSInteger kMPTries = 40;
+        __block NSInteger left = kMPTries;
+        __weak MPDocument *document = self;
+        void (^__block again)(void) = nil;
+        void (^attempt)(void) = ^{
+            MPDocument *strong = document;
+            if (!strong || left-- <= 0)
+            {
+                again = nil;
+                return;
+            }
+            if (NSMaxRange(range) <= strong.editor.string.length)
+            {
+                again = nil;
+                [strong goToRange:range];
+                return;
+            }
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                (int64_t)(0.025 * NSEC_PER_SEC)),
+                dispatch_get_main_queue(), ^{ if (again) again(); });
+        };
+        again = attempt;
+        attempt();
+        return;
+    }
+
+    self.editor.selectedRange = range;
+    [self.editor scrollRangeToVisible:range];
+    [self.windowForSheet makeFirstResponder:self.editor];
 }
 
 - (void)goToProseIssue:(MPProseIssue *)issue

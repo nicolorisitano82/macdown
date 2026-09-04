@@ -449,6 +449,12 @@
                                     <action selector="showProseIssues:" target="-1" id="prs-02-act"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Links to This Document…" keyEquivalent="b" id="bkl-01-lst">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="showBacklinks:" target="-1" id="bkl-01-act"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="prs-01-sep"/>
                             <menuItem title="Enter Full Screen" keyEquivalent="f" id="1gz-YB-DZE">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>

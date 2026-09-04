@@ -128,6 +128,11 @@ Writing**.
   MathJax — so formulas render with no network.
 * **WikiLinks**: `[[Another note]]` links to a neighbouring document, and
   says so when the file is not there.
+* **Which documents point at this one**, ⌃⌥⌘B: the folder is read and every
+  citation listed with its line and the sentence around it, `[[wiki]]` and
+  `[relative](links.md)` alike; clicking one opens that document at that
+  line. A link says where it goes and nothing said what points here, so the
+  question used to be a `grep`.
 * **A sidebar** with the document outline, for moving around a long file.
 * **The code button asks which kind**: backticks inside the line, or a
   fenced block marked with a language chosen from a list — and the list
