@@ -48,6 +48,14 @@ NSString *MPPathToDataFile(NSString *name, NSString *dirPath)
                                           name]];
 }
 
+NSUInteger MPReadingMinutesForWords(NSUInteger words)
+{
+    static const NSUInteger perMinute = 200;
+    if (!words)
+        return 0;
+    return MAX((NSUInteger)1, (words + perMinute / 2) / perMinute);
+}
+
 NSUInteger MPLineNumberForLocation(NSString *text, NSUInteger location)
 {
     if (!text.length)

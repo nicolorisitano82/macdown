@@ -104,13 +104,19 @@ Prima tappa utile e piccola: portare `macdownext` da «apre file» a
 
 ---
 
-## Fase 4 — accessori, se avanza tempo
+## Fase 4 — accessori — **fatta** (ramo `fase4`)
 
-* **Web clipper**: una pagina salvata come Markdown nella cartella, con
-  indirizzo e data in cima. Il convertitore HTML→Markdown c'è già (serve per
-  incollare); il lavoro è ripulire la pagina. *Media.*
-* **Statistiche più complete**: tempo di lettura accanto a parole e
-  caratteri. *Bassa.*
+* **Web clipper** — *fatto*. **File › Salva una pagina web come Markdown…**:
+  il file finisce accanto al documento, con indirizzo e data nel
+  front-matter, e si apre in un tab. Quello che circonda la pagina (script,
+  stili, navigazione, intestazioni, piedi, colonne laterali) resta fuori, e
+  se la pagina dichiara quale parte è l'articolo si prende quella. La
+  conversione è la stessa dell'incollare, quindi arriva quello che
+  arriverebbe copiando la pagina — provato su una pagina vera: 45 KB di
+  HTML, 5,3 KB di Markdown, titolo, elenchi e grassetti al loro posto.
+* **Tempo di lettura** — *fatto*, nel contatore accanto a parole e
+  caratteri. Duecento parole al minuto: una cifra, non una misura, e serve
+  a distinguere una pagina da un capitolo.
 
 ---
 

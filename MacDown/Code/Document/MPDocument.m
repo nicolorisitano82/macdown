@@ -46,6 +46,7 @@
 #import "MPProseIssuesViewController.h"
 #import "MPBacklinksViewController.h"
 #import "MPBacklinks.h"
+#import "MPWebClipper.h"
 #import "MPActionLog.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
@@ -201,6 +202,9 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
     MPWordCountTypeWord,
     MPWordCountTypeCharacter,
     MPWordCountTypeCharacterNoSpaces,
+    /// How long it takes to read, which is the figure that means something
+    /// to whoever has to read it.
+    MPWordCountTypeReadingTime,
 };
 
 @property (weak) IBOutlet NSToolbar *toolbar;
@@ -289,6 +293,7 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (strong) NSMenuItem *wordsMenuItem;
 @property (strong) NSMenuItem *charMenuItem;
 @property (strong) NSMenuItem *charNoSpacesMenuItem;
+@property (strong) NSMenuItem *readingTimeMenuItem;
 @property (nonatomic) BOOL needsToUnregister;
 @property (nonatomic) BOOL alreadyRenderingInWeb;
 @property (nonatomic) BOOL renderToWebPending;
@@ -1064,6 +1069,15 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     self.wordsMenuItem.title =
         [JJPluralForm pluralStringForNumber:value withPluralForms:key
                             usingPluralRule:rule localizeNumeral:NO];
+
+    // Made of the same number, so it is right whenever that one is.
+    NSUInteger minutes = MPReadingMinutesForWords(value);
+    self.readingTimeMenuItem.title = minutes
+        ? [NSString stringWithFormat:NSLocalizedString(
+              @"%lu min di lettura", @"Reading time in the counter"),
+           (unsigned long)minutes]
+        : NSLocalizedString(@"niente da leggere",
+                            @"Reading time of an empty document");
 }
 
 - (void)setTotalCharacters:(NSUInteger)value
@@ -1446,12 +1460,16 @@ static NSString * const kMPSelectionSource =
     self.charNoSpacesMenuItem = [[NSMenuItem alloc] initWithTitle:@""
                                                            action:NULL
                                                     keyEquivalent:@""];
+    self.readingTimeMenuItem = [[NSMenuItem alloc] initWithTitle:@""
+                                                          action:NULL
+                                                   keyEquivalent:@""];
 
     NSPopUpButton *wordCountWidget = self.wordCountWidget;
     [wordCountWidget removeAllItems];
     [wordCountWidget.menu addItem:self.wordsMenuItem];
     [wordCountWidget.menu addItem:self.charMenuItem];
     [wordCountWidget.menu addItem:self.charNoSpacesMenuItem];
+    [wordCountWidget.menu addItem:self.readingTimeMenuItem];
     [wordCountWidget selectItemAtIndex:self.preferences.editorWordCountType];
     wordCountWidget.alphaValue = 0.9;
     wordCountWidget.hidden = !self.preferences.editorShowWordCount;
@@ -4939,6 +4957,150 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
     [popover showRelativeToRect:top ofView:anchor
                  preferredEdge:NSRectEdgeMaxY];
 }
+
+#pragma mark - Clipping a page
+
+/// One alert, since three places here have something to say and go wrong.
+- (void)say:(NSString *)title text:(NSString *)text
+{
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = title ?: @"";
+    alert.informativeText = text ?: @"";
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", @"Confirm")];
+
+    NSWindow *window = self.windowForSheet;
+    if (window)
+        [alert beginSheetModalForWindow:window completionHandler:nil];
+    else
+        [alert runModal];
+}
+
+
+/** Saves a web page as a Markdown file beside this document.
+ *
+ * For collecting evidence: a page that backs a statement in a report is
+ * worth keeping next to the report, and keeping it as Markdown means it is
+ * still readable when the page is gone. The conversion is the one used for
+ * pasting, so what arrives is what copying the page would have given.
+ */
+- (IBAction)clipWebPage:(id)sender
+{
+    if (!self.fileURL)
+    {
+        [self say:NSLocalizedString(@"Salva prima il documento",
+                                    @"Web clipping")
+             text:NSLocalizedString(
+            @"La pagina viene salvata accanto al documento, e un documento "
+            @"non salvato non ha una cartella accanto a cui stare.",
+            @"Web clipping")];
+        return;
+    }
+
+    // An address on the clipboard is almost certainly the one.
+    NSString *pasted = [[NSPasteboard generalPasteboard]
+        URLForType:NSPasteboardTypeString].absoluteString;
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Salva una pagina come Markdown",
+                                          @"Web clipping");
+    alert.informativeText = NSLocalizedString(
+        @"Il file finisce accanto al documento, con l'indirizzo e la data "
+        @"in cima. Quello che la conversione non riconosce lascia il suo "
+        @"testo e nient'altro.", @"Web clipping");
+    [alert addButtonWithTitle:NSLocalizedString(@"Salva", @"Web clipping")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Annulla", @"Cancel")];
+
+    NSTextField *field = [NSTextField textFieldWithString:pasted ?: @""];
+    field.placeholderString = @"https://";
+    field.frame = NSMakeRect(0.0, 0.0, 380.0, 22.0);
+    alert.accessoryView = field;
+
+    NSWindow *window = self.windowForSheet;
+    void (^go)(NSModalResponse) = ^(NSModalResponse response) {
+        if (response != NSAlertFirstButtonReturn)
+            return;
+        NSString *typed = [field.stringValue stringByTrimmingCharactersInSet:
+            [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        NSURL *url = typed.length ? [NSURL URLWithString:typed] : nil;
+        if (!url.scheme.length || !url.host.length)
+        {
+            [self say:NSLocalizedString(@"Indirizzo non valido",
+                                        @"Web clipping")
+                 text:typed];
+            return;
+        }
+        [self clipFromURL:url];
+    };
+
+    if (window)
+    {
+        [alert beginSheetModalForWindow:window completionHandler:go];
+        [window makeFirstResponder:field];
+    }
+    else
+    {
+        go([alert runModal]);
+    }
+}
+
+- (void)clipFromURL:(NSURL *)url
+{
+    MPNote(@"ritaglio %@", url.absoluteString);
+    __weak MPDocument *document = self;
+    [MPWebClipper clipURL:url completion:^(NSString *markdown,
+                                           NSString *title, NSError *error) {
+        MPDocument *strong = document;
+        if (!strong)
+            return;
+        if (!markdown)
+        {
+            MPNote(@"  non ritagliata: %@", error.localizedDescription);
+            [strong say:NSLocalizedString(@"La pagina non si è potuta "
+                                          @"salvare", @"Web clipping")
+                   text:error.localizedDescription];
+            return;
+        }
+
+        NSURL *folder = strong.fileURL.URLByDeletingLastPathComponent;
+        NSURL *file = [folder URLByAppendingPathComponent:
+            MPFileNameForClipping(title, url)];
+        // Never over something that is already there: a clipping is a new
+        // document, and two pages can share a title.
+        NSUInteger attempt = 2;
+        while ([[NSFileManager defaultManager] fileExistsAtPath:file.path])
+        {
+            NSString *stem = MPFileNameForClipping(title, url)
+                .stringByDeletingPathExtension;
+            file = [folder URLByAppendingPathComponent:[NSString
+                stringWithFormat:@"%@-%lu.md", stem,
+                (unsigned long)attempt++]];
+        }
+
+        NSError *writing = nil;
+        if (![markdown writeToURL:file atomically:YES
+                         encoding:NSUTF8StringEncoding error:&writing])
+        {
+            MPNote(@"  non scritta: %@", writing.localizedDescription);
+            [strong say:NSLocalizedString(@"La pagina non si è potuta "
+                                          @"scrivere", @"Web clipping")
+                   text:writing.localizedDescription];
+            return;
+        }
+        MPNote(@"  scritta %@ (%lu caratteri)", file.path,
+               (unsigned long)markdown.length);
+
+        // Opened in a tab, and linked where the caret is: a clipping taken
+        // while writing a report belongs in that report.
+        [[NSDocumentController sharedDocumentController]
+            openDocumentWithContentsOfURL:file display:YES
+                        completionHandler:^(NSDocument *opened, BOOL was,
+                                            NSError *failure) {
+            if (failure)
+                [strong presentError:failure];
+        }];
+    }];
+}
+
 
 /** Which documents in this folder cite this one.
  *
