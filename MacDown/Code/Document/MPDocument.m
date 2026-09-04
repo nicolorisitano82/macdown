@@ -46,6 +46,8 @@
 #import "MPProseIssuesViewController.h"
 #import "MPBacklinksViewController.h"
 #import "MPBacklinks.h"
+#import "MPLinkPreview.h"
+#import "MPLinkPreviewViewController.h"
 #import "MPActionLog.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
@@ -194,6 +196,8 @@ NS_INLINE NSString *MPRectStringForAutosaveName(NSString *name)
 @property (strong, nonatomic) NSPopover *prosePopover;
 /// The list of documents that cite this one, while it is open.
 @property (strong, nonatomic) NSPopover *backlinkPopover;
+/// The card for the link the pointer is resting on, while it is up.
+@property (strong, nonatomic) NSPopover *linkPopover;
 /// How many the last tally found, so the menu item knows whether to offer.
 @property (assign, nonatomic) NSUInteger proseIssueCount;
 
@@ -1129,6 +1133,45 @@ static const NSTimeInterval kMPTypingQuiet = 1.0;
 static NSString * const kMPMathJaxMessage = @"macdownMathJax";
 static NSString * const kMPDiagramsMessage = @"macdownDiagrams";
 static NSString * const kMPSelectionMessage = @"macdownSelection";
+static NSString * const kMPHoverMessage = @"macdownHover";
+
+/// How long a link has to be hovered before it is worth answering.
+static const NSTimeInterval kMPHoverDelay = 5.0;
+
+/** Reports a link the pointer has been resting on, and when it leaves.
+ *
+ * Five seconds, because a card that appears while the pointer is merely
+ * crossing the page is a card in the way. The timer is cancelled by
+ * leaving the link, by scrolling, and by moving to another one — the last
+ * of which matters in a list of links, where the pointer passes over
+ * several on its way to the one it wants.
+ */
+static NSString * const kMPHoverSource =
+    @"(function(){"
+    @"var timer=null,current=null;"
+    @"function forget(){if(timer){clearTimeout(timer);timer=null;}"
+    @"if(current){current=null;"
+    @"window.webkit.messageHandlers.macdownHover.postMessage({away:true});}}"
+    @"document.addEventListener('mouseover',function(e){"
+    @"var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;"
+    @"if(!a){forget();return;}"
+    @"if(a===current)return;"
+    @"forget();current=a;"
+    @"timer=setTimeout(function(){"
+    @"if(current!==a)return;"
+    @"var r=a.getBoundingClientRect();"
+    @"window.webkit.messageHandlers.macdownHover.postMessage({"
+    @"href:a.getAttribute('href')||'',text:(a.textContent||'').slice(0,200),"
+    @"left:r.left,top:r.top,width:r.width,height:r.height});"
+    @"},%.0f);"
+    @"},true);"
+    @"document.addEventListener('mouseout',function(e){"
+    @"var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;"
+    @"if(a&&a===current)forget();"
+    @"},true);"
+    @"window.addEventListener('scroll',forget);"
+    @"window.addEventListener('blur',forget);"
+    @"})();";
 
 /** Reports scrolling and the page's dimensions back to the document.
  *
@@ -1268,6 +1311,7 @@ static NSString * const kMPSelectionSource =
     [content addScriptMessageHandler:self name:kMPMathJaxMessage];
     [content addScriptMessageHandler:self name:kMPDiagramsMessage];
     [content addScriptMessageHandler:self name:kMPSelectionMessage];
+    [content addScriptMessageHandler:self name:kMPHoverMessage];
 
     // At the end of the document, so the page it decorates exists, and in
     // every frame the preview will ever load rather than being re-injected
@@ -1283,6 +1327,13 @@ static NSString * const kMPSelectionSource =
          injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
       forMainFrameOnly:YES];
     [content addUserScript:selection];
+
+    WKUserScript *hover = [[WKUserScript alloc]
+        initWithSource:[NSString stringWithFormat:kMPHoverSource,
+                        kMPHoverDelay * 1000.0]
+         injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
+      forMainFrameOnly:YES];
+    [content addUserScript:hover];
 
     // Everything the preview loads comes through here. See
     // MPPreviewSchemeHandler for why it cannot simply be file://.
@@ -2020,6 +2071,20 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
 - (void)userContentController:(WKUserContentController *)controller
       didReceiveScriptMessage:(WKScriptMessage *)message
 {
+    if ([message.name isEqualToString:kMPHoverMessage])
+    {
+        NSDictionary *body = message.body;
+        if (![body isKindOfClass:[NSDictionary class]])
+            return;
+        if ([body[@"away"] boolValue])
+        {
+            [self hideLinkPreview];
+            return;
+        }
+        [self showLinkPreviewFor:body];
+        return;
+    }
+
     if ([message.name isEqualToString:kMPScrollMessage])
     {
         NSDictionary *body = message.body;
@@ -4939,6 +5004,65 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
     [popover showRelativeToRect:top ofView:anchor
                  preferredEdge:NSRectEdgeMaxY];
 }
+
+#pragma mark - Peeking at a link
+
+/** The card for a link the pointer has been resting on.
+ *
+ * Nothing is fetched: for a document in the same folder the answer is in
+ * the file, and for an address the answer is the address, taken apart so a
+ * long one can be read. A card that made a request would tell somebody's
+ * server that you hovered.
+ */
+- (void)showLinkPreviewFor:(NSDictionary *)body
+{
+    MPLinkPreview *preview = [MPLinkPreview
+        previewForHref:body[@"href"] inDocument:self.fileURL];
+    if (!preview)
+        return;
+
+    [self hideLinkPreview];
+
+    MPLinkPreviewViewController *card = [[MPLinkPreviewViewController alloc]
+        initWithPreview:preview];
+    NSPopover *popover = [[NSPopover alloc] init];
+    popover.contentViewController = card;
+    // Not transient: it is dismissed by the pointer leaving the link, which
+    // the page reports, and a click in the page should follow the link
+    // rather than merely closing a card.
+    popover.behavior = NSPopoverBehaviorApplicationDefined;
+    popover.animates = NO;
+    popover.contentSize = card.view.fittingSize;
+    self.linkPopover = popover;
+
+    /* Where the link is, in the view's own coordinates.
+     *
+     * The page reports a rectangle from getBoundingClientRect, which is
+     * measured from the top left of the viewport and in CSS pixels; the web
+     * view is not flipped and its unit is the point. So the top has to be
+     * turned into a bottom, and both have to be scaled by whatever zoom the
+     * preview is at.
+     */
+    CGFloat zoom = self.preview.pageZoom > 0.0 ? self.preview.pageZoom : 1.0;
+    CGFloat height = [body[@"height"] doubleValue] * zoom;
+    CGFloat top = [body[@"top"] doubleValue] * zoom;
+    NSRect where = NSMakeRect([body[@"left"] doubleValue] * zoom,
+                              NSHeight(self.preview.bounds) - top - height,
+                              MAX(1.0, [body[@"width"] doubleValue] * zoom),
+                              MAX(1.0, height));
+
+    if (!NSIntersectsRect(where, self.preview.bounds))
+        return;   // scrolled away between the report and now
+    [popover showRelativeToRect:where ofView:self.preview
+                  preferredEdge:NSRectEdgeMaxY];
+}
+
+- (void)hideLinkPreview
+{
+    [self.linkPopover close];
+    self.linkPopover = nil;
+}
+
 
 /** Which documents in this folder cite this one.
  *

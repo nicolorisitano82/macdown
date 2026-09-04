@@ -1,0 +1,163 @@
+//
+//  MPLinkPreviewTests.m
+//  MacDown
+//
+
+#import <XCTest/XCTest.h>
+#import "MPLinkPreview.h"
+
+
+@interface MPLinkPreviewTests : XCTestCase
+@property (strong) NSURL *folder;
+@property (strong) NSURL *document;
+@end
+
+
+@implementation MPLinkPreviewTests
+
+- (void)setUp
+{
+    [super setUp];
+    self.folder = [[NSURL fileURLWithPath:NSTemporaryDirectory()]
+        URLByAppendingPathComponent:[NSUUID UUID].UUIDString];
+    [[NSFileManager defaultManager] createDirectoryAtURL:self.folder
+        withIntermediateDirectories:YES attributes:nil error:NULL];
+    self.document = [self.folder
+        URLByAppendingPathComponent:@"verbale.md"];
+    [@"# Verbale\n" writeToURL:self.document atomically:YES
+                      encoding:NSUTF8StringEncoding error:NULL];
+}
+
+- (void)tearDown
+{
+    [[NSFileManager defaultManager] removeItemAtURL:self.folder error:NULL];
+    [super tearDown];
+}
+
+- (MPLinkPreview *)previewOf:(NSString *)href
+{
+    return [MPLinkPreview previewForHref:href inDocument:self.document];
+}
+
+- (NSURL *)write:(NSString *)text to:(NSString *)name
+{
+    NSURL *url = [self.folder URLByAppendingPathComponent:name];
+    [text writeToURL:url atomically:YES encoding:NSUTF8StringEncoding
+               error:NULL];
+    return url;
+}
+
+
+#pragma mark - A document beside this one
+
+- (void)testItReadsTheDocumentTheLinkLeadsTo
+{
+    [self write:@"# Piano di test\n\nPrima riga utile.\nSeconda riga.\n"
+             to:@"piano.md"];
+
+    MPLinkPreview *preview = [self previewOf:@"piano.md"];
+    XCTAssertEqual(preview.kind, MPLinkPreviewKindDocument);
+    // The heading is the title, and it is not repeated in the body.
+    XCTAssertEqualObjects(preview.title, @"Piano di test");
+    XCTAssertTrue([preview.body containsString:@"Prima riga utile."]);
+    XCTAssertFalse([preview.body containsString:@"Piano di test"]);
+    // How much there is to read, which is the other half of "what is over
+    // there".
+    XCTAssertTrue([preview.footnote containsString:@"parole"]);
+}
+
+- (void)testTheNameWhenThereIsNoHeading
+{
+    [self write:@"solo testo, senza titolo\n" to:@"appunti.md"];
+    XCTAssertEqualObjects([self previewOf:@"appunti.md"].title, @"appunti");
+}
+
+- (void)testTheWayALinkCanBeWritten
+{
+    [self write:@"# Rete interna\n\ntesto\n" to:@"rete interna.md"];
+
+    // Escaped, with an anchor, and through a folder that goes nowhere.
+    for (NSString *href in @[@"rete%20interna.md",
+                             @"rete%20interna.md#collaudo",
+                             @"./rete%20interna.md",
+                             @"sotto/../rete%20interna.md"])
+    {
+        XCTAssertEqualObjects([self previewOf:href].title, @"Rete interna",
+                              @"«%@» non ha trovato il file", href);
+    }
+}
+
+- (void)testAWikiLinkHasNoExtensionAndStillFindsTheFile
+{
+    [self write:@"# Appunti\n\ntesto\n" to:@"appunti.md"];
+    // What the editor writes for [[appunti]] is an href with no extension.
+    MPLinkPreview *preview = [self previewOf:@"appunti"];
+    XCTAssertEqual(preview.kind, MPLinkPreviewKindDocument);
+    XCTAssertEqualObjects(preview.title, @"Appunti");
+}
+
+- (void)testAFileThatIsNotThereYetSaysSo
+{
+    MPLinkPreview *preview = [self previewOf:@"ancora-niente.md"];
+    XCTAssertEqual(preview.kind, MPLinkPreviewKindMissingFile);
+    XCTAssertEqualObjects(preview.title, @"ancora-niente");
+    XCTAssertTrue([preview.body containsString:@"non c'è ancora"]);
+}
+
+
+#pragma mark - Somewhere else
+
+- (void)testAnAddressIsTakenApartAndNothingIsFetched
+{
+    MPLinkPreview *preview = [self previewOf:
+        @"https://esempio.it/molto/lungo/percorso?q=1"];
+    XCTAssertEqual(preview.kind, MPLinkPreviewKindAddress);
+    XCTAssertEqualObjects(preview.title, @"esempio.it");
+    XCTAssertEqualObjects(preview.body, @"/molto/lungo/percorso?q=1");
+    XCTAssertTrue([preview.footnote hasPrefix:@"https"]);
+    // There is no file behind it, and nothing was read to find that out.
+    XCTAssertNil(preview.fileURL);
+}
+
+- (void)testAnAnchorInThePageIsNotSomewhereToGo
+{
+    XCTAssertNil([self previewOf:@"#collaudo"]);
+    XCTAssertNil([self previewOf:@""]);
+    XCTAssertNil([self previewOf:nil]);
+}
+
+
+#pragma mark - Pictures
+
+- (void)testAPictureShowsItself
+{
+    NSImage *image = [[NSImage alloc] initWithSize:NSMakeSize(4.0, 4.0)];
+    [image lockFocus];
+    [[NSColor redColor] setFill];
+    NSRectFill(NSMakeRect(0.0, 0.0, 4.0, 4.0));
+    [image unlockFocus];
+    NSData *png = [[[NSBitmapImageRep alloc] initWithCGImage:
+        [image CGImageForProposedRect:NULL context:nil hints:nil]]
+        representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+    NSURL *file = [self.folder URLByAppendingPathComponent:@"rete.png"];
+    [png writeToURL:file atomically:YES];
+
+    MPLinkPreview *preview = [self previewOf:@"rete.png"];
+    XCTAssertEqual(preview.kind, MPLinkPreviewKindImage);
+    XCTAssertEqualObjects(preview.title, @"rete.png");
+    XCTAssertEqualObjects(preview.fileURL.URLByStandardizingPath.path,
+                          file.URLByStandardizingPath.path);
+    // Its size, since that is what a picture's card can say in words.
+    XCTAssertGreaterThan(preview.footnote.length, 0u);
+}
+
+- (void)testFrontMatterIsNotWhatTheDocumentSays
+{
+    [self write:@"---\ntitle: \"Ritaglio\"\nsource: https://esempio.it\n---\n"
+        @"\n# Ritaglio\n\nIl testo vero.\n" to:@"ritaglio.md"];
+    MPLinkPreview *preview = [self previewOf:@"ritaglio.md"];
+    XCTAssertEqualObjects(preview.title, @"Ritaglio");
+    XCTAssertTrue([preview.body containsString:@"Il testo vero."]);
+}
+
+@end
