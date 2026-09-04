@@ -1028,6 +1028,26 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
 - (void)setMarkdown:(NSString *)markdown
 {
     self.editor.string = markdown;
+    // Loading a document is not typing in one, and nothing else here is
+    // told about it: the headings have to be read now or the margin stays
+    // empty until the first keystroke.
+    [self refreshSections];
+}
+
+/** Reads the headings again and hands the folded ranges to the layout.
+ *
+ * Called from the one thing that always happens — the text changing — and
+ * not from the syntax parse. The parse's callback belongs to the
+ * highlighter, and a document with highlighting switched off never gets
+ * one, which is a document whose sections were never found.
+ */
+- (void)refreshSections
+{
+    if (!self.sectionFolder)
+        return;
+    [self.sectionFolder updateWithText:self.editor.string ?: @""];
+    self.markerHider.foldedIndexes = self.sectionFolder.hiddenIndexes;
+    [self.editor setNeedsDisplay:YES];
 }
 
 - (NSString *)html
@@ -1395,18 +1415,13 @@ static NSString * const kMPSelectionSource =
     self.sectionFolder = [[MPSectionFolder alloc] init];
     self.sectionFolder.enabled = self.preferences.editorSectionFolding;
     self.editor.sectionFolder = self.sectionFolder;
-    [self.sectionFolder updateWithText:self.editor.string ?: @""];
+    [self refreshSections];
     self.blockStyler = [[MPBlockStyler alloc] initWithTextView:self.editor];
     self.semanticStyler.themeStyles = self.highlighter.styles;
     __weak MPDocument *weakSelf = self;
     self.highlighter.elementsDidChange = ^(pmh_element **elements) {
         [weakSelf.semanticStyler applyToElements:elements];
         [weakSelf.markerHider updateWithElements:elements];
-        // The headings may have moved, been renamed or gone: the folds are
-        // remembered by heading, so they follow.
-        [weakSelf.sectionFolder updateWithText:weakSelf.editor.string ?: @""];
-        weakSelf.markerHider.foldedIndexes =
-            weakSelf.sectionFolder.hiddenIndexes;
         [weakSelf.blockStyler applyToElements:elements];
     };
     self.renderer = [[MPRenderer alloc] init];
@@ -2601,6 +2616,7 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
         [self updateProseSummary];
 
     [self.sidebar updateOutlineWithMarkdown:self.editor.string ?: @""];
+    [self refreshSections];
 
     if (self.needsHtml)
         [self.renderer parseAndRenderLater];

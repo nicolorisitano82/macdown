@@ -274,8 +274,8 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     NSSize inset = self.textContainerInset;
     // Against the text's edge, and never off the left of the view when the
     // inset is narrow.
-    CGFloat size = 7.0;
-    CGFloat x = MAX(2.0, inset.width - size - 5.0);
+    CGFloat size = 9.0;
+    CGFloat x = MAX(1.0, inset.width - size - 4.0);
 
     for (MPSection *section in self.sectionFolder.sections)
     {
@@ -297,11 +297,12 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         BOOL folded = [self.sectionFolder isFolded:section];
         CGFloat y = inset.height + NSMidY(fragment) - size / 2.0;
 
-        // Faint while the section is open — a column of triangles down the
-        // margin should not compete with the writing — and plain when it is
-        // folded, where it is the only sign that anything is missing.
+        // A shade lighter while the section is open, and plain when it is
+        // folded, where it is the only sign that anything is missing. Not
+        // fainter than this: quaternary at nine points on a dark theme is a
+        // disclosure triangle nobody can find, which was the first try.
         [(folded ? [NSColor secondaryLabelColor]
-                 : [NSColor quaternaryLabelColor]) setFill];
+                 : [NSColor tertiaryLabelColor]) setFill];
 
         NSBezierPath *triangle = [NSBezierPath bezierPath];
         if (folded)

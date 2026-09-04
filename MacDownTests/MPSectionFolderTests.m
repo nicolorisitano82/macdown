@@ -7,6 +7,14 @@
 #import "MPSectionFolder.h"
 #import "MPMarkerHider.h"
 #import "MPEditorView.h"
+#import "MPDocument.h"
+
+
+/// Private, and what the editor is handed when a document is loaded.
+@interface MPDocument (Testing)
+@property (strong) MPSectionFolder *sectionFolder;
+@property (unsafe_unretained) NSTextView *editor;
+@end
 
 
 /// Private, and the record of where a click would land.
@@ -302,6 +310,44 @@
     self.folder.enabled = NO;
     [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
     XCTAssertEqual(view.foldMarks.count, 0u);
+}
+
+/** A real document finds its headings, which is where this went wrong.
+ *
+ * Everything above tests the folder; nothing tested that a document ever
+ * hands it any text. It did not — the update hung off the syntax parse's
+ * callback, which belongs to the highlighter, so with highlighting off the
+ * margin stayed empty for ever. The text changing is the one thing that
+ * always happens, and that is what feeds it now.
+ */
+- (void)testADocumentFindsItsOwnHeadings
+{
+    NSError *error = nil;
+    MPDocument *document = [[NSDocumentController sharedDocumentController]
+        openUntitledDocumentAndDisplay:YES error:&error];
+    XCTAssertNotNil(document, @"%@", error);
+
+    document.markdown = @"# Verbale\n\nPremessa.\n\n## Collaudo\n\nEsito.\n";
+
+    MPSectionFolder *folder = document.sectionFolder;
+    XCTAssertNotNil(folder, @"il documento non ha una piegatura");
+    XCTAssertEqual(folder.sections.count, 2u,
+                   @"il documento non ha letto i suoi titoli");
+    XCTAssertTrue(folder.enabled, @"la preferenza è attiva di suo");
+
+    // And the editor draws them: the closest thing to looking at it.
+    MPEditorView *editor = (MPEditorView *)document.editor;
+    XCTAssertNotNil(editor);
+    XCTAssertEqualObjects(editor.sectionFolder, folder,
+                          @"l'editor non conosce la piegatura del documento");
+    NSBitmapImageRep *canvas =
+        [editor bitmapImageRepForCachingDisplayInRect:editor.bounds];
+    [editor cacheDisplayInRect:editor.bounds toBitmapImageRep:canvas];
+    XCTAssertEqual(editor.foldMarks.count, 2u,
+                   @"niente da cliccare nel margine (inset %g)",
+                   editor.textContainerInset.width);
+
+    [document close];
 }
 
 - (void)testTheInnermostSectionIsTheOneAsked
