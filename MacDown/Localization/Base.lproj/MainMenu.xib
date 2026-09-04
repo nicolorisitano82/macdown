@@ -156,6 +156,13 @@
                                     <action selector="runPageLayout:" target="-1" id="Din-rz-gC5"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Save a Web Page as Markdown…" id="clp-01-web">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="clipWebPage:" target="-1" id="clp-01-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="clp-01-sep"/>
                             <menuItem title="Print…" keyEquivalent="p" id="aTl-1u-JFS">
                                 <connections>
                                     <action selector="printDocument:" target="-1" id="qaZ-4w-aoO"/>

@@ -366,3 +366,6 @@
 
 /* Class = "NSMenuItem"; title = "Clear the Recording"; ObjectID = "rec-03-clr"; */
 "rec-03-clr.title" = "Svuota la registrazione";
+
+/* Class = "NSMenuItem"; title = "Save a Web Page as Markdown…"; ObjectID = "clp-01-web"; */
+"clp-01-web.title" = "Salva una pagina web come Markdown…";

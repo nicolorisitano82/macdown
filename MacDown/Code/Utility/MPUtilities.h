@@ -41,6 +41,15 @@ NSArray<NSURL *> *MPPlugInBundleURLsInFolders(NSArray<NSURL *> *folders);
  */
 NSUInteger MPLineNumberForLocation(NSString *text, NSUInteger location);
 
+/** How long a text of `words` words takes to read, in minutes.
+ *
+ * Two hundred words a minute, which is a number and not a measurement: it
+ * is the figure prose is usually reckoned at, and what it is for is telling
+ * a page from a chapter. Never zero — a document that is there takes some
+ * reading.
+ */
+NSUInteger MPReadingMinutesForWords(NSUInteger words);
+
 NSArray *MPListEntriesForDirectory(
     NSString *dirName, NSString *(^processor)(NSString *absolutePath)
 );

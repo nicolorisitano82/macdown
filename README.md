@@ -104,6 +104,21 @@ character.
 Every one of these can be switched off in **Preferences › Rendering ›
 Writing**.
 
+### Collecting
+
+* **Save a web page as Markdown**, beside the document: the address and the
+  date go at the top as front matter, so a clipping is never a quotation
+  without a source. What surrounds the page — scripts, navigation, headers,
+  footers, asides — is left behind, and if the page says which part is the
+  article, that part is taken. Addresses are made absolute against the page
+  they came from, so its pictures and links still point somewhere once the
+  text is a file in your folder; the clipping is linked where the caret was,
+  and opened in a tab. The conversion is the one used for pasting, so what
+  arrives is what copying the page would have given.
+* **How long it takes to read**, in the counter beside the words and the
+  characters. Two hundred words a minute, which is a figure and not a
+  measurement: what it is for is telling a page from a chapter.
+
 ### When something does not work
 
 * **Help › Record What I Do.** Off unless you switch it on, and then every

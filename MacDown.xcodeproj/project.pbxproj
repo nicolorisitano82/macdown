@@ -33,6 +33,8 @@
 		F55A342A5A01CEBCC9F60063 /* MPLinkPreview.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310073 /* MPLinkPreview.m */; };
 		F55A342A5A01CEBCC9F60064 /* MPLinkPreviewViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310075 /* MPLinkPreviewViewController.m */; };
 		F55A342A5A01CEBCC9F60065 /* MPLinkPreviewTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310076 /* MPLinkPreviewTests.m */; };
+		F55A342A5A01CEBCC9F60060 /* MPWebClipper.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310069 /* MPWebClipper.m */; };
+		F55A342A5A01CEBCC9F60061 /* MPWebClipperTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310070 /* MPWebClipperTests.m */; };
 		F55A342A5A01CEBCC9F60054 /* MPActionLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310061 /* MPActionLog.m */; };
 		F55A342A5A01CEBCC9F60055 /* MPActionLogTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310062 /* MPActionLogTests.m */; };
 		F55A342A5A01CEBCC9F60049 /* MPBacklinks.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310053 /* MPBacklinks.m */; };
@@ -294,6 +296,9 @@
 		7DA2311453239F0973310074 /* MPLinkPreviewViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPLinkPreviewViewController.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310075 /* MPLinkPreviewViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPLinkPreviewViewController.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310076 /* MPLinkPreviewTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPLinkPreviewTests.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310068 /* MPWebClipper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPWebClipper.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310069 /* MPWebClipper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPWebClipper.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310070 /* MPWebClipperTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPWebClipperTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310060 /* MPActionLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPActionLog.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310061 /* MPActionLog.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPActionLog.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310062 /* MPActionLogTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPActionLogTests.m; sourceTree = "<group>"; };
@@ -924,6 +929,8 @@
 				7DA2311453239F0973310073 /* MPLinkPreview.m */,
 				7DA2311453239F0973310060 /* MPActionLog.h */,
 				7DA2311453239F0973310061 /* MPActionLog.m */,
+				7DA2311453239F0973310068 /* MPWebClipper.h */,
+				7DA2311453239F0973310069 /* MPWebClipper.m */,
 				7DA2311453239F0973310045 /* MPCodeIndenter.h */,
 				7DA2311453239F0973310046 /* MPCodeIndenter.m */,
 				7DA2311453239F0973310010 /* MPTextGenerator.h */,
@@ -1223,6 +1230,7 @@
 				7DA2311453239F0973310056 /* MPBacklinkTests.m */,
 				7DA2311453239F0973310062 /* MPActionLogTests.m */,
 				7DA2311453239F0973310076 /* MPLinkPreviewTests.m */,
+				7DA2311453239F0973310070 /* MPWebClipperTests.m */,
 				7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */,
 				7DA2311453239F0973310036 /* MPModelCatalogTests.m */,
 				7DA2311453239F0973310037 /* MPTemplateMenuTests.m */,
@@ -1734,6 +1742,7 @@
 				D2B0000000000000000000EC /* MPQuickLookExtension.m in Sources */,
 				D2B0000000000000000000ED /* MPQuickLookPreferencesViewController.m in Sources */,
 				F55A342A5A01CEBCC9F60054 /* MPActionLog.m in Sources */,
+				F55A342A5A01CEBCC9F60060 /* MPWebClipper.m in Sources */,
 				F55A342A5A01CEBCC9F60044 /* MPCodeIndenter.m in Sources */,
 				F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */,
 				F55A342A5A01CEBCC9F60003 /* MPRemoteImageFetch.m in Sources */,
@@ -1793,6 +1802,7 @@
 				F55A342A5A01CEBCC9F60051 /* MPBacklinkTests.m in Sources */,
 				F55A342A5A01CEBCC9F60055 /* MPActionLogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60065 /* MPLinkPreviewTests.m in Sources */,
+				F55A342A5A01CEBCC9F60061 /* MPWebClipperTests.m in Sources */,
 				F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */,
 				F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */,
