@@ -1741,6 +1741,20 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
             self.editor.selectedRange.location, &where) != nil;
     }
 
+    if (action == @selector(toggleFocusMode:)
+            || action == @selector(toggleTypewriterScrolling:))
+    {
+        if ([(id)item isKindOfClass:[NSMenuItem class]])
+        {
+            BOOL on = (action == @selector(toggleFocusMode:))
+                ? self.preferences.editorFocusMode
+                : self.preferences.editorTypewriter;
+            ((NSMenuItem *)item).state = on ? NSControlStateValueOn
+                                            : NSControlStateValueOff;
+        }
+        return YES;
+    }
+
     if (action == @selector(toggleReadOnly:))
     {
         // The protocol says nothing about being an object one can ask.
@@ -1830,6 +1844,7 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
 - (void)textViewDidChangeSelection:(NSNotification *)notification
 {
     [self.markerHider selectionDidChange];
+    [self.editor updateWritingAids];
     if (notification.object != self.editor)
         return;
     [self markPreviewAtSelection];
@@ -2610,6 +2625,7 @@ NS_INLINE BOOL MPWikiTargetExists(NSURL *directory, NSString *target)
         [self updateProseSummary];
 
     [self.sidebar updateOutlineWithMarkdown:self.editor.string ?: @""];
+    [self.editor updateWritingAids];
 
     if (self.needsHtml)
         [self.renderer parseAndRenderLater];
@@ -4978,6 +4994,30 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
                  preferredEdge:NSRectEdgeMaxY];
 }
 
+#pragma mark - Writing aids
+
+/** The two writing modes, from the menu as well as the preferences.
+ *
+ * One switch, not two: a mode that is on in the menu and off in the
+ * preferences is a mode nobody can find again.
+ */
+- (IBAction)toggleFocusMode:(id)sender
+{
+    BOOL on = !self.preferences.editorFocusMode;
+    self.preferences.editorFocusMode = on;
+    self.editor.focusModeEnabled = on;
+    MPNote(@"modo fuoco: %@", on ? @"acceso" : @"spento");
+}
+
+- (IBAction)toggleTypewriterScrolling:(id)sender
+{
+    BOOL on = !self.preferences.editorTypewriter;
+    self.preferences.editorTypewriter = on;
+    self.editor.typewriterEnabled = on;
+    MPNote(@"macchina da scrivere: %@", on ? @"accesa" : @"spenta");
+}
+
+
 #pragma mark - Task lists
 
 /** Moves the finished items of the list at the caret to the end of it.
@@ -5377,6 +5417,8 @@ static BOOL MPActionEditsTheDocument(SEL action)
 
         self.markerHider.hidesRules = rules;
         self.markerHider.enabled = self.preferences.editorHideMarkers;
+        self.editor.focusModeEnabled = self.preferences.editorFocusMode;
+        self.editor.typewriterEnabled = self.preferences.editorTypewriter;
 
         self.blockStyler.baseFont = self.preferences.editorBaseFont;
         self.blockStyler.enabled = self.preferences.editorBlockLayout;

@@ -24,6 +24,23 @@
 /// Underlines words the prose checker flags. Off by default.
 @property BOOL proseHighlightsEnabled;
 
+/** Dims everything except the paragraph being written.
+ *
+ * Through the layout manager's temporary attributes, so the document is
+ * untouched — what is dimmed is the drawing, not the text.
+ */
+@property (assign, nonatomic) BOOL focusModeEnabled;
+
+/** Keeps the line being written at the same height on the screen.
+ *
+ * Without it the caret walks to the bottom of the window and everything
+ * you have just written is above your eyeline.
+ */
+@property (assign, nonatomic) BOOL typewriterEnabled;
+
+/// Called when the caret moves or the text changes; cheap when both are off.
+- (void)updateWritingAids;
+
 /** Consulted when a deletion lands on a hidden marker.
  *
  * Weak: the hider is owned by the document, and holds this view.

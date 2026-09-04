@@ -455,6 +455,18 @@
                                     <action selector="showBacklinks:" target="-1" id="bkl-01-act"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Focus Mode" keyEquivalent="f" id="wrt-01-fcs">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleFocusMode:" target="-1" id="wrt-01-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Typewriter Scrolling" keyEquivalent="t" id="wrt-02-typ">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleTypewriterScrolling:" target="-1" id="wrt-02-act"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="rdo-00-sep"/>
                             <menuItem title="Read Only" keyEquivalent="l" id="rdo-01-tgl">
                                 <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>

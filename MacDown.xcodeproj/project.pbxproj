@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F55A342A5A01CEBCC9F60059 /* MPWritingAidsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310067 /* MPWritingAidsTests.m */; };
 		F55A342A5A01CEBCC9F60057 /* MPTaskList.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310065 /* MPTaskList.m */; };
 		F55A342A5A01CEBCC9F60058 /* MPTaskListTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310066 /* MPTaskListTests.m */; };
 		F55A342A5A01CEBCC9F60056 /* MPReadOnlyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310063 /* MPReadOnlyTests.m */; };
@@ -227,6 +228,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7DA2311453239F0973310067 /* MPWritingAidsTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPWritingAidsTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310064 /* MPTaskList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPTaskList.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310065 /* MPTaskList.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTaskList.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310066 /* MPTaskListTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPTaskListTests.m; sourceTree = "<group>"; };
@@ -1112,6 +1114,7 @@
 				7DA2311453239F0973310062 /* MPActionLogTests.m */,
 				7DA2311453239F0973310063 /* MPReadOnlyTests.m */,
 				7DA2311453239F0973310066 /* MPTaskListTests.m */,
+				7DA2311453239F0973310067 /* MPWritingAidsTests.m */,
 				7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */,
 				7DA2311453239F0973310036 /* MPModelCatalogTests.m */,
 				7DA2311453239F0973310037 /* MPTemplateMenuTests.m */,
@@ -1628,6 +1631,7 @@
 				F55A342A5A01CEBCC9F60055 /* MPActionLogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60056 /* MPReadOnlyTests.m in Sources */,
 				F55A342A5A01CEBCC9F60058 /* MPTaskListTests.m in Sources */,
+				F55A342A5A01CEBCC9F60059 /* MPWritingAidsTests.m in Sources */,
 				F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */,
 				F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */,
