@@ -176,14 +176,44 @@ static NSString *MPKeyOfSection(MPSection *section)
 
 - (MPSection *)sectionCoveringIndex:(NSUInteger)index
 {
-    // The innermost: a subsection's body is inside its parent's, and the
-    // one being asked about is the smaller of the two.
+    /* Three questions, in this order, because the boundaries touch.
+     *
+     * A section's body ends exactly where the next heading begins, so the
+     * first character of "## Seconda sezione" was claimed both by that
+     * heading and by the end of the section above it — and at equal level
+     * the earlier one won, which folded the section above the one that was
+     * pressed. Standing on a heading has to mean that heading, whatever
+     * else ends there.
+     */
     MPSection *best = nil;
     for (MPSection *section in self.sections)
     {
-        NSRange whole = NSUnionRange(section.headingRange, section.bodyRange);
-        if (!NSLocationInRange(index, whole)
-                && index != NSMaxRange(whole))
+        if (!NSLocationInRange(index, section.headingRange))
+            continue;
+        if (!best || section.level > best.level)
+            best = section;
+    }
+    if (best)
+        return best;
+
+    for (MPSection *section in self.sections)
+    {
+        if (!NSLocationInRange(index, section.bodyRange))
+            continue;
+        // The innermost: a subsection's body is inside its parent's, and
+        // the one being asked about is the smaller of the two.
+        if (!best || section.level > best.level)
+            best = section;
+    }
+    if (best)
+        return best;
+
+    // The very end of the document, where nothing contains the index and
+    // the caret still has to belong somewhere.
+    for (MPSection *section in self.sections)
+    {
+        if (index != NSMaxRange(section.bodyRange)
+                && index != NSMaxRange(section.headingRange))
             continue;
         if (!best || section.level > best.level)
             best = section;

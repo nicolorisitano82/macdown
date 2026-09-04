@@ -625,6 +625,99 @@
     XCTAssertLessThanOrEqual(NSMaxX(rect) - 5.0, 15.0);
 }
 
+/** Folding a section takes its subsections with it.
+ *
+ * Reported as: press on the parent and the child's heading stays on the
+ * page. The body of a section runs to the next heading that is not under
+ * it, so a subsection's heading is inside it and should go dark with the
+ * rest.
+ */
+- (void)testFoldingASectionHidesTheSubsectionsHeadingToo
+{
+    NSString *text =
+        @"# Uno\n\nA.\n\n## Due\n\nB.\n\n### Tre\n\nC.\n\n## Quattro\n";
+    MPEditorView *view = [[MPEditorView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 500.0, 400.0)];
+    view.string = text;
+    MPMarkerHider *hider = [[MPMarkerHider alloc] initWithTextView:view];
+
+    [self.folder updateWithText:text];
+    view.sectionFolder = self.folder;
+
+    MPSection *due = [self sectionNamed:@"Due"];
+    MPSection *tre = [self sectionNamed:@"Tre"];
+    // The child's heading is inside the parent's body: that is the model.
+    XCTAssertTrue(NSLocationInRange(tre.headingRange.location,
+                                    due.bodyRange),
+                  @"il titolo del figlio non è nel corpo del genitore");
+
+    [view.layoutManager ensureLayoutForTextContainer:view.textContainer];
+    CGFloat before = NSHeight([view.layoutManager
+        usedRectForTextContainer:view.textContainer]);
+
+    XCTAssertTrue([self.folder fold:due]);
+    XCTAssertTrue([self.folder isHiddenIndex:tre.headingRange.location],
+                  @"il titolo del figlio non è fra i caratteri nascosti");
+
+    hider.foldedIndexes = self.folder.hiddenIndexes;
+    [view.layoutManager invalidateGlyphsForCharacterRange:
+        NSMakeRange(0, text.length) changeInLength:0
+                                     actualCharacterRange:NULL];
+    [view.layoutManager ensureLayoutForTextContainer:view.textContainer];
+
+    // And it is off the page: the glyphs of that heading take no room.
+    NSRange glyphs = [view.layoutManager
+        glyphRangeForCharacterRange:tre.headingRange
+               actualCharacterRange:NULL];
+    // One glyph, not the range: a range that ends a line measures as wide
+    // as the container whether or not anything is drawn in it.
+    NSRect drawn = [view.layoutManager boundingRectForGlyphRange:
+        NSMakeRange(glyphs.location, 1) inTextContainer:view.textContainer];
+    XCTAssertLessThan(NSWidth(drawn), 1.0,
+        @"il titolo del figlio occupa ancora %g punti di larghezza",
+        NSWidth(drawn));
+
+    CGFloat after = NSHeight([view.layoutManager
+        usedRectForTextContainer:view.textContainer]);
+    XCTAssertLessThan(after, before * 0.75,
+        @"l'altezza è passata da %g a %g", before, after);
+}
+
+/** Standing on a heading means that heading, whatever else ends there.
+ *
+ * A section's body ends exactly where the next heading begins, so the first
+ * character of a heading was claimed twice: by that heading, and by the end
+ * of the section above it. At equal level the earlier one won — press the
+ * chevron beside one section and the one above it folded.
+ */
+- (void)testTheFirstCharacterOfAHeadingBelongsToThatHeading
+{
+    NSString *text =
+        @"# Uno\n\nA.\n\n## Due\n\nB.\n\n## Tre\n\nC.\n";
+    [self.folder updateWithText:text];
+
+    for (NSString *name in @[@"Due", @"Tre"])
+    {
+        MPSection *section = [self sectionNamed:name];
+        NSUInteger first = section.headingRange.location;
+        XCTAssertEqualObjects(
+            [self.folder sectionCoveringIndex:first].title, name,
+            @"il primo carattere di «%@» è stato attribuito a un'altra "
+            @"sezione", name);
+        // And the last character of its heading, which is where a caret at
+        // the end of the line sits.
+        XCTAssertEqualObjects([self.folder sectionCoveringIndex:
+            NSMaxRange(section.headingRange) - 1].title, name);
+    }
+
+    // A subsection still wins over its parent inside its own body.
+    [self.folder updateWithText:
+        @"# Uno\n\nA.\n\n## Due\n\nB.\n\n### Tre\n\nC.\n"];
+    MPSection *tre = [self sectionNamed:@"Tre"];
+    XCTAssertEqualObjects([self.folder
+        sectionCoveringIndex:tre.bodyRange.location].title, @"Tre");
+}
+
 - (void)testTheInnermostSectionIsTheOneAsked
 {
     NSString *text = @"# Uno\n\nA.\n\n## Due\n\nB.\n";
