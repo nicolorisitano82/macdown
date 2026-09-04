@@ -7,10 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D2B0000000000000000000F8 /* MPUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000F4 /* MPUpdate.m */; };
+		D2B0000000000000000000F9 /* MPUpdateController.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000F6 /* MPUpdateController.m */; };
+		D2B0000000000000000000FC /* MPUpdatePreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000FB /* MPUpdatePreferencesViewController.m */; };
+		D2B0000000000000000000FE /* MPUpdateTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000FD /* MPUpdateTests.m */; };
 		D2B0000000000000000000EC /* MPQuickLookExtension.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000E9 /* MPQuickLookExtension.m */; };
 		D2B0000000000000000000ED /* MPQuickLookPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000EB /* MPQuickLookPreferencesViewController.m */; };
 		D2B0000000000000000000EF /* MPQuickLookExtensionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000EE /* MPQuickLookExtensionTests.m */; };
-		D2B0000000000000000000F2 /* MPQuickLookExtension.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000E9 /* MPQuickLookExtension.m */; };
 		D2B0000000000000000000E6 /* MPHoverWatchTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000E5 /* MPHoverWatchTests.m */; };
 		D2B0000000000000000000B0 /* MDQuickLookProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A1 /* MDQuickLookProvider.m */; };
 		D2B0000000000000000000B1 /* MDPreviewPage.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A3 /* MDPreviewPage.m */; };
@@ -255,6 +258,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D2B0000000000000000000F3 /* MPUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPUpdate.h; sourceTree = "<group>"; };
+		D2B0000000000000000000F4 /* MPUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUpdate.m; sourceTree = "<group>"; };
+		D2B0000000000000000000F5 /* MPUpdateController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MPUpdateController.h; path = Code/Application/MPUpdateController.h; sourceTree = "<group>"; };
+		D2B0000000000000000000F6 /* MPUpdateController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MPUpdateController.m; path = Code/Application/MPUpdateController.m; sourceTree = "<group>"; };
+		D2B0000000000000000000FA /* MPUpdatePreferencesViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPUpdatePreferencesViewController.h; sourceTree = "<group>"; };
+		D2B0000000000000000000FB /* MPUpdatePreferencesViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUpdatePreferencesViewController.m; sourceTree = "<group>"; };
+		D2B0000000000000000000FD /* MPUpdateTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPUpdateTests.m; sourceTree = "<group>"; };
 		D2B0000000000000000000E8 /* MPQuickLookExtension.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPQuickLookExtension.h; sourceTree = "<group>"; };
 		D2B0000000000000000000E9 /* MPQuickLookExtension.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPQuickLookExtension.m; sourceTree = "<group>"; };
 		D2B0000000000000000000EA /* MPQuickLookPreferencesViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPQuickLookPreferencesViewController.h; sourceTree = "<group>"; };
@@ -904,6 +914,8 @@
 				7DA2311453239F0973310016 /* MPWritingAssistant.m */,
 				7DA2311453239F0973310042 /* MPCodeLanguages.h */,
 				7DA2311453239F0973310043 /* MPCodeLanguages.m */,
+				D2B0000000000000000000F3 /* MPUpdate.h */,
+				D2B0000000000000000000F4 /* MPUpdate.m */,
 				D2B0000000000000000000E8 /* MPQuickLookExtension.h */,
 				D2B0000000000000000000E9 /* MPQuickLookExtension.m */,
 				7DA2311453239F0973310052 /* MPBacklinks.h */,
@@ -944,6 +956,8 @@
 				1F0D9D6C194AC7F7008E1856 /* MPHtmlPreferencesViewController.h */,
 				1F0D9D6D194AC7F7008E1856 /* MPHtmlPreferencesViewController.m */,
 				1F0D9D87194AC83C008E1856 /* MPHtmlPreferencesViewController.xib */,
+				D2B0000000000000000000FA /* MPUpdatePreferencesViewController.h */,
+				D2B0000000000000000000FB /* MPUpdatePreferencesViewController.m */,
 				D2B0000000000000000000EA /* MPQuickLookPreferencesViewController.h */,
 				D2B0000000000000000000EB /* MPQuickLookPreferencesViewController.m */,
 				852D52391E260A6400BA7162 /* MPTerminalPreferencesViewController.h */,
@@ -1079,6 +1093,8 @@
 				1F5A37121C869C81006E63E7 /* MPPlugInController.h */,
 				D0C1B00200000000000000A1 /* MPPlugInsWindowController.h */,
 				D0C1B00100000000000000A1 /* MPPlugInsWindowController.m */,
+				D2B0000000000000000000F5 /* MPUpdateController.h */,
+				D2B0000000000000000000F6 /* MPUpdateController.m */,
 				1F5A37131C869C81006E63E7 /* MPPlugInController.m */,
 				85E24E5A1E5019C00056E696 /* MPToolbarController.h */,
 				85E24E5B1E5019C00056E696 /* MPToolbarController.m */,
@@ -1187,6 +1203,7 @@
 		1FCDCA2F1944F96E00B1F966 /* MacDownTests */ = {
 			isa = PBXGroup;
 			children = (
+				D2B0000000000000000000FD /* MPUpdateTests.m */,
 				D2B0000000000000000000EE /* MPQuickLookExtensionTests.m */,
 				D2B0000000000000000000E5 /* MPHoverWatchTests.m */,
 				D2B0000000000000000000C5 /* MDPreviewPageTests.m */,
@@ -1711,6 +1728,9 @@
 				F55A342A5A01CEBCC9F60042 /* MPCodeLanguages.m in Sources */,
 				F55A342A5A01CEBCC9F60049 /* MPBacklinks.m in Sources */,
 				F55A342A5A01CEBCC9F60063 /* MPLinkPreview.m in Sources */,
+				D2B0000000000000000000F8 /* MPUpdate.m in Sources */,
+				D2B0000000000000000000F9 /* MPUpdateController.m in Sources */,
+				D2B0000000000000000000FC /* MPUpdatePreferencesViewController.m in Sources */,
 				D2B0000000000000000000EC /* MPQuickLookExtension.m in Sources */,
 				D2B0000000000000000000ED /* MPQuickLookPreferencesViewController.m in Sources */,
 				F55A342A5A01CEBCC9F60054 /* MPActionLog.m in Sources */,
@@ -1752,8 +1772,8 @@
 			files = (
 				1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */,
 				1F51C9A5194565050015A96F /* MPPreferencesTests.m in Sources */,
+				D2B0000000000000000000FE /* MPUpdateTests.m in Sources */,
 				D2B0000000000000000000EF /* MPQuickLookExtensionTests.m in Sources */,
-				D2B0000000000000000000F2 /* MPQuickLookExtension.m in Sources */,
 				D2B0000000000000000000E6 /* MPHoverWatchTests.m in Sources */,
 				D2B0000000000000000000C6 /* MDPreviewPageTests.m in Sources */,
 				D2B0000000000000000000C7 /* MDPreviewPage.m in Sources */,

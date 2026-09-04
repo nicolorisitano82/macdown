@@ -108,6 +108,11 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 /// Identifiers of plug-ins the user has switched off. Absent means enabled,
 /// so a newly dropped-in plug-in works without being turned on first.
 @property (copy) NSArray<NSString *> *disabledPlugIns;
+/// Whether the application looks for a newer release by itself, once a day.
+@property (assign) BOOL updatesCheckAutomatically;
+/// When it last looked, whatever the answer was.
+@property (assign) NSDate *updatesLastCheck;
+
 @property (assign) NSInteger htmlCodeBlockAccessory;
 @property (assign) NSURL *htmlDefaultDirectoryUrl;
 @property (assign) BOOL htmlRendersTOC;

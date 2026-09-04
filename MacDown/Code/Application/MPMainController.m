@@ -19,6 +19,8 @@
 #import "MPMarkdownPreferencesViewController.h"
 #import "MPEditorPreferencesViewController.h"
 #import "MPQuickLookPreferencesViewController.h"
+#import "MPUpdateController.h"
+#import "MPUpdatePreferencesViewController.h"
 #import "MPHtmlPreferencesViewController.h"
 #import "MPTerminalPreferencesViewController.h"
 #import "MPDocument.h"
@@ -127,6 +129,36 @@ NS_INLINE void treat()
           forEventClass:kInternetEventClass andEventID:kAEGetURL];
 
     [self takeChargeOfTheTemplateMenu];
+    [self addTheUpdateMenuItem];
+    [[MPUpdateController sharedInstance] checkQuietlyIfDue];
+}
+
+/** Puts "Controlla aggiornamenti…" under the application menu.
+ *
+ * Added here rather than drawn in the nib because the nib is the one
+ * MacDown has always had, translated into two dozen languages; a menu item
+ * this fork adds is better added where it can be read than merged into a
+ * file nobody diffs.
+ */
+- (void)addTheUpdateMenuItem
+{
+    NSMenu *application = [NSApp mainMenu].itemArray.firstObject.submenu;
+    if (!application)
+        return;
+    for (NSMenuItem *item in application.itemArray)
+    {
+        if (item.action == @selector(checkForUpdates:))
+            return;     // Already there: this is not the first launch.
+    }
+
+    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:
+        NSLocalizedString(@"Controlla aggiornamenti…",
+            @"Application menu item that looks for a newer release")
+        action:@selector(checkForUpdates:) keyEquivalent:@""];
+    item.target = [MPUpdateController sharedInstance];
+    // Under "About MacDown Next", where every application keeps it.
+    [application insertItem:item atIndex:1];
+    [application insertItem:[NSMenuItem separatorItem] atIndex:2];
 }
 
 /** Makes this the keeper of the template submenu.
@@ -303,6 +335,7 @@ const NSInteger kMPTemplateMenuTag = 9001;
             [[MPHtmlPreferencesViewController alloc] init],
             [[MPTerminalPreferencesViewController alloc] init],
             [[MPQuickLookPreferencesViewController alloc] init],
+            [[MPUpdatePreferencesViewController alloc] init],
         ];
         NSString *title = NSLocalizedString(@"Preferences",
                                             @"Preferences window title.");

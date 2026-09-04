@@ -113,6 +113,20 @@ Writing**.
   because the alternative was guessing at what somebody else's screen was
   doing.
 
+### Keeping it up to date
+
+* **MacDown Next ▸ Check for Updates…**, and once a day on its own unless
+  you turn that off in **Preferences › Updates**. Four questions in order:
+  is there a newer release, shall it be downloaded, here it is — shall the
+  disk image be opened, and then the application quits and gets out of the
+  way. Dragging the new copy into Applications stays yours to do: nothing
+  replaces the running application behind your back.
+* The download goes to **Downloads**, with a progress bar and a **Stop**
+  that really stops it, and it will not overwrite a file already there.
+  The check is a request to GitHub's list of releases and nothing else
+  leaves the machine; the disk image is only fetched from GitHub, checked
+  when the list is read and again before the download starts.
+
 ### In the Finder
 
 * **Markdown files preview as they read.** Press space on a `.md` file and
@@ -226,7 +240,7 @@ The following editor themes and CSS files are extracted from [Mou](http://mouapp
 Journals of the work, in Italian: [the editor's text rendering](docs/wysiwyg-testo.md),
 [the local writing help](docs/ai-locale.md) and
 [the two previews](docs/anteprime.md) — the card under the pointer and the
-one Finder draws. They are written for whoever picks a piece of this up
+one Finder draws — and [the updater](docs/aggiornamenti.md). They are written for whoever picks a piece of this up
 next — what was measured, and the several times the measuring contradicted
 me.
 

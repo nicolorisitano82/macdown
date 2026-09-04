@@ -125,7 +125,7 @@ if [ "$DO_TESTS" = 1 ]; then
     # The two features of this branch have their own classes; a suite that
     # is green because they were not run is not evidence.
     for CLASS in MPLinkPreviewTests MDPreviewPageTests MPHoverWatchTests \
-                 MPQuickLookExtensionTests; do
+                 MPQuickLookExtensionTests MPUpdateTests; do
         ok "$CLASS ha girato" grep -q "$CLASS" "$WORK/test.log"
     done
 fi
@@ -278,6 +278,50 @@ then
     ok "niente script nella pagina" absent "$WORK/page.html" "<script"
 else
     skip "banco di prova non compilato — $WORK/harness.log"
+fi
+
+
+# --------------------------------------------------- and what GitHub says
+
+# The panel that offers an update reads this feed. The tests read a copy of
+# it; this reads the real one, because a feed that changes shape would leave
+# the application quietly never offering anything.
+say "L'elenco dei rilasci"
+
+FEED="$WORK/feed.json"
+STATUS=$(curl -sS -o "$FEED" -w '%{http_code}' \
+    -H "Accept: application/vnd.github+json" \
+    -H "User-Agent: MacDownNext/verifica" \
+    "https://api.github.com/repos/nicolorisitano82/macdown-next/releases/latest" \
+    2>/dev/null || echo 000)
+
+if [ "$STATUS" != "200" ]; then
+    skip "GitHub ha risposto $STATUS (nessuna rete?)"
+elif ! clang -fobjc-arc -framework Cocoa -IMacDown/Code/Utility \
+        -o "$WORK/update_feed" Tools/update_feed.m \
+        MacDown/Code/Utility/MPUpdate.m > "$WORK/feedharness.log" 2>&1
+then
+    skip "banco di prova del feed non compilato — $WORK/feedharness.log"
+else
+    "$WORK/update_feed" "$FEED" "0.0.1" > "$WORK/feed.txt" 2>&1 || true
+    READ_VERSION=$(awk -F'\t' 'NR==1{print $1}' "$WORK/feed.txt")
+    READ_URL=$(awk -F'\t' 'NR==1{print $2}' "$WORK/feed.txt")
+    READ_SIZE=$(awk -F'\t' 'NR==1{print $3}' "$WORK/feed.txt")
+    TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+
+    ok "il rilascio si legge ($READ_VERSION)" test -n "$READ_VERSION"
+    ok "ed è l'ultimo tag di qui ($TAG)" test "$READ_VERSION" = "$TAG"
+    ok "con un'immagine disco su GitHub" \
+        grep -qE '^https://(github\.com|objects\.githubusercontent\.com)/' \
+        <(echo "$READ_URL")
+    ok "e una dimensione da mostrare" test "${READ_SIZE:-0}" -gt 0
+    # The whole point of the comparison: an old version is offered the new
+    # one, and the version in hand is not offered itself.
+    ok "a chi ha una versione vecchia viene offerto" \
+        grep -qx "offerto" <(tail -1 "$WORK/feed.txt")
+    "$WORK/update_feed" "$FEED" "$READ_VERSION" > "$WORK/feed-same.txt" 2>&1 || true
+    ok "a chi ha già questa, no" \
+        grep -qx "niente da offrire" <(tail -1 "$WORK/feed-same.txt")
 fi
 
 

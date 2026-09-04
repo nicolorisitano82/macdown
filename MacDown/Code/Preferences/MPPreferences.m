@@ -54,6 +54,9 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
         @"editorBlockLayout": @YES,
         @"exportFetchesRemoteImages": @YES,
         @"editorWritingHelp": @YES,
+        // Looking is a request to GitHub once a day, and nothing else
+        // leaves the machine; downloading and installing are still asked.
+        @"updatesCheckAutomatically": @YES,
     }];
 
     [self cleanupObsoleteAutosaveValues];
@@ -146,6 +149,8 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
 @dynamic editorWritingHelp;
 @dynamic editorPasteAsMarkdown;
 @dynamic disabledPlugIns;
+@dynamic updatesCheckAutomatically;
+@dynamic updatesLastCheck;
 @dynamic htmlCodeBlockAccessory;
 @dynamic htmlRendersTOC;
 
