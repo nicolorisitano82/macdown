@@ -1133,45 +1133,6 @@ static const NSTimeInterval kMPTypingQuiet = 1.0;
 static NSString * const kMPMathJaxMessage = @"macdownMathJax";
 static NSString * const kMPDiagramsMessage = @"macdownDiagrams";
 static NSString * const kMPSelectionMessage = @"macdownSelection";
-static NSString * const kMPHoverMessage = @"macdownHover";
-
-/// How long a link has to be hovered before it is worth answering.
-static const NSTimeInterval kMPHoverDelay = 5.0;
-
-/** Reports a link the pointer has been resting on, and when it leaves.
- *
- * Five seconds, because a card that appears while the pointer is merely
- * crossing the page is a card in the way. The timer is cancelled by
- * leaving the link, by scrolling, and by moving to another one — the last
- * of which matters in a list of links, where the pointer passes over
- * several on its way to the one it wants.
- */
-static NSString * const kMPHoverSource =
-    @"(function(){"
-    @"var timer=null,current=null;"
-    @"function forget(){if(timer){clearTimeout(timer);timer=null;}"
-    @"if(current){current=null;"
-    @"window.webkit.messageHandlers.macdownHover.postMessage({away:true});}}"
-    @"document.addEventListener('mouseover',function(e){"
-    @"var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;"
-    @"if(!a){forget();return;}"
-    @"if(a===current)return;"
-    @"forget();current=a;"
-    @"timer=setTimeout(function(){"
-    @"if(current!==a)return;"
-    @"var r=a.getBoundingClientRect();"
-    @"window.webkit.messageHandlers.macdownHover.postMessage({"
-    @"href:a.getAttribute('href')||'',text:(a.textContent||'').slice(0,200),"
-    @"left:r.left,top:r.top,width:r.width,height:r.height});"
-    @"},%.0f);"
-    @"},true);"
-    @"document.addEventListener('mouseout',function(e){"
-    @"var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;"
-    @"if(a&&a===current)forget();"
-    @"},true);"
-    @"window.addEventListener('scroll',forget);"
-    @"window.addEventListener('blur',forget);"
-    @"})();";
 
 /** Reports scrolling and the page's dimensions back to the document.
  *
@@ -1311,7 +1272,7 @@ static NSString * const kMPSelectionSource =
     [content addScriptMessageHandler:self name:kMPMathJaxMessage];
     [content addScriptMessageHandler:self name:kMPDiagramsMessage];
     [content addScriptMessageHandler:self name:kMPSelectionMessage];
-    [content addScriptMessageHandler:self name:kMPHoverMessage];
+    [content addScriptMessageHandler:self name:MPHoverMessageName];
 
     // At the end of the document, so the page it decorates exists, and in
     // every frame the preview will ever load rather than being re-injected
@@ -1329,8 +1290,7 @@ static NSString * const kMPSelectionSource =
     [content addUserScript:selection];
 
     WKUserScript *hover = [[WKUserScript alloc]
-        initWithSource:[NSString stringWithFormat:kMPHoverSource,
-                        kMPHoverDelay * 1000.0]
+        initWithSource:MPHoverWatchScript(MPHoverDelay)
          injectionTime:WKUserScriptInjectionTimeAtDocumentEnd
       forMainFrameOnly:YES];
     [content addUserScript:hover];
@@ -2071,7 +2031,7 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
 - (void)userContentController:(WKUserContentController *)controller
       didReceiveScriptMessage:(WKScriptMessage *)message
 {
-    if ([message.name isEqualToString:kMPHoverMessage])
+    if ([message.name isEqualToString:MPHoverMessageName])
     {
         NSDictionary *body = message.body;
         if (![body isKindOfClass:[NSDictionary class]])

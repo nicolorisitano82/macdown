@@ -13,6 +13,51 @@ static const NSUInteger kMPPreviewLines = 4;
 static const unsigned long long kMPPreviewSizeLimit = 4 * 1024 * 1024;
 
 
+NSString * const MPHoverMessageName = @"macdownHover";
+
+/// Five seconds, because a card that appears while the pointer is merely
+/// crossing the page is a card in the way.
+const NSTimeInterval MPHoverDelay = 5.0;
+
+
+NSString *MPHoverWatchScript(NSTimeInterval seconds)
+{
+    /* Reports a link the pointer has been resting on, and when it leaves.
+     *
+     * The timer is cancelled by leaving the link, by scrolling, and by
+     * moving to another one — the last of which matters in a list of links,
+     * where the pointer passes over several on its way to the one it wants.
+     */
+    static NSString * const source =
+        @"(function(){"
+        @"var timer=null,current=null;"
+        @"function forget(){if(timer){clearTimeout(timer);timer=null;}"
+        @"if(current){current=null;"
+        @"window.webkit.messageHandlers.macdownHover.postMessage({away:true});}}"
+        @"document.addEventListener('mouseover',function(e){"
+        @"var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;"
+        @"if(!a){forget();return;}"
+        @"if(a===current)return;"
+        @"forget();current=a;"
+        @"timer=setTimeout(function(){"
+        @"if(current!==a)return;"
+        @"var r=a.getBoundingClientRect();"
+        @"window.webkit.messageHandlers.macdownHover.postMessage({"
+        @"href:a.getAttribute('href')||'',text:(a.textContent||'').slice(0,200),"
+        @"left:r.left,top:r.top,width:r.width,height:r.height});"
+        @"},%.0f);"
+        @"},true);"
+        @"document.addEventListener('mouseout',function(e){"
+        @"var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;"
+        @"if(a&&a===current)forget();"
+        @"},true);"
+        @"window.addEventListener('scroll',forget);"
+        @"window.addEventListener('blur',forget);"
+        @"})();";
+    return [NSString stringWithFormat:source, seconds * 1000.0];
+}
+
+
 @interface MPLinkPreview ()
 @property (nonatomic) MPLinkPreviewKind kind;
 @property (copy, nonatomic) NSString *title;

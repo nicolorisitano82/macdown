@@ -1,0 +1,298 @@
+#!/bin/bash
+#
+# Tools/verify_features.sh — the control suite.
+#
+# The unit tests say the code does what it says. This says the built
+# application does: it looks at the product, at the page Finder would be
+# handed, and at whether macOS actually hands a Markdown file to our
+# extension. Those three live outside XCTest — in the bundle, in another
+# process, and in Launch Services — which is exactly where the mistakes
+# that survive a green suite hide.
+#
+#   Tools/verify_features.sh                 build, test, check everything
+#   Tools/verify_features.sh --no-build      use the products already built
+#   Tools/verify_features.sh --no-tests      skip the XCTest suite
+#   Tools/verify_features.sh --no-finder     do not touch Launch Services
+#   Tools/verify_features.sh --configuration Release
+#
+# Exit status is the number of checks that failed, so it is 0 when all is
+# well and usable from a script.
+
+set -u
+cd "$(dirname "$0")/.."
+
+CONFIGURATION=Debug
+DO_BUILD=1
+DO_TESTS=1
+DO_FINDER=1
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --no-build)  DO_BUILD=0 ;;
+        --no-tests)  DO_TESTS=0 ;;
+        --no-finder) DO_FINDER=0 ;;
+        --configuration) shift; CONFIGURATION="$1" ;;
+        -h|--help)   sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "opzione sconosciuta: $1" >&2; exit 2 ;;
+    esac
+    shift
+done
+
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/macdown-verifica.XXXXXX")
+# The sandbox the Finder preview runs in can read the home folder and not
+# much else, so the document a real preview is asked for has to live there.
+HOME_WORK="$HOME/.macdown-verifica"
+trap 'rm -rf "$WORK" "$HOME_WORK"' EXIT
+
+PASSED=0
+FAILED=0
+SKIPPED=0
+
+say() { printf '\n\033[1m%s\033[0m\n' "$1"; }
+
+# ok "what was expected" <test command...>
+ok() {
+    local what="$1"; shift
+    if "$@" >/dev/null 2>&1; then
+        printf '  \033[32m✓\033[0m %s\n' "$what"
+        PASSED=$((PASSED + 1))
+    else
+        printf '  \033[31m✗\033[0m %s\n' "$what"
+        FAILED=$((FAILED + 1))
+    fi
+}
+
+# Same, for the common case of "this text is in that file".
+contains() { grep -qF -- "$2" "$1"; }
+absent()   { ! grep -qF -- "$2" "$1"; }
+
+skip() {
+    printf '  \033[33m–\033[0m %s\n' "$1"
+    SKIPPED=$((SKIPPED + 1))
+}
+
+xcode() {
+    DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode-beta.app/Contents/Developer} \
+        xcodebuild -workspace MacDown.xcworkspace -scheme MacDown \
+                   -configuration "$CONFIGURATION" "$@"
+}
+
+
+# --------------------------------------------------------------- the build
+
+if [ "$DO_BUILD" = 1 ]; then
+    say "Costruzione ($CONFIGURATION)"
+    if xcode build > "$WORK/build.log" 2>&1; then
+        printf '  \033[32m✓\033[0m build riuscita\n'
+        PASSED=$((PASSED + 1))
+    else
+        printf '  \033[31m✗\033[0m build fallita — %s\n' "$WORK/build.log"
+        grep -E " error: " "$WORK/build.log" | head -5
+        exit 1
+    fi
+fi
+
+PRODUCTS=$(xcode -showBuildSettings 2>/dev/null \
+    | awk -F' = ' '/^ *BUILT_PRODUCTS_DIR = /{print $2; exit}')
+# One application comes out of this workspace; taking it by name would mean
+# knowing how the target renames it per configuration.
+APP=$(ls -d "$PRODUCTS"/*.app 2>/dev/null | head -1)
+if [ ! -d "$APP" ]; then
+    echo "l'applicazione costruita non si trova: $APP" >&2
+    exit 1
+fi
+APPEX="$APP/Contents/PlugIns/MacDownQuickLook.appex"
+echo "  · $APP"
+
+
+# --------------------------------------------------------------- the suite
+
+if [ "$DO_TESTS" = 1 ]; then
+    say "Prove unitarie"
+    # Signing is left alone on purpose: `CODE_SIGNING_ALLOWED=NO` would
+    # leave the extension in the products unsigned, and the checks below
+    # would then be looking at something that is not what gets shipped.
+    xcode test > "$WORK/test.log" 2>&1
+    LINE=$(grep -Eo "Executed [0-9]+ tests, with [0-9]+ failures" \
+           "$WORK/test.log" | tail -1)
+    if [ -n "$LINE" ]; then
+        echo "  · $LINE"
+    fi
+    ok "suite verde" grep -q "TEST SUCCEEDED" "$WORK/test.log"
+    if ! grep -q "TEST SUCCEEDED" "$WORK/test.log"; then
+        grep -E "Tests\.m:[0-9]+: error" "$WORK/test.log" | sort -u | head -5
+    fi
+    # The two features of this branch have their own classes; a suite that
+    # is green because they were not run is not evidence.
+    for CLASS in MPLinkPreviewTests MDPreviewPageTests MPHoverWatchTests; do
+        ok "$CLASS ha girato" grep -q "$CLASS" "$WORK/test.log"
+    done
+fi
+
+
+# ------------------------------------------------- the extension as shipped
+
+say "L'estensione dentro l'applicazione"
+ok "l'.appex viaggia nell'app" test -d "$APPEX"
+
+if [ -d "$APPEX" ]; then
+    PLIST="$APPEX/Contents/Info.plist"
+    read_plist() { /usr/libexec/PlistBuddy -c "Print $1" "$PLIST" 2>/dev/null; }
+
+    ok "punto di estensione: anteprima di Quick Look" \
+        test "$(read_plist :NSExtension:NSExtensionPointIdentifier)" \
+             = "com.apple.quicklook.preview"
+    ok "classe principale MDQuickLookProvider" \
+        test "$(read_plist :NSExtension:NSExtensionPrincipalClass)" \
+             = "MDQuickLookProvider"
+    # Without this the system treats it as having a view to show, and dies
+    # in QLPreviewExtensionViewController.
+    ok "dichiarata anteprima a dati (QLIsDataBasedPreview)" \
+        test "$(read_plist :NSExtension:NSExtensionAttributes:QLIsDataBasedPreview)" \
+             = "true"
+    ok "si offre per net.daringfireball.markdown" \
+        grep -q "net.daringfireball.markdown" \
+        <(read_plist :NSExtension:NSExtensionAttributes:QLSupportedContentTypes)
+    ok "lo stile dell'app è dentro l'estensione" \
+        test -f "$APPEX/Contents/Resources/GitHub2.css"
+
+    # Quick Look loads sandboxed extensions only, and `codesign --deep` on
+    # the app quietly strips the nested entitlements. Both are invisible
+    # until a preview does not appear.
+    codesign -d --entitlements - --xml "$APPEX" > "$WORK/rights.plist" 2>/dev/null
+    ok "firmata" codesign --verify --strict "$APPEX"
+    ok "in sandbox (o Quick Look non la carica)" \
+        contains "$WORK/rights.plist" "com.apple.security.app-sandbox"
+    ok "può leggere le figure accanto al documento" \
+        contains "$WORK/rights.plist" \
+        "com.apple.security.temporary-exception.files.home-relative-path.read-only"
+fi
+
+
+# ------------------------------------------- the page Finder would be given
+
+say "La pagina che il Finder riceverebbe"
+
+DOC="$HOME_WORK/verbale di prova.md"
+mkdir -p "$HOME_WORK"
+# A small red square, so that a picture beside the document is a real file.
+python3 - "$HOME_WORK/rete.png" <<'PY'
+import base64, sys, pathlib
+pathlib.Path(sys.argv[1]).write_bytes(base64.b64decode(
+ b'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAP0lEQVR4nO3PsQ3AMAwDwf//'
+ b'6bIFF3ARJ0AKFncdSRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPBvHnGgAAHkPTHT'
+ b'AAAAAElFTkSuQmCC'))
+PY
+cat > "$DOC" <<'EOF'
+---
+title: da scartare
+source: https://esempio.it
+---
+
+# Relazione di prova
+
+Un paragrafo con **grassetto** e un [collegamento](altro.md).
+
+- [ ] comprare il pane
+- [x] pagare la bolletta
+- voce normale
+
+| Voce | Quantità |
+|------|----------|
+| pane | 2        |
+
+```python
+def saluta(nome):
+    return f"ciao {nome}"
+```
+
+![rete](rete.png)
+
+![fuori](https://esempio.it/tracciante.png)
+EOF
+
+if clang -fobjc-arc -framework Foundation -IQuickLook \
+         -IDependency/hoedown/src -o "$WORK/quicklook_page" \
+         Tools/quicklook_page.m QuickLook/MDPreviewPage.m \
+         Dependency/hoedown/src/*.c > "$WORK/harness.log" 2>&1
+then
+    "$WORK/quicklook_page" "$DOC" MacDown/Resources/Styles/GitHub2.css \
+        > "$WORK/page.html"
+    "$WORK/quicklook_page" "$DOC" --pictures > "$WORK/pictures.txt"
+
+    ok "il titolo è quello del documento" \
+        contains "$WORK/page.html" "<title>Relazione di prova</title>"
+    ok "il front-matter resta fuori" \
+        absent "$WORK/page.html" "da scartare"
+    ok "lo stile dell'app è nella pagina" \
+        contains "$WORK/page.html" "font-family: Helvetica"
+    ok "i to-do sono caselle" \
+        contains "$WORK/page.html" '<li class="task"><input type="checkbox" disabled>'
+    ok "un to-do fatto è una casella segnata" \
+        contains "$WORK/page.html" 'disabled checked'
+    ok "le tabelle sono tabelle" contains "$WORK/page.html" "<table"
+    ok "il codice è evidenziabile (class=language-)" \
+        contains "$WORK/page.html" 'class="language-python"'
+    ok "la figura accanto viaggia come allegato" \
+        contains "$WORK/page.html" 'src="cid:pict0"'
+    ok "e l'allegato è quel file" \
+        grep -q "rete.png" "$WORK/pictures.txt"
+    ok "la figura remota è lasciata dov'è" \
+        contains "$WORK/page.html" "https://esempio.it/tracciante.png"
+    ok "e non può essere scaricata" \
+        contains "$WORK/page.html" "default-src 'none'"
+    ok "niente script nella pagina" absent "$WORK/page.html" "<script"
+else
+    skip "banco di prova non compilato — $WORK/harness.log"
+fi
+
+
+# ----------------------------------------------- and whether macOS uses it
+
+say "Quello che fa il sistema"
+
+if [ "$DO_FINDER" = 0 ]; then
+    skip "registrazione e anteprima vera (--no-finder)"
+elif [ ! -d "$APPEX" ]; then
+    skip "registrazione e anteprima vera (manca l'.appex)"
+else
+    LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+    IDENTIFIER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" \
+                 "$APPEX/Contents/Info.plist" 2>/dev/null)
+    # `-f` alone does not replace a record that is already there, and the
+    # extension then stays invisible however often it is repeated.
+    "$LSREGISTER" -u "$APP" >/dev/null 2>&1
+    sleep 1
+    "$LSREGISTER" -f -R -trusted "$APP" >/dev/null 2>&1
+    sleep 5
+
+    ok "il sistema la elenca fra le anteprime" \
+        grep -q "$IDENTIFIER" <(pluginkit -m -p com.apple.quicklook.preview \
+                                2>/dev/null)
+
+    # Quick Look keeps previews, so a fresh name is the only way to be sure
+    # the extension is asked again rather than a cached page shown.
+    FRESH="$HOME_WORK/$(date +%s)-$RANDOM.md"
+    cp "$DOC" "$FRESH"
+    SINCE=$(date "+%Y-%m-%d %H:%M:%S")
+    (qlmanage -p "$FRESH" >/dev/null 2>&1 &)
+    sleep 8
+    pkill -x qlmanage >/dev/null 2>&1
+    /usr/bin/log show --start "$SINCE" \
+        --predicate 'process == "MacDownQuickLook"' --style compact \
+        > "$WORK/extension.log" 2>/dev/null
+
+    ok "l'estensione viene avviata e serve la richiesta" \
+        contains "$WORK/extension.log" "beginning extension request"
+    ok "e non muore per un'asserzione del sistema" \
+        absent "$WORK/extension.log" "Assertion failure"
+fi
+
+
+# -------------------------------------------------------------- the verdict
+
+say "Esito"
+printf '  %d passate, %d fallite' "$PASSED" "$FAILED"
+[ "$SKIPPED" -gt 0 ] && printf ', %d saltate' "$SKIPPED"
+printf '\n\n'
+exit "$FAILED"

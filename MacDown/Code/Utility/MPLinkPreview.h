@@ -48,3 +48,19 @@ typedef NS_ENUM(NSUInteger, MPLinkPreviewKind) {
                     inDocument:(NSURL *)documentURL;
 
 @end
+
+
+/// The name the page uses to report a link the pointer is resting on.
+extern NSString * const MPHoverMessageName;
+
+/// How long the pointer has to rest on a link before the card is worth it.
+extern const NSTimeInterval MPHoverDelay;
+
+/** The script that watches the pointer, waiting `seconds` on each link.
+ *
+ * The wait belongs in the page rather than in a timer here: the page is the
+ * one that knows when the pointer leaves, when the reader scrolls, and when
+ * it has moved on to the next link in a list. Given as a function so that a
+ * test can watch the same script with a wait it can afford.
+ */
+extern NSString *MPHoverWatchScript(NSTimeInterval seconds);

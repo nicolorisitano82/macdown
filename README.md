@@ -260,6 +260,30 @@ account for it:
     git submodule update
     pod install
 
+### Checking a build
+
+The XCTest suite says the code does what it says. Some of this application
+is not code the suite can reach: the Quick Look extension runs out of
+process, in a sandbox, and only if macOS agrees to register it. One command
+covers both:
+
+    Tools/verify_features.sh
+
+It builds, runs the suite, then reads the built product — is the extension
+inside the app, is it signed and sandboxed, does it declare a data-based
+preview — builds the very page Finder would be handed and checks what is in
+it, and finally registers the app and asks Quick Look for a real preview,
+confirming from the system log that our extension served it. The exit
+status is the number of checks that failed.
+
+`--no-build`, `--no-tests` and `--no-finder` cut it short; the last of
+these leaves Launch Services alone. `--configuration Release` checks what
+would be released. Two warnings the script has learned the hard way and
+that are worth knowing by hand as well: `codesign --deep` strips the
+entitlements of the nested extension, so an app signed that way has a Quick
+Look extension macOS will silently ignore, and `lsregister -f` alone does
+not replace a registration that is already there — `lsregister -u` first.
+
 ## Credits
 
 MacDown Next leans on other open source projects:

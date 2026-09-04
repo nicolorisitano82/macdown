@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D2B0000000000000000000E6 /* MPHoverWatchTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000E5 /* MPHoverWatchTests.m */; };
 		D2B0000000000000000000B0 /* MDQuickLookProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A1 /* MDQuickLookProvider.m */; };
 		D2B0000000000000000000B1 /* MDPreviewPage.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A3 /* MDPreviewPage.m */; };
 		D2B0000000000000000000B2 /* autolink.c in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A7 /* autolink.c */; };
@@ -250,6 +251,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D2B0000000000000000000E5 /* MPHoverWatchTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPHoverWatchTests.m; sourceTree = "<group>"; };
 		D2B0000000000000000000A0 /* MDQuickLookProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDQuickLookProvider.h"; sourceTree = "<group>"; };
 		D2B0000000000000000000A1 /* MDQuickLookProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "MDQuickLookProvider.m"; sourceTree = "<group>"; };
 		D2B0000000000000000000A2 /* MDPreviewPage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDPreviewPage.h"; sourceTree = "<group>"; };
@@ -1172,6 +1174,7 @@
 		1FCDCA2F1944F96E00B1F966 /* MacDownTests */ = {
 			isa = PBXGroup;
 			children = (
+				D2B0000000000000000000E5 /* MPHoverWatchTests.m */,
 				D2B0000000000000000000C5 /* MDPreviewPageTests.m */,
 				1FF1420319A8A24800CF8A6A /* MPUtilityTests.m */,
 				7DA2311453239F097331E216 /* MPTableSourceTests.m */,
@@ -1733,6 +1736,7 @@
 			files = (
 				1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */,
 				1F51C9A5194565050015A96F /* MPPreferencesTests.m in Sources */,
+				D2B0000000000000000000E6 /* MPHoverWatchTests.m in Sources */,
 				D2B0000000000000000000C6 /* MDPreviewPageTests.m in Sources */,
 				D2B0000000000000000000C7 /* MDPreviewPage.m in Sources */,
 				1FF1420419A8A24800CF8A6A /* MPUtilityTests.m in Sources */,
@@ -2476,6 +2480,8 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lcompression",
+					"-framework",
+					WebKit,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicolorisitano82.${PRODUCT_NAME:rfc1034identifier:lower}";
 				PRODUCT_NAME = MacDownTests;
@@ -2510,6 +2516,8 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-lcompression",
+					"-framework",
+					WebKit,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.nicolorisitano82.${PRODUCT_NAME:rfc1034identifier:lower}";
 				PRODUCT_NAME = MacDownTests;

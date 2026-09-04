@@ -123,7 +123,46 @@ niente, non è la modifica: copia il file con un altro nome.
 | Cosa | Dove |
 |---|---|
 | Cartolina del link | `MacDown/Code/Utility/MPLinkPreview.{h,m}`, `MacDown/Code/View/MPLinkPreviewViewController.{h,m}` |
-| Attesa e posizione | `MPDocument.m`, `kMPHoverSource` e `showLinkPreviewFor:` |
+| Attesa e posizione | `MPHoverWatchScript()` in `MPLinkPreview.m`; `showLinkPreviewFor:` in `MPDocument.m` |
 | Pagina del Finder | `QuickLook/MDPreviewPage.{h,m}` |
 | Estensione | `QuickLook/MDQuickLookProvider.{h,m}`, `QuickLook/Info.plist`, `QuickLook/MacDownQuickLook.entitlements` |
-| Prove | `MacDownTests/MPLinkPreviewTests.m` (9), `MacDownTests/MDPreviewPageTests.m` (18) |
+| Prove | `MacDownTests/MPLinkPreviewTests.m` (9), `MacDownTests/MDPreviewPageTests.m` (18), `MacDownTests/MPHoverWatchTests.m` (7) |
+| Controllo di tutto | `Tools/verify_features.sh`, con il banco `Tools/quicklook_page.m` |
+
+---
+
+## Come si controlla
+
+Le prove unitarie non arrivano dove sta il rischio vero di queste due
+funzioni: l'attesa di cinque secondi vive **nella pagina**, e l'estensione
+del Finder vive **in un altro processo**, in sandbox, e solo se macOS
+accetta di registrarla.
+
+Per la prima il rimedio è stato spostare lo script in
+`MPHoverWatchScript(secondi)`: l'applicazione lo inietta con cinque secondi,
+`MPHoverWatchTests` lo inietta con un quarto di secondo in una `WKWebView`
+vera e muove il puntatore con eventi sintetici. Sono lo stesso script, non
+una copia semplificata. Sette prove: che risponda, che **non** risponda
+prima del tempo, che l'uscita dal link, lo scorrimento e il passaggio a un
+altro link annullino l'attesa, e che il testo che non è un link non apra
+niente.
+
+Per la seconda c'è `Tools/verify_features.sh`: costruisce, esegue la suite,
+poi guarda il **prodotto** (l'`appex` è dentro l'app? è firmata? in sandbox?
+dichiara l'anteprima a dati?), costruisce la pagina che il Finder riceverebbe
+e la legge riga per riga, e alla fine registra l'app e chiede a Quick Look
+un'anteprima vera, controllando nel log di sistema che l'abbia servita la
+nostra estensione. Esce col numero di controlli falliti.
+
+La prima volta che l'ho eseguita ha trovato subito qualcosa: dopo un
+`xcodebuild test` con `CODE_SIGNING_ALLOWED=NO` l'estensione nei prodotti
+era **non firmata**, quindi quattro controlli rossi e la registrazione
+rifiutata. Il difetto era nella suite di controllo, non nell'app — ma è
+esattamente il genere di cosa che una suite verde non vede.
+
+Una nota fuori tema, trovata dalla stessa esecuzione:
+`MPDocumentTabsTests` era intermittente. Una finestra nuova entra nel gruppo
+di tab della finestra **davanti**, e in una sessione di prove davanti può non
+esserci nulla; ora il test mette davanti la prima finestra prima di aprire la
+seconda, e misura la configurazione dell'app invece dell'umore del window
+server.

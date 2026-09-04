@@ -66,6 +66,12 @@
 - (void)testTwoDocumentsBecomeTwoTabsOfOneWindow
 {
     NSWindow *first = [self windowOf:[self openUntitled]];
+    // A new window joins the tab group of the window in front, and in a
+    // test run there may be nothing in front at all: without this the test
+    // measures the window server's mood rather than the application's
+    // configuration, and fails on the same code that passed an hour ago.
+    [first makeKeyAndOrderFront:nil];
+
     NSWindow *second = [self windowOf:[self openUntitled]];
     XCTAssertNotEqual(first, second, @"sono due finestre, e due tab");
 
