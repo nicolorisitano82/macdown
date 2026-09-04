@@ -308,12 +308,25 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
                                         actualCharacterRange:NULL];
         if (!glyphs.length)
             continue;
-        // One glyph, not the range: the bounding rectangle of a range that
-        // ends a line runs to the edge of the container, which is how the
-        // count ended up pinned to the right margin. The first glyph of
-        // the heading is on the line the mark belongs beside.
-        NSRect words = [manager boundingRectForGlyphRange:
-            NSMakeRange(glyphs.location, 1) inTextContainer:container];
+        /* The line's used rectangle, not the first glyph's.
+         *
+         * The first characters of a heading are its hashes, and those are
+         * suppressed while the caret is elsewhere: a suppressed glyph has
+         * an empty rectangle, so measuring it meant no mark at all until
+         * the caret arrived at the heading and the hashes came back. Which
+         * is exactly what a chevron appearing only on click looks like.
+         *
+         * The used rectangle is what the drawn glyphs of that line
+         * occupy — it exists whatever is suppressed, and it hugs the words
+         * rather than the room this editor leaves above a heading.
+         */
+        NSRect words = [manager lineFragmentUsedRectForGlyphAtIndex:
+            glyphs.location effectiveRange:NULL];
+        if (NSIsEmptyRect(words))
+        {
+            words = [manager lineFragmentRectForGlyphAtIndex:glyphs.location
+                                              effectiveRange:NULL];
+        }
         if (NSIsEmptyRect(words))
             continue;
 
@@ -425,11 +438,10 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
                                         actualCharacterRange:NULL];
         if (!glyphs.length)
             continue;
-        // The last glyph of the heading: the whole range's rectangle runs
-        // to the container's edge, which put this against the right margin
-        // instead of after the words.
-        NSRect used = [manager boundingRectForGlyphRange:
-            NSMakeRange(NSMaxRange(glyphs) - 1, 1) inTextContainer:container];
+        // The line's used rectangle, for the same reason as the chevron's:
+        // a glyph of the heading may be suppressed, and this exists anyway.
+        NSRect used = [manager lineFragmentUsedRectForGlyphAtIndex:
+            glyphs.location effectiveRange:NULL];
         if (NSIsEmptyRect(used))
             continue;
 

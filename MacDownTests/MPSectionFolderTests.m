@@ -813,6 +813,55 @@
                   @"niente nel margine accanto a un titolo senza corpo");
 }
 
+/** The chevron is there whether or not the hashes are.
+ *
+ * The one that got away twice. The first characters of a heading are its
+ * hashes, and those are suppressed while the caret is elsewhere; a
+ * suppressed glyph has an empty rectangle, and measuring it meant no mark
+ * at all until the caret arrived and the hashes came back. Every test
+ * before this one attached no hider, so the hashes were always drawn and
+ * the mark was always there.
+ */
+- (void)testTheChevronIsDrawnWithTheHashesHidden
+{
+    NSString *text = @"# Uno\n\nA.\n\n## Due\n\nB.\n";
+    MPEditorView *view = [[MPEditorView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 400.0, 300.0)];
+    view.string = text;
+    view.textContainerInset = NSMakeSize(15.0, 8.0);
+
+    MPMarkerHider *hider = [[MPMarkerHider alloc] initWithTextView:view];
+    view.markerHider = hider;
+    [self.folder updateWithText:text];
+    view.sectionFolder = self.folder;
+
+    NSBitmapImageRep *canvas =
+        [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+
+    // The markers drawn, as they are when the caret is on the heading.
+    hider.enabled = NO;
+    [view.layoutManager invalidateGlyphsForCharacterRange:
+        NSMakeRange(0, text.length) changeInLength:0
+                                     actualCharacterRange:NULL];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+    XCTAssertEqual(view.foldMarks.count, 2u);
+    NSRect shown = [view.foldMarks.firstObject[@"rect"] rectValue];
+
+    // And suppressed, as they are the rest of the time.
+    hider.enabled = YES;
+    [hider updateWithElements:NULL];
+    [view.layoutManager invalidateGlyphsForCharacterRange:
+        NSMakeRange(0, text.length) changeInLength:0
+                                     actualCharacterRange:NULL];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+
+    XCTAssertEqual(view.foldMarks.count, 2u,
+        @"il chevron è scomparso quando i cancelletti sono stati nascosti");
+    // And in the same place, since the margin does not move either.
+    NSRect hidden = [view.foldMarks.firstObject[@"rect"] rectValue];
+    XCTAssertEqualWithAccuracy(NSMinX(hidden), NSMinX(shown), 0.5);
+}
+
 - (void)testTheInnermostSectionIsTheOneAsked
 {
     NSString *text = @"# Uno\n\nA.\n\n## Due\n\nB.\n";
