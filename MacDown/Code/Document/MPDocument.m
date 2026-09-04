@@ -5020,6 +5020,8 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
             inText:text summary:[checker summaryForIssues:issues]
             chosen:^(MPProseIssue *issue) {
         [document goToProseIssue:issue];
+    } fixed:^(MPProseIssue *issue) {
+        [document applyProseFix:issue];
     }];
 
     NSPopover *popover = [[NSPopover alloc] init];
@@ -5036,6 +5038,43 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
     [popover showRelativeToRect:top ofView:anchor
                  preferredEdge:NSRectEdgeMaxY];
 }
+
+/** The one correction the prose panel offers: the space after the hashes.
+ *
+ * Done through the text view rather than the storage, so it is one undo
+ * away and the highlighter hears about it. The text is checked before it is
+ * replaced: the panel is a list taken a moment ago, and the document may
+ * have moved under it.
+ */
+- (void)applyProseFix:(MPProseIssue *)issue
+{
+    if (!issue.replacement.length || !issue.text.length)
+        return;
+
+    NSRange range = issue.range;
+    NSString *text = self.editor.string;
+    if (NSMaxRange(range) > text.length
+        || ![[text substringWithRange:range] isEqualToString:issue.text])
+    {
+        MPNote(@"correzione saltata: il testo si è mosso");
+        return;
+    }
+
+    if (![self.editor shouldChangeTextInRange:range
+                            replacementString:issue.replacement])
+        return;
+    [self.editor.textStorage replaceCharactersInRange:range
+                                           withString:issue.replacement];
+    [self.editor didChangeText];
+    MPNote(@"corretto «%@» in «%@» a %lu", issue.text, issue.replacement,
+           (unsigned long)range.location);
+
+    // The list behind the panel is now one line out of date, and the tally
+    // under the title is redrawn from the document anyway.
+    [self.prosePopover close];
+    self.prosePopover = nil;
+}
+
 
 #pragma mark - Peeking at a link
 
@@ -5123,17 +5162,6 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
  */
 - (IBAction)clipWebPage:(id)sender
 {
-    if (!self.fileURL)
-    {
-        [self say:NSLocalizedString(@"Salva prima il documento",
-                                    @"Web clipping")
-             text:NSLocalizedString(
-            @"La pagina viene salvata accanto al documento, e un documento "
-            @"non salvato non ha una cartella accanto a cui stare.",
-            @"Web clipping")];
-        return;
-    }
-
     // An address on the clipboard is almost certainly the one.
     NSString *pasted = [[NSPasteboard generalPasteboard]
         URLForType:NSPasteboardTypeString].absoluteString;
@@ -5141,10 +5169,18 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = NSLocalizedString(@"Salva una pagina come Markdown",
                                           @"Web clipping");
-    alert.informativeText = NSLocalizedString(
-        @"Il file finisce accanto al documento, con l'indirizzo e la data "
-        @"in cima. Quello che la conversione non riconosce lascia il suo "
-        @"testo e nient'altro.", @"Web clipping");
+    // What happens next depends on whether this document has a folder to put
+    // a file in, so the question says which of the two it will be.
+    alert.informativeText = self.fileURL
+        ? NSLocalizedString(
+            @"Il file finisce accanto al documento, con l'indirizzo e la "
+            @"data in cima, e viene collegato dove sta il cursore. Quello "
+            @"che la conversione non riconosce lascia il suo testo e "
+            @"nient'altro.", @"Web clipping")
+        : NSLocalizedString(
+            @"Questo documento non è ancora salvato, quindi il ritaglio si "
+            @"apre come documento nuovo, da salvare dove vuoi. L'indirizzo "
+            @"e la data stanno in cima.", @"Web clipping");
     [alert addButtonWithTitle:NSLocalizedString(@"Salva", @"Web clipping")];
     [alert addButtonWithTitle:NSLocalizedString(@"Annulla", @"Cancel")];
 
@@ -5196,6 +5232,14 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
             [strong say:NSLocalizedString(@"La pagina non si è potuta "
                                           @"salvare", @"Web clipping")
                    text:error.localizedDescription];
+            return;
+        }
+
+        // No folder to put a file in: the clipping becomes a document of
+        // its own, and where it goes is asked when its window closes.
+        if (!strong.fileURL)
+        {
+            [strong openClippingAsANewDocument:markdown];
             return;
         }
 
@@ -5399,6 +5443,38 @@ static BOOL MPActionEditsTheDocument(SEL action)
         ]];
     });
     return [editing containsObject:NSStringFromSelector(action)];
+}
+
+
+/** A clipping taken while the notes it belongs to are still untitled.
+ *
+ * A page worth keeping is worth keeping even before the document beside it
+ * has a name. It opens as a new document with the clipping in it, marked as
+ * changed so that closing the window asks where to put it — the text was
+ * put there from here rather than typed, and an unsaved clipping that goes
+ * away without asking is a clipping thrown away.
+ */
+- (BOOL)openClippingAsANewDocument:(NSString *)markdown
+{
+    NSDocumentController *controller =
+        [NSDocumentController sharedDocumentController];
+    NSError *making = nil;
+    MPDocument *fresh = [controller openUntitledDocumentAndDisplay:YES
+                                                             error:&making];
+    if (!fresh)
+    {
+        MPNote(@"  non aperta: %@", making.localizedDescription);
+        [self say:NSLocalizedString(@"Il ritaglio non si è potuto aprire",
+                                    @"Web clipping")
+             text:making.localizedDescription];
+        return NO;
+    }
+
+    fresh.markdown = markdown;
+    [fresh updateChangeCount:NSChangeDone];
+    MPNote(@"  aperta come documento nuovo (%lu caratteri)",
+           (unsigned long)markdown.length);
+    return YES;
 }
 
 

@@ -55,7 +55,14 @@ Plain =     Inlines
 
 AtxInline = !Newline !(Sp? '#'* Sp Newline) Inline
 
-AtxStart =  < ( "######" | "#####" | "####" | "###" | "##" | "#" ) >
+# The space after the hashes is required, as CommonMark and GitHub require
+# it and as the renderer this editor is paired with insists (hoedown, with
+# HOEDOWN_EXT_SPACE_HEADERS). Without it `#riunione` at the start of a line
+# would be a heading, which is never what anybody meant by writing a
+# hashtag — and, worse, the editor would colour as a heading a line the
+# preview shows as a paragraph. The lookahead keeps the captured text to
+# the hashes alone, which is what the level is counted from.
+AtxStart =  < ( "######" | "#####" | "####" | "###" | "##" | "#" ) > &Spacechar
             { $$ = elem((pmh_element_type)(pmh_H1 + (strlen(yytext) - 1))); }
 
 AtxHeading = < s:AtxStart Sp? ( AtxInline )+ (Sp? '#'* Sp)? Newline >

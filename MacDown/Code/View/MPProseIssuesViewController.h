@@ -20,10 +20,16 @@
  *
  * `text` is the document as it is now: the line numbers are worked out from
  * it, and they are what makes a list of "è stato" tellable apart.
+ *
+ * `fixed` is called for the rows that carry a correction — today that is
+ * the heading whose hashes are stuck to its text — and those rows get a
+ * button. The rest of the findings are matters of judgement and get none:
+ * a panel that offers to rewrite somebody's prose is a panel that will.
  */
 - (instancetype)initWithIssues:(NSArray<MPProseIssue *> *)issues
                         inText:(NSString *)text
                        summary:(NSString *)summary
-                        chosen:(void (^)(MPProseIssue *issue))chosen;
+                        chosen:(void (^)(MPProseIssue *issue))chosen
+                         fixed:(void (^)(MPProseIssue *issue))fixed;
 
 @end

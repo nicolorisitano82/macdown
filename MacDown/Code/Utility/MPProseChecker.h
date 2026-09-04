@@ -16,6 +16,9 @@
 @property (copy, nonatomic) NSString *categoryName;
 @property (strong, nonatomic) NSColor *color;
 @property (assign, nonatomic) NSRange range;
+/// What should stand in its place, when there is one obvious answer; nil
+/// when the choice is the writer's — which is most of them.
+@property (copy, nonatomic) NSString *replacement;
 @end
 
 
@@ -33,6 +36,11 @@
  * Markdown is respected to the extent that matters here: matches inside
  * fenced or inline code are dropped, along with matches inside link
  * destinations, since none of those are prose.
+ *
+ * One finding is not about words at all: a line of hashes stuck to its
+ * text. `##Titolo` is a heading in nobody's Markdown — this editor colours
+ * it as prose and the preview draws it as prose — and it is almost always
+ * a heading that lost its space. That one carries its own correction.
  */
 - (NSArray<MPProseIssue *> *)issuesInString:(NSString *)text;
 

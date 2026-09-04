@@ -264,6 +264,9 @@ NS_INLINE NSString *MPProsePattern(NSString *entry, BOOL isPhrase)
         }
     }
 
+    [issues addObjectsFromArray:[self headingsMissingTheirSpaceIn:text
+                                                       skipping:skips]];
+
     [issues sortUsingComparator:^NSComparisonResult(MPProseIssue *a,
                                                     MPProseIssue *b) {
         if (a.range.location != b.range.location)
@@ -295,6 +298,66 @@ NS_INLINE NSString *MPProsePattern(NSString *entry, BOOL isPhrase)
     }
     return distinct;
 }
+
+/** Lines whose hashes are stuck to their text.
+ *
+ * `##Trump: la proposta` reads as a heading to whoever wrote it and as a
+ * paragraph to every Markdown there is, this editor included. Reported
+ * with the correction, since there is only one thing it can mean.
+ *
+ * A single hash is different: `#riunione` is a hashtag, and a common one.
+ * So one hash is only reported when what follows it has a space in it —
+ * more than one word is a sentence, and a sentence is a heading.
+ */
+- (NSArray<MPProseIssue *> *)headingsMissingTheirSpaceIn:(NSString *)text
+    skipping:(NSArray<NSTextCheckingResult *> *)skips
+{
+    static NSRegularExpression *stuck = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        stuck = [NSRegularExpression regularExpressionWithPattern:
+            @"^(#{1,6})([^#\\s].*)$"
+            options:NSRegularExpressionAnchorsMatchLines error:NULL];
+    });
+
+    NSMutableArray<MPProseIssue *> *found = [NSMutableArray array];
+    NSArray *matches = [stuck matchesInString:text options:0
+                                        range:NSMakeRange(0, text.length)];
+    for (NSTextCheckingResult *match in matches)
+    {
+        NSRange hashes = [match rangeAtIndex:1];
+        NSRange rest = [match rangeAtIndex:2];
+
+        BOOL inCode = NO;
+        for (NSTextCheckingResult *span in skips)
+        {
+            if (NSIntersectionRange(span.range, match.range).length)
+            {
+                inCode = YES;
+                break;
+            }
+        }
+        if (inCode)
+            continue;
+
+        if (hashes.length == 1
+            && [text rangeOfString:@" " options:0 range:rest].location
+                == NSNotFound)
+            continue;       // A hashtag, not a heading.
+
+        MPProseIssue *issue = [[MPProseIssue alloc] init];
+        issue.range = hashes;
+        issue.text = [text substringWithRange:hashes];
+        issue.categoryIdentifier = @"heading-space";
+        issue.categoryName = NSLocalizedString(@"titolo senza spazio",
+            @"Prose issue: hashes stuck to the heading text");
+        issue.color = [NSColor systemPurpleColor];
+        issue.replacement = [issue.text stringByAppendingString:@" "];
+        [found addObject:issue];
+    }
+    return found;
+}
+
 
 - (NSString *)summaryForIssues:(NSArray<MPProseIssue *> *)issues
 {

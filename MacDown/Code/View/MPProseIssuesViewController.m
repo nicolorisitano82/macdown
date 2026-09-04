@@ -19,6 +19,7 @@ static const CGFloat kMPPopoverMaximumHeight = 420.0;
 @property (copy, nonatomic) void (^chosen)(MPProseIssue *issue);
 @property (copy, nonatomic) NSString *summary;
 @property (strong, nonatomic) NSTableView *table;
+@property (copy, nonatomic) void (^fixed)(MPProseIssue *issue);
 @end
 
 
@@ -28,6 +29,7 @@ static const CGFloat kMPPopoverMaximumHeight = 420.0;
                         inText:(NSString *)text
                        summary:(NSString *)summary
                         chosen:(void (^)(MPProseIssue *))chosen
+                         fixed:(void (^)(MPProseIssue *))fixed
 {
     self = [super initWithNibName:nil bundle:nil];
     if (!self)
@@ -35,6 +37,7 @@ static const CGFloat kMPPopoverMaximumHeight = 420.0;
 
     _issues = [issues copy];
     _chosen = [chosen copy];
+    _fixed = [fixed copy];
     _summary = [summary copy];
 
     // Worked out once, here: asking for a line number per row while the
@@ -133,17 +136,46 @@ static const CGFloat kMPPopoverMaximumHeight = 420.0;
     what.lineBreakMode = NSLineBreakByTruncatingTail;
     [cell addSubview:what];
 
+    CGFloat right = column.width - 2.0;
+    if (issue.replacement.length && self.fixed)
+    {
+        // Only where there is one obvious answer; see the header.
+        NSButton *fix = [NSButton buttonWithTitle:NSLocalizedString(@"Correggi",
+            @"Apply the correction to a prose issue")
+            target:self action:@selector(fixClicked:)];
+        fix.controlSize = NSControlSizeSmall;
+        fix.font = [NSFont systemFontOfSize:[NSFont smallSystemFontSize]];
+        fix.bezelStyle = NSBezelStyleRounded;
+        fix.tag = row;
+        [fix sizeToFit];
+        NSRect frame = fix.frame;
+        frame.origin = NSMakePoint(right - NSWidth(frame), 2.0);
+        fix.frame = frame;
+        [cell addSubview:fix];
+        right -= NSWidth(frame) + 6.0;
+    }
+
     NSString *where = [NSString stringWithFormat:@"riga %@ · %@",
         self.lines[(NSUInteger)row], issue.categoryName ?: @""];
     NSTextField *place = [NSTextField labelWithString:where];
     place.alignment = NSTextAlignmentRight;
     place.textColor = [NSColor secondaryLabelColor];
     place.font = [NSFont systemFontOfSize:[NSFont smallSystemFontSize]];
-    place.frame = NSMakeRect(column.width - 168.0, 5.0, 166.0, 16.0);
+    place.frame = NSMakeRect(right - 166.0, 5.0, 166.0, 16.0);
     place.lineBreakMode = NSLineBreakByTruncatingHead;
     [cell addSubview:place];
 
     return cell;
+}
+
+/// The button on a row: the correction, applied where it was found.
+- (void)fixClicked:(NSButton *)sender
+{
+    NSInteger row = sender.tag;
+    if (row < 0 || row >= (NSInteger)self.issues.count)
+        return;
+    if (self.fixed)
+        self.fixed(self.issues[(NSUInteger)row]);
 }
 
 - (void)rowClicked:(id)sender

@@ -4,7 +4,9 @@
 //
 
 #import <XCTest/XCTest.h>
+#import <objc/message.h>
 #import "MPWebClipper.h"
+#import "MPDocument.h"
 #import "MPUtilities.h"
 
 
@@ -199,6 +201,51 @@
     XCTAssertEqual(MPReadingMinutesForWords(400), 2u);
     XCTAssertEqual(MPReadingMinutesForWords(500), 3u);
     XCTAssertEqual(MPReadingMinutesForWords(2000), 10u);
+}
+
+
+#pragma mark - Where the clipping ends up
+
+/** A clipping taken while the notes are still untitled.
+ *
+ * There is no folder to put a file in, so it opens as a document of its
+ * own; marked as changed, or closing its window would throw it away
+ * without asking.
+ */
+- (void)testAClippingTakenWhileUntitledOpensAsItsOwnDocument
+{
+    NSDocumentController *controller =
+        [NSDocumentController sharedDocumentController];
+    NSError *error = nil;
+    MPDocument *host = [controller openUntitledDocumentAndDisplay:YES
+                                                            error:&error];
+    XCTAssertNotNil(host, @"%@", error);
+    XCTAssertNil(host.fileURL, @"il documento di partenza non è salvato");
+    NSUInteger before = controller.documents.count;
+
+    NSString *clipping = @"---\ntitle: \"Rete\"\n---\n\n# Rete\n\nTesto.\n";
+    SEL open = NSSelectorFromString(@"openClippingAsANewDocument:");
+    XCTAssertTrue([host respondsToSelector:open]);
+    BOOL opened = ((BOOL (*)(id, SEL, id))objc_msgSend)(host, open, clipping);
+    XCTAssertTrue(opened);
+
+    XCTAssertEqual(controller.documents.count, before + 1,
+                   @"il ritaglio non ha aperto niente");
+    MPDocument *fresh = nil;
+    for (NSDocument *document in controller.documents)
+    {
+        if (document != host && [document isKindOfClass:[MPDocument class]])
+            fresh = (MPDocument *)document;
+    }
+    XCTAssertNotNil(fresh);
+    XCTAssertTrue([fresh.markdown containsString:@"# Rete"], @"%@",
+                  fresh.markdown);
+    XCTAssertTrue(fresh.isDocumentEdited,
+                  @"chiudendo la finestra deve chiedere dove salvarlo");
+    XCTAssertNil(fresh.fileURL, @"non ha ancora un posto dove stare");
+
+    [fresh close];
+    [host close];
 }
 
 @end

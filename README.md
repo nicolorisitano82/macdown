@@ -110,7 +110,10 @@ Writing**.
   date go at the top as front matter, so a clipping is never a quotation
   without a source. What surrounds the page — scripts, navigation, headers,
   footers, asides — is left behind, and if the page says which part is the
-  article, that part is taken. Addresses are made absolute against the page
+  article, that part is taken. From an unsaved document it opens as a
+  document of its own, to be saved wherever you like — a page worth keeping
+  is worth keeping before the notes it belongs to have a name. Addresses are
+  made absolute against the page
   they came from, so its pictures and links still point somewhere once the
   text is a file in your folder; the clipping is linked where the caret was,
   and opened in a tab. The conversion is the one used for pasting, so what
@@ -134,6 +137,18 @@ Writing**.
   command rather than by itself — a list is often in the order it is in on
   purpose. An item takes its continuation lines and its nested tasks with
   it.
+
+### Agreement between the two panes
+
+* A heading needs the space after its hashes — `## Titolo`, not `##Titolo` —
+  because CommonMark, GitHub and the renderer here all require it, and
+  because `#riunione` at the start of a line is a hashtag and not a
+  first-level heading. The editor's parser used to disagree with the
+  renderer about exactly that, colouring as a heading a line the preview
+  drew as a paragraph; it no longer does.
+* The prose panel reports those lines — "titolo senza spazio" — with a
+  **Correggi** button, the one finding there that has a single obvious
+  answer. The rest are matters of judgement and get no button.
 
 ### When something does not work
 
