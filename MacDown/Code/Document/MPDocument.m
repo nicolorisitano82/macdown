@@ -47,6 +47,7 @@
 #import "MPBacklinksViewController.h"
 #import "MPBacklinks.h"
 #import "MPSectionFolder.h"
+#import "MPActionLog.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -1048,6 +1049,11 @@ static void (^MPGetPreviewLoadingCompletionHandler(MPDocument *doc))()
     [self.sectionFolder updateWithText:self.editor.string ?: @""];
     self.markerHider.foldedIndexes = self.sectionFolder.hiddenIndexes;
     [self.editor setNeedsDisplay:YES];
+    MPNote(@"sezioni: %lu, piegate %lu, nascosti %lu caratteri (piegatura %@)",
+           (unsigned long)self.sectionFolder.sections.count,
+           (unsigned long)self.sectionFolder.foldedSections.count,
+           (unsigned long)self.sectionFolder.hiddenIndexes.count,
+           self.sectionFolder.enabled ? @"attiva" : @"spenta");
 }
 
 - (NSString *)html
@@ -4989,22 +4995,30 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
 
 - (IBAction)foldSection:(id)sender
 {
-    [self.editor foldSectionAtIndex:self.editor.selectedRange.location];
+    NSUInteger at = self.editor.selectedRange.location;
+    BOOL done = [self.editor foldSectionAtIndex:at];
+    MPNote(@"piega la sezione a %lu: %@", (unsigned long)at,
+           done ? @"fatto" : @"niente");
 }
 
 - (IBAction)unfoldSection:(id)sender
 {
-    [self.editor unfoldSectionAtIndex:self.editor.selectedRange.location];
+    NSUInteger at = self.editor.selectedRange.location;
+    BOOL done = [self.editor unfoldSectionAtIndex:at];
+    MPNote(@"apri la sezione a %lu: %@", (unsigned long)at,
+           done ? @"fatto" : @"niente");
 }
 
 - (IBAction)foldAllSections:(id)sender
 {
-    [self.editor foldEverySection];
+    MPNote(@"piega tutto: %@", [self.editor foldEverySection]
+        ? @"fatto" : @"niente");
 }
 
 - (IBAction)unfoldAllSections:(id)sender
 {
-    [self.editor unfoldEverySection];
+    MPNote(@"apri tutto: %@", [self.editor unfoldEverySection]
+        ? @"fatto" : @"niente");
 }
 
 
@@ -5026,10 +5040,14 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
         return;
 
     NSURL *folder = self.fileURL.URLByDeletingLastPathComponent;
+    MPNote(@"cerco chi collega %@ in %@", self.fileURL.lastPathComponent,
+           folder.path);
     __weak MPDocument *document = self;
     [MPBacklinkFinder findLinksTo:self.fileURL inFolder:folder
                        completion:^(NSArray<MPBacklink *> *found,
                                     NSUInteger read) {
+        MPNote(@"  %lu collegamenti in %lu documenti letti",
+               (unsigned long)found.count, (unsigned long)read);
         [document showBacklinkList:found counted:read];
     }];
 }

@@ -411,3 +411,12 @@
 
 /* Class = "NSMenuItem"; title = "Models…"; ObjectID = "mdw-models-item"; */
 "mdw-models-item.title" = "Modelli…";
+
+/* Class = "NSMenuItem"; title = "Record What I Do"; ObjectID = "rec-01-tgl"; */
+"rec-01-tgl.title" = "Registra cosa faccio";
+
+/* Class = "NSMenuItem"; title = "Show the Recording in the Finder"; ObjectID = "rec-02-shw"; */
+"rec-02-shw.title" = "Mostra la registrazione nel Finder";
+
+/* Class = "NSMenuItem"; title = "Clear the Recording"; ObjectID = "rec-03-clr"; */
+"rec-03-clr.title" = "Svuota la registrazione";

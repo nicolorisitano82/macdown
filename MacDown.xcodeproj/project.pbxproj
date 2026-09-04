@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F55A342A5A01CEBCC9F60054 /* MPActionLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310061 /* MPActionLog.m */; };
+		F55A342A5A01CEBCC9F60055 /* MPActionLogTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310062 /* MPActionLogTests.m */; };
 		F55A342A5A01CEBCC9F60052 /* MPSectionFolder.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310058 /* MPSectionFolder.m */; };
 		F55A342A5A01CEBCC9F60053 /* MPSectionFolderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310059 /* MPSectionFolderTests.m */; };
 		F55A342A5A01CEBCC9F60049 /* MPBacklinks.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2311453239F0973310053 /* MPBacklinks.m */; };
@@ -224,6 +226,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7DA2311453239F0973310060 /* MPActionLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPActionLog.h; sourceTree = "<group>"; };
+		7DA2311453239F0973310061 /* MPActionLog.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPActionLog.m; sourceTree = "<group>"; };
+		7DA2311453239F0973310062 /* MPActionLogTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPActionLogTests.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310057 /* MPSectionFolder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPSectionFolder.h; sourceTree = "<group>"; };
 		7DA2311453239F0973310058 /* MPSectionFolder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPSectionFolder.m; sourceTree = "<group>"; };
 		7DA2311453239F0973310059 /* MPSectionFolderTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPSectionFolderTests.m; sourceTree = "<group>"; };
@@ -815,6 +820,8 @@
 				7DA2311453239F0973310043 /* MPCodeLanguages.m */,
 				7DA2311453239F0973310052 /* MPBacklinks.h */,
 				7DA2311453239F0973310053 /* MPBacklinks.m */,
+				7DA2311453239F0973310060 /* MPActionLog.h */,
+				7DA2311453239F0973310061 /* MPActionLog.m */,
 				7DA2311453239F0973310045 /* MPCodeIndenter.h */,
 				7DA2311453239F0973310046 /* MPCodeIndenter.m */,
 				7DA2311453239F0973310010 /* MPTextGenerator.h */,
@@ -1101,6 +1108,7 @@
 				7DA2311453239F0973310051 /* MPPlugInsTests.m */,
 				7DA2311453239F0973310056 /* MPBacklinkTests.m */,
 				7DA2311453239F0973310059 /* MPSectionFolderTests.m */,
+				7DA2311453239F0973310062 /* MPActionLogTests.m */,
 				7DA2311453239F0973310023 /* MPDocumentTemplateTests.m */,
 				7DA2311453239F0973310036 /* MPModelCatalogTests.m */,
 				7DA2311453239F0973310037 /* MPTemplateMenuTests.m */,
@@ -1561,6 +1569,7 @@
 				F55A342A5A01CEBCC9F60016 /* MPWritingAssistant.m in Sources */,
 				F55A342A5A01CEBCC9F60042 /* MPCodeLanguages.m in Sources */,
 				F55A342A5A01CEBCC9F60049 /* MPBacklinks.m in Sources */,
+				F55A342A5A01CEBCC9F60054 /* MPActionLog.m in Sources */,
 				F55A342A5A01CEBCC9F60044 /* MPCodeIndenter.m in Sources */,
 				F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */,
 				F55A342A5A01CEBCC9F60003 /* MPRemoteImageFetch.m in Sources */,
@@ -1614,6 +1623,7 @@
 				F55A342A5A01CEBCC9F60048 /* MPPlugInsTests.m in Sources */,
 				F55A342A5A01CEBCC9F60051 /* MPBacklinkTests.m in Sources */,
 				F55A342A5A01CEBCC9F60053 /* MPSectionFolderTests.m in Sources */,
+				F55A342A5A01CEBCC9F60055 /* MPActionLogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60023 /* MPDocumentTemplateTests.m in Sources */,
 				F55A342A5A01CEBCC9F60036 /* MPModelCatalogTests.m in Sources */,
 				F55A342A5A01CEBCC9F60037 /* MPTemplateMenuTests.m in Sources */,

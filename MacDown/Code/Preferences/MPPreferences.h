@@ -80,6 +80,9 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 /// Whether a heading's section can be folded away. On, and it costs nothing
 /// until something is folded.
 @property (assign) BOOL editorSectionFolding;
+
+/// Whether what is asked of the editor is written down. Off.
+@property (assign) BOOL diagnosticsRecording;
 /// Whether lists are indented, quotations get a bar and headings get room.
 @property (assign) BOOL editorBlockLayout;
 

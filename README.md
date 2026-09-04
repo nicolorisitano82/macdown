@@ -111,6 +111,15 @@ character.
 Every one of these can be switched off in **Preferences › Rendering ›
 Writing**.
 
+### When something does not work
+
+* **Help › Record What I Do.** Off unless you switch it on, and then every
+  command and its answer goes into `~/Library/Logs/MacDown Next/azioni.log`
+  — which section was folded and whether it took, how many documents a
+  backlink search read, what the sections came to. Nothing leaves the Mac;
+  the menu shows the file in the Finder and empties it. It exists because
+  the alternative was guessing at what somebody else's screen was doing.
+
 ### Plug-ins
 
 * **A draw.io importer**, as a real plug-in (`Drawio.plugin`): pick a

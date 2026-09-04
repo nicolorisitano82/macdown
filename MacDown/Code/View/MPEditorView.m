@@ -12,6 +12,7 @@
 #import "MPMarkdownFromRichText.h"
 #import "MPTableSource.h"
 #import "MPSectionFolder.h"
+#import "MPActionLog.h"
 #import "MPCodeLanguages.h"
 #import "MPCodeIndenter.h"
 
@@ -411,6 +412,9 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
             continue;
 
         NSUInteger index = [mark[@"index"] unsignedIntegerValue];
+        MPNote(@"clic sul segno di piegatura a %lu (%@)",
+               (unsigned long)index,
+               [mark[@"toggles"] boolValue] ? @"triangolo" : @"conteggio");
         if (![mark[@"toggles"] boolValue])
         {
             [self unfoldSectionAtIndex:index];   // the count, on a fold

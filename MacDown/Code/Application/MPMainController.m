@@ -8,6 +8,7 @@
 
 #import "MPMainController.h"
 #import "MPPlugInsWindowController.h"
+#import "MPActionLog.h"
 #import <MASPreferences/MASPreferencesWindowController.h>
 #import "MPGlobals.h"
 #import "MPUtilities.h"
@@ -319,6 +320,70 @@ const NSInteger kMPTemplateMenuTag = 9001;
 - (IBAction)showHelp:(id)sender
 {
     MPOpenBundledFile(@"help", @"md");
+}
+
+/** Starts and stops writing down what is asked of the editor.
+ *
+ * For the case that keeps happening: something does not work and neither of
+ * us can see what the other sees. A recording of the screen would be a
+ * recording of everything else on it too; this is a transcript of the
+ * commands and their answers, in a file on this Mac.
+ */
+- (IBAction)toggleActionRecording:(id)sender
+{
+    MPPreferences *preferences = [MPPreferences sharedInstance];
+    BOOL on = !preferences.diagnosticsRecording;
+    preferences.diagnosticsRecording = on;
+    [MPActionLog sharedLog].recording = on;
+
+    // Said out loud the first time: a recording nobody knows is running is
+    // not a thing to leave lying about.
+    if (!on)
+        return;
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = NSLocalizedString(@"Sto registrando cosa fai",
+                                          @"Action recording started");
+    alert.informativeText = [NSString stringWithFormat:NSLocalizedString(
+        @"Comandi e risposte vengono scritti in %@. Non esce niente dal "
+        @"Mac. Dentro ci finiscono i percorsi dei documenti e i titoli "
+        @"delle sezioni su cui lavori.",
+        @"Explains what the recording holds"),
+        [MPActionLog sharedLog].fileURL.path];
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", @"Confirm")];
+    [alert runModal];
+}
+
+- (IBAction)showActionRecording:(id)sender
+{
+    NSURL *url = [MPActionLog sharedLog].fileURL;
+    if (![[NSFileManager defaultManager] fileExistsAtPath:url.path])
+    {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = NSLocalizedString(@"Non c'è niente registrato",
+                                              @"No recording yet");
+        alert.informativeText = NSLocalizedString(
+            @"Accendi «Registra cosa faccio», rifai quello che non "
+            @"funziona, e il diario sarà qui.", @"How to get a recording");
+        [alert addButtonWithTitle:NSLocalizedString(@"OK", @"Confirm")];
+        [alert runModal];
+        return;
+    }
+    [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[url]];
+}
+
+- (IBAction)clearActionRecording:(id)sender
+{
+    [[MPActionLog sharedLog] clear];
+}
+
+- (BOOL)validateMenuItem:(NSMenuItem *)item
+{
+    if (item.action == @selector(toggleActionRecording:))
+    {
+        item.state = [MPPreferences sharedInstance].diagnosticsRecording
+            ? NSControlStateValueOn : NSControlStateValueOff;
+    }
+    return YES;
 }
 
 - (IBAction)showContributing:(id)sender

@@ -29,8 +29,11 @@
 {
     // Seconds since the start rather than the time of day: what one wants
     // to know from a log of an import is where the twenty seconds went.
+    // Never below zero: the clock can hand back a hair of negative when
+    // two calls land in the same instant, and "-0.000" reads as a fault.
+    NSTimeInterval elapsed = MAX(0.0, -[self.began timeIntervalSinceNow]);
     [self.lines addObject:[NSString stringWithFormat:@"%7.3f  %@",
-        -[self.began timeIntervalSinceNow], line ?: @""]];
+        elapsed, line ?: @""]];
 }
 
 - (void)noteFormat:(NSString *)format, ...
