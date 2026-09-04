@@ -37,6 +37,11 @@ static const unsigned long long kMPActionLogLimit = 2 * 1024 * 1024;
     if (!self)
         return nil;
 
+    // Read from the preferences rather than waiting for the menu item: a
+    // recording that only starts when somebody clicks cannot record what
+    // happens at launch, which is where a document reads its headings.
+    _recording = [[NSUserDefaults standardUserDefaults]
+        boolForKey:@"diagnosticsRecording"];
     _queue = dispatch_queue_create("com.macdown.actionlog",
                                    DISPATCH_QUEUE_SERIAL);
     _clock = [[NSDateFormatter alloc] init];

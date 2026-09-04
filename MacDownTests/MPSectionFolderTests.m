@@ -350,6 +350,55 @@
     [document close];
 }
 
+/** A document opened from a file finds its headings too.
+ *
+ * The one that got away. Text arrives two ways — typed, or loaded — and the
+ * loading does not go through -setMarkdown:, so hooking that one left every
+ * opened document with no sections at all until its first keystroke. The
+ * test above passed the whole time, because it set the text the other way.
+ */
+- (void)testADocumentOpenedFromAFileFindsItsHeadings
+{
+    NSURL *file = [[[NSURL fileURLWithPath:NSTemporaryDirectory()]
+        URLByAppendingPathComponent:[NSUUID UUID].UUIDString]
+        URLByAppendingPathExtension:@"md"];
+    NSString *text =
+        @"# Verbale\n\nPremessa.\n\n## Collaudo\n\nEsito.\n";
+    XCTAssertTrue([text writeToURL:file atomically:YES
+                          encoding:NSUTF8StringEncoding error:NULL]);
+
+    XCTestExpectation *opened = [self expectationWithDescription:@"aperto"];
+    __block MPDocument *document = nil;
+    [[NSDocumentController sharedDocumentController]
+        openDocumentWithContentsOfURL:file display:YES
+                    completionHandler:^(NSDocument *made, BOOL wasOpen,
+                                        NSError *error) {
+        document = (MPDocument *)made;
+        XCTAssertNil(error, @"%@", error);
+        [opened fulfill];
+    }];
+    [self waitForExpectations:@[opened] timeout:20.0];
+
+    // The text is put into the editor after the opening has been reported,
+    // so the question is whether the headings are there a moment later —
+    // not whether they are there in the same breath.
+    NSDate *until = [NSDate dateWithTimeIntervalSinceNow:5.0];
+    while (!document.sectionFolder.sections.count
+           && [until timeIntervalSinceNow] > 0.0)
+    {
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode
+                                 beforeDate:
+            [NSDate dateWithTimeIntervalSinceNow:0.05]];
+    }
+
+    XCTAssertEqual(document.sectionFolder.sections.count, 2u,
+                   @"un documento aperto da file non ha letto i suoi titoli");
+    XCTAssertGreaterThan(document.editor.string.length, 0u);
+
+    [document close];
+    [[NSFileManager defaultManager] removeItemAtURL:file error:NULL];
+}
+
 - (void)testTheInnermostSectionIsTheOneAsked
 {
     NSString *text = @"# Uno\n\nA.\n\n## Due\n\nB.\n";

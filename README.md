@@ -64,8 +64,8 @@ character.
   rule down the margin, headings get room above them, and three dashes are
   drawn as a line across the page.
 * **A section folds away by its heading**: a triangle in the margin beside
-  every heading with something under it, ⌥⌘← and ⌥⌘→, and both with shift
-  for the whole document. A folded heading says how many lines went with it,
+  every heading with something under it, ⌥⌘← and ⌥⌘→ (View menu), and both
+  with shift for the whole document. A folded heading says how many lines went with it,
   and a selection that reaches into a folded section opens it rather than
   leaving the caret in the dark. The fold is remembered by the heading
   rather than by where it sits, so it survives the document being written in

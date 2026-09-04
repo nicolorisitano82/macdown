@@ -264,6 +264,17 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
  */
 - (void)drawFoldTriangles
 {
+    static NSUInteger said = 0;
+    if (said < 3)
+    {
+        said++;
+        MPNote(@"disegno: piegatura %@, %lu sezioni, inset %g",
+               self.sectionFolder ? (self.sectionFolder.enabled
+                   ? @"attiva" : @"spenta") : @"ASSENTE",
+               (unsigned long)self.sectionFolder.sections.count,
+               self.textContainerInset.width);
+    }
+
     if (!self.sectionFolder.enabled)
         return;
 
@@ -329,6 +340,8 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
             @"index": @(heading.location),
             @"toggles": @YES,
         }];
+        if (said <= 3)
+            MPNote(@"  triangolo «%@» a (%g, %g)", section.title, x, y);
     }
 }
 

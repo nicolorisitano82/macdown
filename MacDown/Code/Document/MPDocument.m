@@ -1505,6 +1505,11 @@ static NSString * const kMPSelectionSource =
     {
         self.editor.string = self.loadedString;
         self.loadedString = nil;
+        // The headings are in the document now. Not in -setMarkdown:,
+        // which is the other way text arrives and not the way a file
+        // does: hooking only that one left every opened document with no
+        // sections until its first keystroke.
+        [self refreshSections];
         [self.renderer parseAndRenderNow];
         [self.highlighter parseAndHighlightNow];
 
