@@ -530,6 +530,14 @@
            in:(NSRect)rect
            of:(NSBitmapImageRep *)canvas
 {
+    return [self inkAt:fraction in:rect of:canvas above:90];
+}
+
+- (BOOL)inkAt:(NSPoint)fraction
+           in:(NSRect)rect
+           of:(NSBitmapImageRep *)canvas
+        above:(unsigned char)threshold
+{
     NSInteger scale = MAX(1, canvas.pixelsWide / 400);
     const unsigned char *bytes = canvas.bitmapData;
     NSInteger centreX = (NSMinX(rect) + fraction.x * NSWidth(rect)) * scale;
@@ -544,7 +552,7 @@
                 continue;
             const unsigned char *pixel =
                 bytes + y * canvas.bytesPerRow + x * canvas.samplesPerPixel;
-            if (pixel[0] > 90)
+            if (pixel[0] > threshold)
                 return YES;
         }
     }
@@ -716,6 +724,93 @@
     MPSection *tre = [self sectionNamed:@"Tre"];
     XCTAssertEqualObjects([self.folder
         sectionCoveringIndex:tre.bodyRange.location].title, @"Tre");
+}
+
+/** The count does not move when the markers come and go.
+ *
+ * Placed after the heading's words it jumped sideways every time the caret
+ * arrived at the heading, because hiding the hashes shifts the whole line.
+ * Next to markers that already appear and disappear on their own, one more
+ * thing moving is one thing too many.
+ */
+- (void)testTheCountStaysPutWhenTheHashesAppear
+{
+    NSString *text = @"# Uno\n\nA.\nB.\n";
+    MPEditorView *view = [[MPEditorView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 400.0, 200.0)];
+    view.string = text;
+    view.textContainerInset = NSMakeSize(15.0, 8.0);
+
+    MPMarkerHider *hider = [[MPMarkerHider alloc] initWithTextView:view];
+    [self.folder updateWithText:text];
+    view.sectionFolder = self.folder;
+    XCTAssertTrue([self.folder fold:[self sectionNamed:@"Uno"]]);
+    hider.foldedIndexes = self.folder.hiddenIndexes;
+
+    NSBitmapImageRep *canvas =
+        [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+
+    // Twice: with the heading's hashes drawn, and with them suppressed.
+    NSMutableArray *places = [NSMutableArray array];
+    for (NSNumber *hides in @[@NO, @YES])
+    {
+        hider.enabled = hides.boolValue;
+        [view.layoutManager invalidateGlyphsForCharacterRange:
+            NSMakeRange(0, text.length) changeInLength:0
+                                         actualCharacterRange:NULL];
+        [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+
+        for (NSDictionary *mark in view.foldMarks)
+        {
+            if ([mark[@"toggles"] boolValue])
+                continue;   // the chevron, which lives in the margin
+            [places addObject:@(NSMinX([mark[@"rect"] rectValue]))];
+        }
+    }
+
+    XCTAssertEqual(places.count, 2u, @"il conteggio non è stato disegnato");
+    XCTAssertEqualObjects(places.firstObject, places.lastObject,
+        @"il conteggio si è spostato di %g punti",
+        [places.lastObject doubleValue] - [places.firstObject doubleValue]);
+}
+
+/// An idle chevron is drawn too, so nothing appears and disappears.
+- (void)testAHeadingWithNothingUnderItStillGetsAChevron
+{
+    NSString *text = @"# Uno\n\nA.\n\n## Ultima\n";
+    MPEditorView *view = [[MPEditorView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 400.0, 200.0)];
+    view.string = text;
+    view.textContainerInset = NSMakeSize(15.0, 8.0);
+    view.backgroundColor = [NSColor colorWithCalibratedWhite:0.12 alpha:1.0];
+    view.textColor = [NSColor colorWithCalibratedWhite:0.95 alpha:1.0];
+
+    [self.folder updateWithText:text];
+    view.sectionFolder = self.folder;
+    MPSection *last = [self sectionNamed:@"Ultima"];
+    XCTAssertEqual(last.bodyRange.length, 0u);
+
+    NSBitmapImageRep *canvas =
+        [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+
+    // Only the one that can be folded is clickable…
+    XCTAssertEqual(view.foldMarks.count, 1u);
+
+    // …but the idle one is on the page. Its line, its margin, faintly.
+    NSRange glyphs = [view.layoutManager
+        glyphRangeForCharacterRange:last.headingRange
+               actualCharacterRange:NULL];
+    NSRect words = [view.layoutManager boundingRectForGlyphRange:
+        NSMakeRange(glyphs.location, 1)
+        inTextContainer:view.textContainer];
+    NSRect margin = NSMakeRect(2.0, NSMinY(words) + 8.0 - 2.0, 13.0,
+                               NSHeight(words) + 4.0);
+    // Fainter than an active one, so asked for with a lower bar: the
+    // ground is 31 of 255 and three tenths of the ink is about 94.
+    XCTAssertTrue([self inkAt:NSMakePoint(0.5, 0.5) in:margin of:canvas
+                        above:60],
+                  @"niente nel margine accanto a un titolo senza corpo");
 }
 
 - (void)testTheInnermostSectionIsTheOneAsked

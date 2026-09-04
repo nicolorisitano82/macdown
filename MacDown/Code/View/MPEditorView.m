@@ -292,8 +292,6 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 
     for (MPSection *section in self.sectionFolder.sections)
     {
-        if (!section.bodyRange.length)
-            continue;   // nothing under it to fold away
         NSRange heading = section.headingRange;
         if (!heading.length || NSMaxRange(heading) > self.textStorage.length)
             continue;
@@ -329,6 +327,11 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         // Clear of the window's edge on one side and the text on the other.
         CGFloat x = MAX(3.0, inset.width - size - 3.0);
 
+        // Every heading on the page gets one, even one with nothing under
+        // it. A mark that comes and goes as the text is written is worse
+        // than a mark that is sometimes idle — especially next to markers
+        // that appear and disappear on their own.
+        BOOL foldable = section.bodyRange.length > 0;
         BOOL folded = [self.sectionFolder isFolded:section];
         CGFloat y = inset.height + NSMidY(words) - size / 2.0;
 
@@ -336,8 +339,11 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         // as part of the interface, and a solid triangle beside a heading
         // reads as a bullet somebody left there. Rounded joins, and a
         // weight that follows the size.
-        NSColor *stroke =
-            [ink colorWithAlphaComponent:folded ? 0.8 : 0.5];
+        // Idle is plainly subordinate but still there to be seen: a fifth
+        // of the ink reads as thirty of two hundred and fifty-five over a
+        // dark ground, which is not "there" at all.
+        NSColor *stroke = [ink colorWithAlphaComponent:
+            foldable ? (folded ? 0.8 : 0.5) : 0.3];
         [stroke setStroke];
 
         NSBezierPath *chevron = [NSBezierPath bezierPath];
@@ -371,7 +377,11 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         }
         [chevron stroke];
 
-        // A triangle is seven points across; what is clicked is bigger.
+        // Idle ones are not clicked: there is nothing under them to hide.
+        if (!foldable)
+            continue;
+
+        // The chevron is a few points across; what is clicked is bigger.
         [self.foldMarks addObject:@{
             @"rect": [NSValue valueWithRect:
                 NSInsetRect(NSMakeRect(x, y, size, size), -5.0, -5.0)],
@@ -438,11 +448,20 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
             NSForegroundColorAttributeName:
                 [ink colorWithAlphaComponent:0.7],
         };
+        /* Against the right margin, not after the words.
+         *
+         * The words move: hiding the hashes of a heading shifts the whole
+         * line, so a count placed after the text jumped sideways every
+         * time the caret arrived at or left the heading. The margin does
+         * not move.
+         */
         NSSize size = [label sizeWithAttributes:style];
-        NSRect pill = NSMakeRect(inset.width + NSMaxX(used) + 8.0,
-                                 inset.height + NSMinY(used)
-                                     + (NSHeight(used) - size.height) / 2.0,
-                                 size.width + 12.0, size.height + 2.0);
+        CGFloat width = size.width + 12.0;
+        NSRect pill = NSMakeRect(
+            inset.width + container.size.width - width - 2.0,
+            inset.height + NSMinY(used)
+                + (NSHeight(used) - size.height) / 2.0,
+            width, size.height + 2.0);
 
         [[ink colorWithAlphaComponent:0.15] setFill];
         [[NSBezierPath bezierPathWithRoundedRect:pill xRadius:4.0 yRadius:4.0]
