@@ -4,9 +4,9 @@ Seguito dello [studio di Bear](da-bear.md), messo in ordine di lavoro. Ogni
 voce dice **dove siamo** e **quanto costa**, e le fasi sono in ordine di
 quanto cambiano la giornata di chi tiene una cartella di verbali.
 
-Stato al 4 settembre 2026: master a `9734c8b`, 209 prove; la piegatura sul
-ramo `piegatura`, 231 prove, con un difetto aperto; le due anteprime sul ramo
-`anteprime`, 236 prove.
+Stato al 4 settembre 2026: master con le due anteprime dentro, 243 prove; la
+piegatura sul ramo `piegatura`, con un difetto aperto; la sola lettura e il
+fuoco sul ramo `fase1`; il web clipper sul ramo `fase4`.
 
 ---
 
@@ -30,8 +30,8 @@ ramo `piegatura`, 231 prove, con un difetto aperto; le due anteprime sul ramo
 | Modalità sola lettura | **da fare** | — | bassa |
 | Fuoco / macchina da scrivere | **da fare** | — | bassa |
 | To-do che si riordinano | **da fare** | — | bassa |
-| Anteprima del documento collegato | **fatta** — cartolina dopo cinque secondi sul link | ramo `anteprime` | — |
-| Anteprima nel Finder (Quick Look) | **fatta** — estensione dentro l'app | ramo `anteprime` | — |
+| Anteprima del documento collegato | **fatta** — cartolina dopo cinque secondi sul link | master | — |
+| Anteprima nel Finder (Quick Look) | **fatta** — estensione dentro l'app | master | — |
 | Server MCP con perimetro | **da fare** | — | alta |
 | Web clipper | **da fare** | — | media |
 | Tag come organizzazione | **no** — l'equivalente su file è il front-matter | — | — |
@@ -76,7 +76,7 @@ reale di chi scrive documentazione.
 I backlink hanno aperto la strada: la cartella diventa qualcosa che si
 percorre. Queste due la completano.
 
-1. ~~**Anteprima del documento collegato.**~~ **Fatta** sul ramo `anteprime`,
+1. ~~**Anteprima del documento collegato.**~~ **Fatta**, su master,
    nell'anteprima invece che nell'editor: puntatore fermo cinque secondi su un
    link e si apre una cartolina con titolo e prime righe. Insieme è arrivata
    l'anteprima dei `.md` nel Finder. Diario: [le due anteprime](anteprime.md).
