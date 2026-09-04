@@ -251,16 +251,94 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
  * In the inset to the left of the text rather than beside it, so turning it
  * on does not reflow a line.
  */
+/** A triangle in the margin beside every heading that can be folded.
+ *
+ * Without it folding is a shortcut you have to have been told about, and a
+ * section that folds looks exactly like one that does not. Pointing down
+ * when the section is open and right when it is folded, which is what a
+ * disclosure triangle has meant since before this editor existed.
+ *
+ * In the inset to the left of the text, like the quotation bars, so having
+ * them costs no reflow.
+ */
+- (void)drawFoldTriangles
+{
+    if (!self.sectionFolder.enabled)
+        return;
+
+    NSLayoutManager *manager = self.layoutManager;
+    NSTextContainer *container = self.textContainer;
+    if (!manager || !container)
+        return;
+
+    NSSize inset = self.textContainerInset;
+    // Against the text's edge, and never off the left of the view when the
+    // inset is narrow.
+    CGFloat size = 7.0;
+    CGFloat x = MAX(2.0, inset.width - size - 5.0);
+
+    for (MPSection *section in self.sectionFolder.sections)
+    {
+        if (!section.bodyRange.length)
+            continue;   // nothing under it to fold away
+        NSRange heading = section.headingRange;
+        if (!heading.length || NSMaxRange(heading) > self.textStorage.length)
+            continue;
+
+        NSRange glyphs = [manager glyphRangeForCharacterRange:heading
+                                        actualCharacterRange:NULL];
+        if (!glyphs.length)
+            continue;
+        NSRect fragment = [manager lineFragmentRectForGlyphAtIndex:glyphs.location
+                                                    effectiveRange:NULL];
+        if (NSIsEmptyRect(fragment))
+            continue;
+
+        BOOL folded = [self.sectionFolder isFolded:section];
+        CGFloat y = inset.height + NSMidY(fragment) - size / 2.0;
+
+        // Faint while the section is open — a column of triangles down the
+        // margin should not compete with the writing — and plain when it is
+        // folded, where it is the only sign that anything is missing.
+        [(folded ? [NSColor secondaryLabelColor]
+                 : [NSColor quaternaryLabelColor]) setFill];
+
+        NSBezierPath *triangle = [NSBezierPath bezierPath];
+        if (folded)
+        {
+            [triangle moveToPoint:NSMakePoint(x + 1.0, y)];
+            [triangle lineToPoint:NSMakePoint(x + 1.0, y + size)];
+            [triangle lineToPoint:NSMakePoint(x + size, y + size / 2.0)];
+        }
+        else
+        {
+            [triangle moveToPoint:NSMakePoint(x, y + 1.5)];
+            [triangle lineToPoint:NSMakePoint(x + size, y + 1.5)];
+            [triangle lineToPoint:NSMakePoint(x + size / 2.0,
+                                              y + size - 0.5)];
+        }
+        [triangle closePath];
+        [triangle fill];
+
+        // A triangle is seven points across; what is clicked is bigger.
+        [self.foldMarks addObject:@{
+            @"rect": [NSValue valueWithRect:
+                NSInsetRect(NSMakeRect(x, y, size, size), -5.0, -5.0)],
+            @"index": @(heading.location),
+            @"toggles": @YES,
+        }];
+    }
+}
+
 /** What a folded heading says about itself.
  *
  * Text that is not drawn is text nobody can tell is there, so a folded
- * section puts a count at the end of its heading. Also the place to click
- * to get it back — the rectangles are kept as they are drawn, since that is
+ * section puts a count at the end of its heading. Also a place to click to
+ * get it back — the rectangles are kept as they are drawn, since that is
  * the only pass that knows where the heading ended.
  */
 - (void)drawFoldMarks
 {
-    self.foldMarks = [NSMutableArray array];
     NSArray<MPSection *> *folded = self.sectionFolder.foldedSections;
     if (!folded.count)
         return;
@@ -290,11 +368,11 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
             continue;
 
         NSString *label = [NSString stringWithFormat:
-            NSLocalizedString(@"▸ %lu righe", @"A folded section's line count"),
+            NSLocalizedString(@"%lu righe", @"A folded section's line count"),
             (unsigned long)section.bodyLines];
         if (section.bodyLines == 1)
         {
-            label = NSLocalizedString(@"▸ 1 riga",
+            label = NSLocalizedString(@"1 riga",
                                       @"A folded section of one line");
         }
 
@@ -317,11 +395,12 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         [self.foldMarks addObject:@{
             @"rect": [NSValue valueWithRect:pill],
             @"index": @(heading.location),
+            @"toggles": @NO,
         }];
     }
 }
 
-/// A click on a fold's mark opens it; everything else is a click in text.
+/// A click on a triangle or on a count; everything else is text.
 - (void)mouseDown:(NSEvent *)event
 {
     NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
@@ -329,7 +408,19 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     {
         if (!NSPointInRect(point, [mark[@"rect"] rectValue]))
             continue;
-        [self unfoldSectionAtIndex:[mark[@"index"] unsignedIntegerValue]];
+
+        NSUInteger index = [mark[@"index"] unsignedIntegerValue];
+        if (![mark[@"toggles"] boolValue])
+        {
+            [self unfoldSectionAtIndex:index];   // the count, on a fold
+            return;
+        }
+        // The triangle, which goes both ways.
+        MPSection *section = [self.sectionFolder sectionCoveringIndex:index];
+        if ([self.sectionFolder isFolded:section])
+            [self unfoldSectionAtIndex:index];
+        else
+            [self foldSectionAtIndex:index];
         return;
     }
     [super mouseDown:event];
@@ -407,6 +498,8 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     [super drawViewBackgroundInRect:rect];
     [self drawQuoteBars];
     [self drawRules];
+    self.foldMarks = [NSMutableArray array];
+    [self drawFoldTriangles];
     [self drawFoldMarks];
 
     NSRange range = self.activeSourceRange;

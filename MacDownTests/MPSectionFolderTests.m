@@ -6,6 +6,13 @@
 #import <XCTest/XCTest.h>
 #import "MPSectionFolder.h"
 #import "MPMarkerHider.h"
+#import "MPEditorView.h"
+
+
+/// Private, and the record of where a click would land.
+@interface MPEditorView (Testing)
+@property (strong, nonatomic) NSMutableArray *foldMarks;
+@end
 
 
 @interface MPSectionFolderTests : XCTestCase
@@ -246,6 +253,55 @@
     [view.layoutManager ensureLayoutForTextContainer:view.textContainer];
     XCTAssertEqualWithAccuracy(NSHeight([view.layoutManager
         usedRectForTextContainer:view.textContainer]), before, 0.5);
+}
+
+/** The triangles are drawn, and something can be clicked.
+ *
+ * A shortcut nobody has been told about is not a feature, so every heading
+ * with something under it gets a triangle in the margin. Counted rather
+ * than looked at: the drawing pass is the only thing that knows where a
+ * heading ended, and it is also the only place a click can be aimed at.
+ */
+- (void)testEveryFoldableHeadingGetsSomethingToClick
+{
+    NSString *text =
+        @"# Uno\n\nA.\n\n## Due\n\nB.\n\n## Vuota\n";
+    MPEditorView *view = [[MPEditorView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 600.0, 400.0)];
+    view.string = text;
+    view.textContainerInset = NSMakeSize(24.0, 10.0);
+
+    [self.folder updateWithText:text];
+    view.sectionFolder = self.folder;
+    XCTAssertEqual(self.folder.sections.count, 3u);
+
+    NSBitmapImageRep *canvas =
+        [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+
+    // "Uno" and "Due" have something under them; "Vuota" is the last
+    // heading with nothing after it, and folding it would hide nothing.
+    XCTAssertEqual(view.foldMarks.count, 2u);
+    for (NSDictionary *mark in view.foldMarks)
+    {
+        XCTAssertTrue([mark[@"toggles"] boolValue],
+                      @"un triangolo va in entrambi i versi");
+        NSRect rect = [mark[@"rect"] rectValue];
+        XCTAssertGreaterThan(NSWidth(rect), 10.0, @"troppo piccolo da colpire");
+        XCTAssertTrue(NSMinX(rect) < 24.0,
+                      @"il triangolo deve stare nel margine, non nel testo");
+    }
+
+    // Folded, and the count appears beside the heading as a second thing
+    // to click.
+    [self.folder fold:[self sectionNamed:@"Due"]];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+    XCTAssertEqual(view.foldMarks.count, 3u);
+
+    // With the preference off there is nothing in the margin at all.
+    self.folder.enabled = NO;
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+    XCTAssertEqual(view.foldMarks.count, 0u);
 }
 
 - (void)testTheInnermostSectionIsTheOneAsked
