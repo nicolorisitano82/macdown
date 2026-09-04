@@ -361,6 +361,9 @@
 /* Class = "NSMenuItem"; title = "Read Only"; ObjectID = "rdo-01-tgl"; */
 "rdo-01-tgl.title" = "Sola lettura";
 
+/* Class = "NSMenuItem"; title = "Move Completed Tasks to the End"; ObjectID = "tsk-01-srt"; */
+"tsk-01-srt.title" = "Sposta le attività fatte in fondo";
+
 /* Class = "NSMenuItem"; title = "Record What I Do"; ObjectID = "rec-01-tgl"; */
 "rec-01-tgl.title" = "Registra cosa faccio";
 

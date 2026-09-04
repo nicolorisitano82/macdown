@@ -539,6 +539,12 @@
                                     <action selector="toggleComment:" target="-1" id="7Xw-6O-ibS"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Move Completed Tasks to the End" id="tsk-01-srt">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="moveDoneTasksToEnd:" target="-1" id="tsk-01-act"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="mdw-sep-1"/>
                             <menuItem title="Writing Help" id="mdw-help-menu">
                                 <modifierMask key="keyEquivalentModifierMask"/>

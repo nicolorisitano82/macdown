@@ -47,6 +47,7 @@
 #import "MPBacklinksViewController.h"
 #import "MPBacklinks.h"
 #import "MPActionLog.h"
+#import "MPTaskList.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -1727,6 +1728,18 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
     // Nowhere to look until the document has a folder to be in.
     if (action == @selector(showBacklinks:))
         return self.fileURL != nil;
+
+    // Nothing to offer unless the caret is in a list with something to
+    // move: a command that does nothing when pressed teaches you to stop
+    // pressing it.
+    if (action == @selector(moveDoneTasksToEnd:))
+    {
+        if (self.readOnly)
+            return NO;
+        NSRange where = NSMakeRange(NSNotFound, 0);
+        return MPTasksMovedToEnd(self.editor.string ?: @"",
+            self.editor.selectedRange.location, &where) != nil;
+    }
 
     if (action == @selector(toggleReadOnly:))
     {
@@ -4965,6 +4978,38 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
                  preferredEdge:NSRectEdgeMaxY];
 }
 
+#pragma mark - Task lists
+
+/** Moves the finished items of the list at the caret to the end of it.
+ *
+ * A command rather than something that happens by itself, unlike Bear's:
+ * reordering somebody's lines while they are typing them is invasive, and
+ * a list is often in the order it is in on purpose.
+ */
+- (IBAction)moveDoneTasksToEnd:(id)sender
+{
+    NSRange replaced = NSMakeRange(NSNotFound, 0);
+    NSString *sorted = MPTasksMovedToEnd(self.editor.string ?: @"",
+        self.editor.selectedRange.location, &replaced);
+    if (!sorted || replaced.location == NSNotFound)
+    {
+        MPNote(@"attività fatte in fondo: niente da spostare");
+        return;
+    }
+
+    if (![self.editor shouldChangeTextInRange:replaced
+                            replacementString:sorted])
+        return;
+    [self.editor insertText:sorted replacementRange:replaced];
+    // The whole list stays selected: what moved is worth seeing, and one
+    // undo takes it back.
+    self.editor.selectedRange = NSMakeRange(replaced.location,
+                                            sorted.length);
+    MPNote(@"attività fatte in fondo: %lu caratteri riscritti",
+           (unsigned long)sorted.length);
+}
+
+
 #pragma mark - Reading rather than writing
 
 /** Stops the document being changed, and says so.
@@ -5049,7 +5094,7 @@ static BOOL MPActionEditsTheDocument(SEL action)
             @"linkToNewMarkdownFile:",
             @"improveWriting:", @"correctWriting:", @"makeWritingFormal:",
             @"makeWritingPlain:", @"makeWritingShorter:",
-            @"makeWritingLonger:",
+            @"makeWritingLonger:", @"moveDoneTasksToEnd:",
         ]];
     });
     return [editing containsObject:NSStringFromSelector(action)];
