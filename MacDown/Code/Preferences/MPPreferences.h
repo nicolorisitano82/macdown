@@ -80,6 +80,11 @@ extern NSString * const MPDidDetectFreshInstallationNotification;
 
 /// Whether what is asked of the editor is written down. Off.
 @property (assign) BOOL diagnosticsRecording;
+
+/// Dims all but the paragraph being written. Off: it is a mode, not a look.
+@property (assign) BOOL editorFocusMode;
+/// Keeps the line being written at the same height. Off, for the same reason.
+@property (assign) BOOL editorTypewriter;
 /// Whether lists are indented, quotations get a bar and headings get room.
 @property (assign) BOOL editorBlockLayout;
 

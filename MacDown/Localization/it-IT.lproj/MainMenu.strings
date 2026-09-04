@@ -358,6 +358,18 @@
 /* Class = "NSMenuItem"; title = "Links to This Document…"; ObjectID = "bkl-01-lst"; */
 "bkl-01-lst.title" = "Chi collega questo documento…";
 
+/* Class = "NSMenuItem"; title = "Read Only"; ObjectID = "rdo-01-tgl"; */
+"rdo-01-tgl.title" = "Sola lettura";
+
+/* Class = "NSMenuItem"; title = "Focus Mode"; ObjectID = "wrt-01-fcs"; */
+"wrt-01-fcs.title" = "Modo fuoco";
+
+/* Class = "NSMenuItem"; title = "Typewriter Scrolling"; ObjectID = "wrt-02-typ"; */
+"wrt-02-typ.title" = "Scorrimento a macchina da scrivere";
+
+/* Class = "NSMenuItem"; title = "Move Completed Tasks to the End"; ObjectID = "tsk-01-srt"; */
+"tsk-01-srt.title" = "Sposta le attività fatte in fondo";
+
 /* Class = "NSMenuItem"; title = "Record What I Do"; ObjectID = "rec-01-tgl"; */
 "rec-01-tgl.title" = "Registra cosa faccio";
 

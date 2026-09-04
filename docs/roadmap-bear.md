@@ -5,9 +5,9 @@ voce dice **dove siamo** e **quanto costa**, e le fasi sono in ordine di
 quanto cambiano la giornata di chi tiene una cartella di verbali.
 
 Stato al 4 settembre 2026: master con le due anteprime dentro, 243 prove; la
-piegatura sul ramo `piegatura`, con un difetto aperto; la sola lettura, il
-fuoco e il riordino dei to-do sul ramo `fase1`. Il web clipper è su master
-dalla 0.23.0.
+piegatura sul ramo `piegatura`, con un difetto aperto. Tutto il resto è su
+master: il web clipper, la sola lettura, il fuoco e il riordino dei to-do
+arrivano con la 0.23.0.
 
 ---
 
@@ -28,9 +28,9 @@ dalla 0.23.0.
 | Export (PDF, DOCX, HTML, ePub) | fatto, e più curato del loro | master | — |
 | Temi | fatto, editor e anteprima | master | — |
 | CLI | `macdownext`: apre file, e basta | master | media |
-| Modalità sola lettura | **da fare** | — | bassa |
-| Fuoco / macchina da scrivere | **da fare** | — | bassa |
-| To-do che si riordinano | **da fare** | — | bassa |
+| Modalità sola lettura | **fatta** — ⌥⌘L | master | — |
+| Fuoco / macchina da scrivere | **fatti** — ⌃⌥⌘F e ⌃⌥⌘T | master | — |
+| To-do che si riordinano | **fatto**, a comando | master | — |
 | Anteprima del documento collegato | **fatta** — cartolina dopo cinque secondi sul link | master | — |
 | Anteprima nel Finder (Quick Look) | **fatta** — estensione dentro l'app | master | — |
 | Server MCP con perimetro | **da fare** | — | alta |
@@ -55,20 +55,16 @@ Un ramo aperto è lavoro che invecchia.
 
 ---
 
-## Fase 1 — tre cose piccole che si sentono ogni giorno
+## Fase 1 — ~~tre cose piccole che si sentono ogni giorno~~ fatta
 
-Nessuna delle tre supera le duecento righe, e ognuna risolve un fastidio
-reale di chi scrive documentazione.
+Tutte e tre su master dalla 0.23.0:
 
-1. **Sola lettura.** Un verbale firmato o un'evidenza chiusa non va toccata
-   per sbaglio; oggi l'unica difesa è ricordarsene. Voce di menù, una fascia
-   che lo dice, `editable = NO`. *Bassa.*
-2. **Fuoco e macchina da scrivere.** Attenuare i paragrafi che non stai
-   scrivendo e tenere la riga corrente a metà schermo invece che in fondo.
-   *Bassa.*
-3. **To-do che si riordinano.** In Bear i completati scendono in fondo da
-   soli e si può spegnere. Da noi **a comando**, non automatico: riordinare
-   le righe di qualcuno mentre scrive è invadente. *Bassa.*
+1. **Sola lettura**, ⌥⌘L: lucchetto nella barra del titolo, testo ancora
+   selezionabile, comandi che modificano rifiutati.
+2. **Fuoco e macchina da scrivere**, ⌃⌥⌘F e ⌃⌥⌘T: attenuazione fatta con gli
+   attributi temporanei del layout manager, quindi non tocca il file.
+3. **To-do che si riordinano**, a comando e non da soli: una voce si porta
+   dietro le sue righe di continuazione e i suoi to-do annidati.
 
 ---
 

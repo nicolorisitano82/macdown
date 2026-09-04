@@ -462,6 +462,25 @@
                                     <action selector="showBacklinks:" target="-1" id="bkl-01-act"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Focus Mode" keyEquivalent="f" id="wrt-01-fcs">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleFocusMode:" target="-1" id="wrt-01-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Typewriter Scrolling" keyEquivalent="t" id="wrt-02-typ">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleTypewriterScrolling:" target="-1" id="wrt-02-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="rdo-00-sep"/>
+                            <menuItem title="Read Only" keyEquivalent="l" id="rdo-01-tgl">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleReadOnly:" target="-1" id="rdo-01-act"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="prs-01-sep"/>
                             <menuItem title="Enter Full Screen" keyEquivalent="f" id="1gz-YB-DZE">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
@@ -537,6 +556,12 @@
                             <menuItem title="Comment" keyEquivalent="/" id="i8c-gf-w29">
                                 <connections>
                                     <action selector="toggleComment:" target="-1" id="7Xw-6O-ibS"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Move Completed Tasks to the End" id="tsk-01-srt">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="moveDoneTasksToEnd:" target="-1" id="tsk-01-act"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="mdw-sep-1"/>

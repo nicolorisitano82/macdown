@@ -118,6 +118,22 @@ Writing**.
 * **How long it takes to read**, in the counter beside the words and the
   characters. Two hundred words a minute, which is a figure and not a
   measurement: what it is for is telling a page from a chapter.
+### Reading and writing
+
+* **Read only**, ⌥⌘L: a lock in the title bar, the text still selectable,
+  and the commands that edit refused — the text view turns down what is
+  typed into it but not what is done to it, so ⌘B would otherwise still put
+  asterisks in a document that says it cannot change. Per window, not
+  remembered.
+* **Focus mode** and **typewriter scrolling**, ⌃⌥⌘F and ⌃⌥⌘T: everything but
+  the paragraph you are writing dimmed, and that paragraph kept two fifths
+  down the window instead of walking to the bottom. The dimming is drawing
+  and not text: it goes through the layout manager's temporary attributes,
+  so it cannot reach the file.
+* **Move completed tasks to the end** of the list the caret is in, on
+  command rather than by itself — a list is often in the order it is in on
+  purpose. An item takes its continuation lines and its nested tasks with
+  it.
 
 ### When something does not work
 

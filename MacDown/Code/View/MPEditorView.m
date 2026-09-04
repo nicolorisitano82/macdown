@@ -243,6 +243,107 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     }
 }
 
+#pragma mark - Writing aids
+
+- (void)setFocusModeEnabled:(BOOL)enabled
+{
+    if (_focusModeEnabled == enabled)
+        return;
+    _focusModeEnabled = enabled;
+    [self applyFocusDimming];
+}
+
+- (void)setTypewriterEnabled:(BOOL)enabled
+{
+    if (_typewriterEnabled == enabled)
+        return;
+    _typewriterEnabled = enabled;
+    if (enabled)
+        [self keepTheWritingLineInPlace];
+}
+
+- (void)updateWritingAids
+{
+    if (self.focusModeEnabled)
+        [self applyFocusDimming];
+    if (self.typewriterEnabled)
+        [self keepTheWritingLineInPlace];
+}
+
+/** Everything but the current paragraph, drawn faintly.
+ *
+ * Temporary attributes: they belong to the layout manager and not to the
+ * text, so nothing here can reach the file. Only the foreground colour is
+ * added and removed, which leaves whatever else is temporary — the prose
+ * checker's underlines — where it is.
+ */
+- (void)applyFocusDimming
+{
+    NSLayoutManager *manager = self.layoutManager;
+    if (!manager || !self.textStorage.length)
+        return;
+
+    NSRange whole = NSMakeRange(0, self.textStorage.length);
+    [manager removeTemporaryAttribute:NSForegroundColorAttributeName
+                   forCharacterRange:whole];
+    if (!self.focusModeEnabled)
+        return;
+
+    NSRange here = [self.string paragraphRangeForRange:
+        NSMakeRange(MIN(self.selectedRange.location, whole.length), 0)];
+    NSColor *dim = [(self.textColor ?: [NSColor textColor])
+        colorWithAlphaComponent:0.35];
+
+    if (here.location > 0)
+    {
+        [manager addTemporaryAttribute:NSForegroundColorAttributeName
+                                value:dim
+                    forCharacterRange:NSMakeRange(0, here.location)];
+    }
+    NSUInteger after = NSMaxRange(here);
+    if (after < whole.length)
+    {
+        [manager addTemporaryAttribute:NSForegroundColorAttributeName
+                                value:dim
+                    forCharacterRange:NSMakeRange(after,
+                                                  whole.length - after)];
+    }
+}
+
+/// Scrolls so the line with the caret sits where the eye already is.
+- (void)keepTheWritingLineInPlace
+{
+    NSClipView *clip = self.enclosingScrollView.contentView;
+    NSLayoutManager *manager = self.layoutManager;
+    NSTextContainer *container = self.textContainer;
+    if (!clip || !manager || !container || !self.textStorage.length)
+        return;
+
+    NSUInteger location = MIN(self.selectedRange.location,
+                              self.textStorage.length - 1);
+    NSRange glyphs = [manager glyphRangeForCharacterRange:
+        NSMakeRange(location, 1) actualCharacterRange:NULL];
+    if (!glyphs.length)
+        return;
+    NSRect line = [manager lineFragmentRectForGlyphAtIndex:glyphs.location
+                                            effectiveRange:NULL];
+    if (NSIsEmptyRect(line))
+        return;
+
+    // Two fifths down rather than the middle: what has just been written
+    // wants more room above it than below.
+    CGFloat wanted = NSMinY(line) + self.textContainerInset.height
+        - NSHeight(clip.bounds) * 0.42;
+    CGFloat furthest = MAX(0.0, NSHeight(self.frame) - NSHeight(clip.bounds));
+    wanted = MAX(0.0, MIN(wanted, furthest));
+
+    if (fabs(wanted - NSMinY(clip.bounds)) < 1.0)
+        return;
+    [clip scrollToPoint:NSMakePoint(NSMinX(clip.bounds), wanted)];
+    [self.enclosingScrollView reflectScrolledClipView:clip];
+}
+
+
 /** Draws the bar marking the block the preview is looking at.
  *
  * In the inset to the left of the text rather than beside it, so turning it
