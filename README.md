@@ -113,6 +113,22 @@ Writing**.
   because the alternative was guessing at what somebody else's screen was
   doing.
 
+### In the Finder
+
+* **Markdown files preview as they read.** Press space on a `.md` file and
+  Finder shows the document — headings, tables, code, to-do boxes — with
+  the same style sheet the application opens with, instead of the source.
+  Pictures kept beside the document travel with the preview; the page
+  itself cannot reach the network, so a document that asks for a remote
+  image does not get one.
+* **Preferences › Quick Look** says where that preview stands and does
+  something about it: whether macOS has it, which copy of the application
+  is providing it, and which version — with **Install**, **Update** when
+  the registered build is older than the one in hand, and **Remove**.
+  Worth a panel because the registration goes wrong quietly: a copy left
+  in the Downloads folder can hold it, and a preview that does not appear
+  says nothing at all.
+
 ### Plug-ins
 
 * **A draw.io importer**, as a real plug-in (`Drawio.plugin`): pick a

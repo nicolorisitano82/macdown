@@ -124,7 +124,8 @@ if [ "$DO_TESTS" = 1 ]; then
     fi
     # The two features of this branch have their own classes; a suite that
     # is green because they were not run is not evidence.
-    for CLASS in MPLinkPreviewTests MDPreviewPageTests MPHoverWatchTests; do
+    for CLASS in MPLinkPreviewTests MDPreviewPageTests MPHoverWatchTests \
+                 MPQuickLookExtensionTests; do
         ok "$CLASS ha girato" grep -q "$CLASS" "$WORK/test.log"
     done
 fi
@@ -156,6 +157,7 @@ if [ -d "$APPEX" ]; then
     ok "lo stile dell'app è dentro l'estensione" \
         test -f "$APPEX/Contents/Resources/GitHub2.css"
 
+
     # Quick Look loads sandboxed extensions only, and `codesign --deep` on
     # the app quietly strips the nested entitlements. Both are invisible
     # until a preview does not appear.
@@ -166,6 +168,38 @@ if [ -d "$APPEX" ]; then
     ok "può leggere le figure accanto al documento" \
         contains "$WORK/rights.plist" \
         "com.apple.security.temporary-exception.files.home-relative-path.read-only"
+fi
+
+
+# ------------------------------------------------- and the copy that ships
+
+# The version and the seal only come together on the copy in dist/: the
+# build system rewrites the extension's Info.plist at the end of its own
+# target, so the stamp goes on afterwards, and the signature with it. The
+# panel in Preferences compares the registered version with this one, so a
+# copy left at its placeholder version would offer an update for ever.
+DIST_APP=$(ls -d "dist/$CONFIGURATION"/*.app 2>/dev/null | head -1)
+DIST_APPEX="$DIST_APP/Contents/PlugIns/MacDownQuickLook.appex"
+
+say "La copia che si distribuisce"
+if [ -z "$DIST_APP" ] || [ ! -d "$DIST_APPEX" ]; then
+    skip "niente in dist/$CONFIGURATION"
+else
+    DIST_VERSION=$(/usr/libexec/PlistBuddy -c \
+        "Print :CFBundleShortVersionString" "$DIST_APPEX/Contents/Info.plist" \
+        2>/dev/null)
+    DIST_APP_VERSION=$(/usr/libexec/PlistBuddy -c \
+        "Print :CFBundleShortVersionString" "$DIST_APP/Contents/Info.plist" \
+        2>/dev/null)
+    echo "  · $DIST_APP"
+    ok "l'estensione porta la versione dell'app ($DIST_APP_VERSION)" \
+        test -n "$DIST_VERSION" -a "$DIST_VERSION" = "$DIST_APP_VERSION"
+    ok "e la firma regge lo stampo" \
+        codesign --verify --strict "$DIST_APPEX"
+    codesign -d --entitlements - --xml "$DIST_APPEX" \
+        > "$WORK/dist-rights.plist" 2>/dev/null
+    ok "con la sandbox ancora dichiarata" \
+        contains "$WORK/dist-rights.plist" "com.apple.security.app-sandbox"
 fi
 
 

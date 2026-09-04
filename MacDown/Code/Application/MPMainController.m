@@ -18,6 +18,7 @@
 #import "MPGeneralPreferencesViewController.h"
 #import "MPMarkdownPreferencesViewController.h"
 #import "MPEditorPreferencesViewController.h"
+#import "MPQuickLookPreferencesViewController.h"
 #import "MPHtmlPreferencesViewController.h"
 #import "MPTerminalPreferencesViewController.h"
 #import "MPDocument.h"
@@ -301,6 +302,7 @@ const NSInteger kMPTemplateMenuTag = 9001;
             [[MPEditorPreferencesViewController alloc] init],
             [[MPHtmlPreferencesViewController alloc] init],
             [[MPTerminalPreferencesViewController alloc] init],
+            [[MPQuickLookPreferencesViewController alloc] init],
         ];
         NSString *title = NSLocalizedString(@"Preferences",
                                             @"Preferences window title.");

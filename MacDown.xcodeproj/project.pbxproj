@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D2B0000000000000000000EC /* MPQuickLookExtension.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000E9 /* MPQuickLookExtension.m */; };
+		D2B0000000000000000000ED /* MPQuickLookPreferencesViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000EB /* MPQuickLookPreferencesViewController.m */; };
+		D2B0000000000000000000EF /* MPQuickLookExtensionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000EE /* MPQuickLookExtensionTests.m */; };
+		D2B0000000000000000000F2 /* MPQuickLookExtension.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000E9 /* MPQuickLookExtension.m */; };
 		D2B0000000000000000000E6 /* MPHoverWatchTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000E5 /* MPHoverWatchTests.m */; };
 		D2B0000000000000000000B0 /* MDQuickLookProvider.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A1 /* MDQuickLookProvider.m */; };
 		D2B0000000000000000000B1 /* MDPreviewPage.m in Sources */ = {isa = PBXBuildFile; fileRef = D2B0000000000000000000A3 /* MDPreviewPage.m */; };
@@ -251,6 +255,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D2B0000000000000000000E8 /* MPQuickLookExtension.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPQuickLookExtension.h; sourceTree = "<group>"; };
+		D2B0000000000000000000E9 /* MPQuickLookExtension.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPQuickLookExtension.m; sourceTree = "<group>"; };
+		D2B0000000000000000000EA /* MPQuickLookPreferencesViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPQuickLookPreferencesViewController.h; sourceTree = "<group>"; };
+		D2B0000000000000000000EB /* MPQuickLookPreferencesViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPQuickLookPreferencesViewController.m; sourceTree = "<group>"; };
+		D2B0000000000000000000EE /* MPQuickLookExtensionTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPQuickLookExtensionTests.m; sourceTree = "<group>"; };
 		D2B0000000000000000000E5 /* MPHoverWatchTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPHoverWatchTests.m; sourceTree = "<group>"; };
 		D2B0000000000000000000A0 /* MDQuickLookProvider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "MDQuickLookProvider.h"; sourceTree = "<group>"; };
 		D2B0000000000000000000A1 /* MDQuickLookProvider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "MDQuickLookProvider.m"; sourceTree = "<group>"; };
@@ -895,6 +904,8 @@
 				7DA2311453239F0973310016 /* MPWritingAssistant.m */,
 				7DA2311453239F0973310042 /* MPCodeLanguages.h */,
 				7DA2311453239F0973310043 /* MPCodeLanguages.m */,
+				D2B0000000000000000000E8 /* MPQuickLookExtension.h */,
+				D2B0000000000000000000E9 /* MPQuickLookExtension.m */,
 				7DA2311453239F0973310052 /* MPBacklinks.h */,
 				7DA2311453239F0973310053 /* MPBacklinks.m */,
 				7DA2311453239F0973310072 /* MPLinkPreview.h */,
@@ -933,6 +944,8 @@
 				1F0D9D6C194AC7F7008E1856 /* MPHtmlPreferencesViewController.h */,
 				1F0D9D6D194AC7F7008E1856 /* MPHtmlPreferencesViewController.m */,
 				1F0D9D87194AC83C008E1856 /* MPHtmlPreferencesViewController.xib */,
+				D2B0000000000000000000EA /* MPQuickLookPreferencesViewController.h */,
+				D2B0000000000000000000EB /* MPQuickLookPreferencesViewController.m */,
 				852D52391E260A6400BA7162 /* MPTerminalPreferencesViewController.h */,
 				852D523A1E260A6400BA7162 /* MPTerminalPreferencesViewController.m */,
 				1F3619E81F36DA0F00EDA15A /* MPTerminalPreferencesViewController.xib */,
@@ -1174,6 +1187,7 @@
 		1FCDCA2F1944F96E00B1F966 /* MacDownTests */ = {
 			isa = PBXGroup;
 			children = (
+				D2B0000000000000000000EE /* MPQuickLookExtensionTests.m */,
 				D2B0000000000000000000E5 /* MPHoverWatchTests.m */,
 				D2B0000000000000000000C5 /* MDPreviewPageTests.m */,
 				1FF1420319A8A24800CF8A6A /* MPUtilityTests.m */,
@@ -1506,7 +1520,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "DEST=\"$SRCROOT/dist/$CONFIGURATION\"\n# Per configuration, so a Debug build cannot quietly replace the Release\n# one you thought you were running.\nmkdir -p \"$DEST\"\nrm -rf \"$DEST/$FULL_PRODUCT_NAME\"\ncp -R \"$BUILT_PRODUCTS_DIR/$FULL_PRODUCT_NAME\" \"$DEST/\"\n# The plug-ins built alongside go too: one is installed through the\n# plug-in manager, which asks for a .plugin to point at.\nfor PLUGIN in \"$BUILT_PRODUCTS_DIR\"/*.plugin; do\n    [ -e \"$PLUGIN\" ] || continue\n    rm -rf \"$DEST/$(basename \"$PLUGIN\")\"\n    cp -R \"$PLUGIN\" \"$DEST/\"\ndone\n# The version goes on here, at the very end, and by an explicit path.\n# Stamped earlier it does not survive: the build system writes the\n# Info.plist again after the script phases have run, and the app was\n# shipping as 0.1.\nPLIST=\"$DEST/$FULL_PRODUCT_NAME/Contents/Info.plist\"\nSHORT=$(\"$SRCROOT/Tools/short_version.sh\")\nBUNDLE=$(cd \"$SRCROOT\" && git rev-list --count HEAD)\nBUILD=$(cd \"$SRCROOT\" && git describe --tags --always --dirty=+)\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $SHORT\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUNDLE\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Add :CFBundleBuildVersion string $BUILD\" \"$PLIST\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Set :CFBundleBuildVersion $BUILD\" \"$PLIST\"\necho \"note: dist copy stamped $SHORT ($BUNDLE)\"\necho \"note: copied $FULL_PRODUCT_NAME to dist/$CONFIGURATION\"\n";
+			shellScript = "DEST=\"$SRCROOT/dist/$CONFIGURATION\"\n# Per configuration, so a Debug build cannot quietly replace the Release\n# one you thought you were running.\nmkdir -p \"$DEST\"\nrm -rf \"$DEST/$FULL_PRODUCT_NAME\"\ncp -R \"$BUILT_PRODUCTS_DIR/$FULL_PRODUCT_NAME\" \"$DEST/\"\n# The plug-ins built alongside go too: one is installed through the\n# plug-in manager, which asks for a .plugin to point at.\nfor PLUGIN in \"$BUILT_PRODUCTS_DIR\"/*.plugin; do\n    [ -e \"$PLUGIN\" ] || continue\n    rm -rf \"$DEST/$(basename \"$PLUGIN\")\"\n    cp -R \"$PLUGIN\" \"$DEST/\"\ndone\n# The version goes on here, at the very end, and by an explicit path.\n# Stamped earlier it does not survive: the build system writes the\n# Info.plist again after the script phases have run, and the app was\n# shipping as 0.1.\nPLIST=\"$DEST/$FULL_PRODUCT_NAME/Contents/Info.plist\"\nSHORT=$(\"$SRCROOT/Tools/short_version.sh\")\nBUNDLE=$(cd \"$SRCROOT\" && git rev-list --count HEAD)\nBUILD=$(cd \"$SRCROOT\" && git describe --tags --always --dirty=+)\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $SHORT\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUNDLE\" \"$PLIST\"\n/usr/libexec/PlistBuddy -c \"Add :CFBundleBuildVersion string $BUILD\" \"$PLIST\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Set :CFBundleBuildVersion $BUILD\" \"$PLIST\"\necho \"note: dist copy stamped $SHORT ($BUNDLE)\"\necho \"note: copied $FULL_PRODUCT_NAME to dist/$CONFIGURATION\"\n# The extension carries the same version, and is signed again after: the Quick Look panel in Preferences compares the registered version with this one.\nbash \"$SRCROOT/Tools/stamp_extension.sh\" \"$DEST/$FULL_PRODUCT_NAME\"\n";
 		};
 		1E02F0A95AAEBCEF65493F5F /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -1697,6 +1711,8 @@
 				F55A342A5A01CEBCC9F60042 /* MPCodeLanguages.m in Sources */,
 				F55A342A5A01CEBCC9F60049 /* MPBacklinks.m in Sources */,
 				F55A342A5A01CEBCC9F60063 /* MPLinkPreview.m in Sources */,
+				D2B0000000000000000000EC /* MPQuickLookExtension.m in Sources */,
+				D2B0000000000000000000ED /* MPQuickLookPreferencesViewController.m in Sources */,
 				F55A342A5A01CEBCC9F60054 /* MPActionLog.m in Sources */,
 				F55A342A5A01CEBCC9F60044 /* MPCodeIndenter.m in Sources */,
 				F55A342A5A01CEBCC9F60012 /* MPLlamaGenerator.m in Sources */,
@@ -1736,6 +1752,8 @@
 			files = (
 				1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */,
 				1F51C9A5194565050015A96F /* MPPreferencesTests.m in Sources */,
+				D2B0000000000000000000EF /* MPQuickLookExtensionTests.m in Sources */,
+				D2B0000000000000000000F2 /* MPQuickLookExtension.m in Sources */,
 				D2B0000000000000000000E6 /* MPHoverWatchTests.m in Sources */,
 				D2B0000000000000000000C6 /* MDPreviewPageTests.m in Sources */,
 				D2B0000000000000000000C7 /* MDPreviewPage.m in Sources */,

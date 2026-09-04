@@ -118,6 +118,50 @@ niente, non è la modifica: copia il file con un altro nome.
 
 ---
 
+## Un pannello per una cosa che si registra da sola
+
+L'estensione non si «installa» come un plugin: sta dentro l'app, e installarla
+vuol dire **far sì che macOS la noti**. Il guaio è che quel passaggio va
+storto in silenzio — una copia dell'app rimasta in Download può tenersi la
+registrazione, un aggiornamento può lasciare registrata la build vecchia, e
+un'anteprima che non compare non dice niente.
+
+Quindi **Impostazioni › Anteprima Finder**: una frase con un pallino colorato,
+il percorso e la versione registrata, la versione che c'è in questa copia, e
+tre pulsanti — **Installa**, **Aggiorna** quando la registrata è più vecchia
+di quella in mano, **Rimuovi**. Sotto, il collegamento al pannello delle
+estensioni di Impostazioni di Sistema, per chi preferisce spegnerla da lì.
+
+Non esiste un'API per questo, quindi il pannello parla agli stessi strumenti
+che usa il sistema: `pluginkit -m -i … -vvv` per sapere come stanno le cose,
+`lsregister -u` e poi `-f -R -trusted` per installare o aggiornare,
+`pluginkit -r` (con `-e ignore`) per rimuovere. Le due parti che vale la pena
+provare sono separate dal resto e hanno le loro prove: **leggere l'elenco** di
+`pluginkit` — il segno a inizio riga è tutto ciò che distingue «spenta a mano»
+(`-`) da «nessuno l'ha mai chiesto» (spazio) — e **decidere lo stato** dalle
+tre cose che si sanno (dov'è registrata, quale versione, cosa c'è nell'app).
+Diciannove prove, di cui quattro costruiscono il pannello vero e leggono che
+cosa offre.
+
+### La versione, e lo stampo che rompe il sigillo
+
+Per confrontare le versioni, l'estensione deve **portare** la versione
+dell'app: nata con `1.0` fisso nel suo `Info.plist`, avrebbe offerto un
+aggiornamento per sempre. Il primo tentativo — una fase di build
+nell'estensione che stampa la versione col `PlistBuddy` — ha prodotto la
+trappola documentata sopra al contrario: il sistema di build **riscrive** il
+suo `Info.plist` alla fine del proprio target, e in Release il risultato era
+un'estensione col sigillo rotto. L'ha trovato la suite di controllo, alla
+riga «firmata».
+
+Quindi lo stampo va dove non passa più nessuno: sulla copia in `dist/`, quella
+che finisce nel DMG, e subito dopo l'estensione **viene firmata di nuovo con i
+suoi diritti** (`Tools/stamp_extension.sh`). Nella copia che gira da Xcode la
+versione resta il segnaposto, e non è un problema: il pannello confronta la
+registrata con quella dentro l'app, che lì sono lo stesso file.
+
+---
+
 ## Dove sta il conto
 
 | Cosa | Dove |
@@ -127,6 +171,9 @@ niente, non è la modifica: copia il file con un altro nome.
 | Pagina del Finder | `QuickLook/MDPreviewPage.{h,m}` |
 | Estensione | `QuickLook/MDQuickLookProvider.{h,m}`, `QuickLook/Info.plist`, `QuickLook/MacDownQuickLook.entitlements` |
 | Prove | `MacDownTests/MPLinkPreviewTests.m` (9), `MacDownTests/MDPreviewPageTests.m` (18), `MacDownTests/MPHoverWatchTests.m` (7) |
+| Pannello nelle impostazioni | `MacDown/Code/Preferences/MPQuickLookPreferencesViewController.{h,m}` |
+| Stato dell'estensione | `MacDown/Code/Utility/MPQuickLookExtension.{h,m}`, prove in `MacDownTests/MPQuickLookExtensionTests.m` (19) |
+| Versione dell'estensione | `Tools/stamp_extension.sh`, chiamato dalla copia in `dist/` |
 | Controllo di tutto | `Tools/verify_features.sh`, con il banco `Tools/quicklook_page.m` |
 
 ---
