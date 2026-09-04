@@ -1,0 +1,138 @@
+# Roadmap: le funzioni di Bear, e cosa ne facciamo
+
+Seguito dello [studio di Bear](da-bear.md), messo in ordine di lavoro. Ogni
+voce dice **dove siamo** e **quanto costa**, e le fasi sono in ordine di
+quanto cambiano la giornata di chi tiene una cartella di verbali.
+
+Stato al 4 settembre 2026: master a `5a59df4`, 209 prove; la piegatura sul
+ramo `piegatura`, 231 prove, con un difetto aperto.
+
+---
+
+## Il quadro
+
+| Funzione di Bear | Da noi | Dove | Costo |
+|---|---|---|---|
+| Backlink | **fatto** — ⌃⌥⌘B, con riga e frase | master | — |
+| Piegatura delle sezioni | **fatta**, difetto aperto sul sync dello scorrimento | ramo `piegatura` | — |
+| Tabelle | fatto, per comandi | master | — |
+| Blocchi di codice + evidenziazione | fatto, 113 linguaggi, rientro per linguaggio | master | — |
+| Indice del documento (ToC) | fatto, barra laterale | master | — |
+| Cerca e sostituisci nella nota | fatto (⌘F, ⌥⌘F) | master | — |
+| Note collegate (wiki link) | fatto | master | — |
+| Mermaid | fatto **prima di Bear** (loro: luglio 2026) | master | — |
+| Formule matematiche | fatto **prima di Bear** (loro: agosto 2025) | master | — |
+| Statistiche in linea | parziale: parole e caratteri | master | bassa |
+| Export (PDF, DOCX, HTML, ePub) | fatto, e più curato del loro | master | — |
+| Temi | fatto, editor e anteprima | master | — |
+| CLI | `macdownext`: apre file, e basta | master | media |
+| Modalità sola lettura | **da fare** | — | bassa |
+| Fuoco / macchina da scrivere | **da fare** | — | bassa |
+| To-do che si riordinano | **da fare** | — | bassa |
+| Anteprima del documento collegato | **da fare** | — | bassa |
+| Server MCP con perimetro | **da fare** | — | alta |
+| Web clipper | **da fare** | — | media |
+| Tag come organizzazione | **no** — l'equivalente su file è il front-matter | — | — |
+| Sync iCloud, cifratura per nota, OCR, scanner, schizzi, archivio/cestino, workspace per tag | **no** | — | — |
+
+---
+
+## Fase 0 — chiudere la piegatura
+
+Un ramo aperto è lavoro che invecchia.
+
+* **Il sync dello scorrimento con le sezioni piegate.** Pista già in mano, ed
+  è la stessa trappola che ha morso quattro volte: `editorTopForCharacterIndex:`
+  misura il rettangolo di un glifo, e per un carattere dentro una sezione
+  piegata quel rettangolo è vuoto — l'editor salta a zero. La direzione
+  editor → anteprima passa invece per il carattere in cima e regge; è
+  `syncScrollers`, che interpola sulle posizioni dei titoli, quella da
+  ricalcolare quando una piega cambia.
+* Poi **fusione su master** e un rilascio.
+
+---
+
+## Fase 1 — tre cose piccole che si sentono ogni giorno
+
+Nessuna delle tre supera le duecento righe, e ognuna risolve un fastidio
+reale di chi scrive documentazione.
+
+1. **Sola lettura.** Un verbale firmato o un'evidenza chiusa non va toccata
+   per sbaglio; oggi l'unica difesa è ricordarsene. Voce di menù, una fascia
+   che lo dice, `editable = NO`. *Bassa.*
+2. **Fuoco e macchina da scrivere.** Attenuare i paragrafi che non stai
+   scrivendo e tenere la riga corrente a metà schermo invece che in fondo.
+   *Bassa.*
+3. **To-do che si riordinano.** In Bear i completati scendono in fondo da
+   soli e si può spegnere. Da noi **a comando**, non automatico: riordinare
+   le righe di qualcuno mentre scrive è invadente. *Bassa.*
+
+---
+
+## Fase 2 — navigare una cartella come si navigano le note
+
+I backlink hanno aperto la strada: la cartella diventa qualcosa che si
+percorre. Queste due la completano.
+
+1. **Anteprima del documento collegato.** Passando su un `[[wikilink]]` o su
+   un link relativo: titolo e prime righe in un popover. Trasforma un elenco
+   di file in una rete leggibile. *Bassa-media.*
+2. **Elenco della cartella per front-matter.** L'equivalente onesto dei tag
+   di Bear: il front-matter Jekyll lo leggiamo già, manca un pannello che
+   mostri i documenti vicini per campo — `stato: bozza`, `cliente: X`.
+   Niente database, solo quello che c'è scritto nei file. *Media.*
+
+---
+
+## Fase 3 — il pezzo grosso: un server MCP sulla cartella
+
+Bear 2.8 ha messo `bearcli` e un server MCP; la 2.9 ha aggiunto lo
+**scoping** — quali note l'assistente vede, per tag inclusi o esclusi.
+
+Da noi l'unità non è il tag, è **la cartella**: cerca, leggi, crea, aggiungi
+in coda, dentro una radice dichiarata e con esclusioni. Per una cartella di
+evidenze ISO 27001 poter chiedere «i verbali di agosto che citano il
+firewall» senza aprire l'app vale più di dieci funzioni di editor.
+
+**Va progettato prima di essere scritto**, e la parte da progettare non è il
+protocollo: è il perimetro. Cosa può leggere, cosa può scrivere, come si
+dice di no, e come si vede cosa ha fatto — il diario delle azioni che c'è
+già è il posto giusto dove farlo comparire. *Alta.*
+
+Prima tappa utile e piccola: portare `macdownext` da «apre file» a
+«cerca/leggi/aggiungi», che è la stessa base su cui il server poi si appoggia.
+
+---
+
+## Fase 4 — accessori, se avanza tempo
+
+* **Web clipper**: una pagina salvata come Markdown nella cartella, con
+  indirizzo e data in cima. Il convertitore HTML→Markdown c'è già (serve per
+  incollare); il lavoro è ripulire la pagina. *Media.*
+* **Statistiche più complete**: tempo di lettura accanto a parole e
+  caratteri. *Bassa.*
+
+---
+
+## Quello che non faremo, e perché
+
+| | |
+|---|---|
+| **Tag come organizzazione** | Sono un database. Su file l'equivalente è il front-matter, che già leggiamo |
+| **Sync iCloud** | I file stanno in una cartella: sincronizzarli è mestiere di iCloud Drive, Dropbox o `git`. Rifarlo dentro l'app significa poterlo rompere |
+| **Cifratura per nota** | Renderebbe il file illeggibile a tutto il resto, che è il contrario del motivo per cui si scrive in Markdown. FileVault cifra il disco |
+| **OCR dentro immagini e PDF** | Lo fa Spotlight sulla cartella |
+| **Scanner, schizzi a penna** | Roba da iPhone e iPad |
+| **Archivio e cestino** | Sono il Finder |
+| **Workspace per tag** | Da noi il workspace è la cartella, e ce l'ha già il sistema |
+
+---
+
+## Una regola che vale per tutta la lista
+
+> Si porta ciò che vive dentro un documento o dentro una cartella. Non si
+> porta ciò che ha bisogno di un database.
+
+È il criterio con cui è stata scritta questa roadmap, ed è anche il motivo
+per cui è corta: metà delle funzioni di Bear risolvono un problema che noi
+non abbiamo.
