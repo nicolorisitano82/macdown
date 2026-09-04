@@ -310,22 +310,24 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
                                         actualCharacterRange:NULL];
         if (!glyphs.length)
             continue;
-        // The heading's own glyphs rather than the line fragment: this
-        // editor gives a heading room above it, so the fragment's middle
-        // is above the words and a mark centred on it reads as dropped
-        // there rather than set beside them.
-        NSRect words = [manager boundingRectForGlyphRange:glyphs
-                                         inTextContainer:container];
+        // One glyph, not the range: the bounding rectangle of a range that
+        // ends a line runs to the edge of the container, which is how the
+        // count ended up pinned to the right margin. The first glyph of
+        // the heading is on the line the mark belongs beside.
+        NSRect words = [manager boundingRectForGlyphRange:
+            NSMakeRange(glyphs.location, 1) inTextContainer:container];
         if (NSIsEmptyRect(words))
             continue;
 
-        // And sized from the heading it belongs to, so an H1 gets a bigger
-        // one than an H4 instead of the same nine points beside both.
+        // Sized from the heading it belongs to, so an H1 gets a bigger one
+        // than an H4 — and smaller than it was, since it is a mark in a
+        // margin and not a control.
         NSFont *font = [self.textStorage attribute:NSFontAttributeName
                                            atIndex:heading.location
                                     effectiveRange:NULL];
-        CGFloat size = MIN(15.0, MAX(8.0, font.pointSize * 0.62));
-        CGFloat x = MAX(1.0, inset.width - size - 4.0);
+        CGFloat size = MIN(11.0, MAX(6.5, font.pointSize * 0.42));
+        // Clear of the window's edge on one side and the text on the other.
+        CGFloat x = MAX(3.0, inset.width - size - 3.0);
 
         BOOL folded = [self.sectionFolder isFolded:section];
         CGFloat y = inset.height + NSMidY(words) - size / 2.0;
@@ -343,25 +345,29 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         chevron.lineCapStyle = NSLineCapStyleRound;
         chevron.lineJoinStyle = NSLineJoinStyleRound;
 
-        // Inset so the stroke stays inside the rectangle that is clicked.
+        /* Inset so the stroke stays inside the rectangle that is clicked,
+         * and drawn for a flipped view — which a text view is: y grows
+         * downwards. Written the other way round the open chevron came out
+         * as a caret pointing up, which is what was on the screen.
+         */
         CGFloat pad = chevron.lineWidth;
         CGFloat left = x + pad;
         CGFloat right = x + size - pad;
-        CGFloat bottom = y + pad;
-        CGFloat top = y + size - pad;
+        CGFloat upper = y + pad;              // nearer the top of the view
+        CGFloat lower = y + size - pad;       // nearer the bottom
         if (folded)
         {
             // Pointing right: the section is shut.
-            [chevron moveToPoint:NSMakePoint(left + 1.0, top)];
-            [chevron lineToPoint:NSMakePoint(right, (top + bottom) / 2.0)];
-            [chevron lineToPoint:NSMakePoint(left + 1.0, bottom)];
+            [chevron moveToPoint:NSMakePoint(left + 0.5, upper)];
+            [chevron lineToPoint:NSMakePoint(right, (upper + lower) / 2.0)];
+            [chevron lineToPoint:NSMakePoint(left + 0.5, lower)];
         }
         else
         {
             // Pointing down: what is under it is on the page.
-            [chevron moveToPoint:NSMakePoint(left, top - 1.0)];
-            [chevron lineToPoint:NSMakePoint((left + right) / 2.0, bottom)];
-            [chevron lineToPoint:NSMakePoint(right, top - 1.0)];
+            [chevron moveToPoint:NSMakePoint(left, upper + 0.5)];
+            [chevron lineToPoint:NSMakePoint((left + right) / 2.0, lower)];
+            [chevron lineToPoint:NSMakePoint(right, upper + 0.5)];
         }
         [chevron stroke];
 
@@ -409,8 +415,11 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
                                         actualCharacterRange:NULL];
         if (!glyphs.length)
             continue;
-        NSRect used = [manager boundingRectForGlyphRange:glyphs
-                                         inTextContainer:container];
+        // The last glyph of the heading: the whole range's rectangle runs
+        // to the container's edge, which put this against the right margin
+        // instead of after the words.
+        NSRect used = [manager boundingRectForGlyphRange:
+            NSMakeRange(NSMaxRange(glyphs) - 1, 1) inTextContainer:container];
         if (NSIsEmptyRect(used))
             continue;
 

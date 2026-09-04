@@ -431,7 +431,11 @@
     // The brightest pixel where the triangle was drawn, against the
     // background it sits on. Read off the samples: asking a colour for its
     // brightness means knowing its colour space, and bytes do not care.
-    NSRect rect = [view.foldMarks.firstObject[@"rect"] rectValue];
+    // The chevron's own area: the clickable rectangle is padded, and with
+    // a wide inset the padding reaches under the heading's first letters —
+    // whose ink would answer the question instead of the chevron's.
+    NSRect rect = NSInsetRect(
+        [view.foldMarks.firstObject[@"rect"] rectValue], 5.0, 5.0);
     const unsigned char *bytes = canvas.bitmapData;
     NSInteger scale = canvas.pixelsWide / (NSInteger)NSWidth(view.bounds);
     unsigned char brightest = 0;
@@ -515,6 +519,110 @@
     XCTAssertTrue([self.folder unfold:[self sectionNamed:@"Due"]]);
     [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
     XCTAssertEqual(view.foldMarks.count, 3u);
+}
+
+/** Whether there is ink at a place inside a rectangle.
+ *
+ * Given as fractions of it, and sampled over a couple of points, so the
+ * answer does not turn on one antialiased pixel.
+ */
+- (BOOL)inkAt:(NSPoint)fraction
+           in:(NSRect)rect
+           of:(NSBitmapImageRep *)canvas
+{
+    NSInteger scale = MAX(1, canvas.pixelsWide / 400);
+    const unsigned char *bytes = canvas.bitmapData;
+    NSInteger centreX = (NSMinX(rect) + fraction.x * NSWidth(rect)) * scale;
+    NSInteger centreY = (NSMinY(rect) + fraction.y * NSHeight(rect)) * scale;
+
+    for (NSInteger y = centreY - 1; y <= centreY + 1; y++)
+    {
+        for (NSInteger x = centreX - 1; x <= centreX + 1; x++)
+        {
+            if (x < 0 || y < 0
+                    || x >= canvas.pixelsWide || y >= canvas.pixelsHigh)
+                continue;
+            const unsigned char *pixel =
+                bytes + y * canvas.bytesPerRow + x * canvas.samplesPerPixel;
+            if (pixel[0] > 90)
+                return YES;
+        }
+    }
+    return NO;
+}
+
+/** The chevron points the way it says it does.
+ *
+ * A text view is flipped — y grows downwards — and drawn the other way
+ * round the open chevron came out as a caret pointing up, which is what
+ * was on the screen. A rectangle cannot tell the two apart; where the ink
+ * is inside it can. Not the centre of the ink either: the middle of a V is
+ * the middle of its rectangle, which is what my first attempt measured and
+ * why it disagreed with a picture of a perfectly good V.
+ *
+ * The vertex is the thing: a V has ink at the bottom middle and none at the
+ * top middle, and a > has ink at the right middle and none at the left.
+ */
+- (void)testTheChevronPointsDownWhenOpenAndRightWhenFolded
+{
+    NSString *text = @"# Uno\n\nA.\nB.\n";
+    MPEditorView *view = [[MPEditorView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 400.0, 200.0)];
+    view.string = text;
+    view.textContainerInset = NSMakeSize(24.0, 8.0);
+    view.backgroundColor = [NSColor colorWithCalibratedWhite:0.12 alpha:1.0];
+    view.textColor = [NSColor colorWithCalibratedWhite:0.95 alpha:1.0];
+
+    [self.folder updateWithText:text];
+    view.sectionFolder = self.folder;
+
+    NSBitmapImageRep *canvas =
+        [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+    XCTAssertEqual(view.foldMarks.count, 1u);
+
+    // The chevron's own area: the clickable rectangle is padded, and with
+    // a wide inset that padding reaches under the heading's first letters,
+    // whose ink would answer instead of the chevron's.
+    NSRect rect = NSInsetRect(
+        [view.foldMarks.firstObject[@"rect"] rectValue], 5.0, 5.0);
+
+    XCTAssertTrue([self inkAt:NSMakePoint(0.5, 0.85) in:rect of:canvas],
+                  @"il chevron aperto non ha la punta in basso");
+    XCTAssertFalse([self inkAt:NSMakePoint(0.5, 0.1) in:rect of:canvas],
+                   @"c'è inchiostro in cima al mezzo: non è una V");
+
+    [self.folder fold:[self sectionNamed:@"Uno"]];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+
+    XCTAssertTrue([self inkAt:NSMakePoint(0.85, 0.5) in:rect of:canvas],
+                  @"il chevron piegato non ha la punta a destra");
+    XCTAssertFalse([self inkAt:NSMakePoint(0.1, 0.5) in:rect of:canvas],
+                   @"c'è inchiostro a sinistra al mezzo: non è un >");
+}
+
+/// Small, and out of the text: a mark in a margin, not a control.
+- (void)testTheMarkIsSmallAndStaysInTheMargin
+{
+    NSString *text = @"# Uno\n\nA.\n";
+    MPEditorView *view = [[MPEditorView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 400.0, 200.0)];
+    view.string = text;
+    view.textContainerInset = NSMakeSize(15.0, 8.0);
+
+    [self.folder updateWithText:text];
+    view.sectionFolder = self.folder;
+    NSBitmapImageRep *canvas =
+        [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+
+    NSRect rect = [view.foldMarks.firstObject[@"rect"] rectValue];
+    // The rectangle is the clickable one, ten points of padding around a
+    // chevron of eleven at most.
+    XCTAssertLessThan(NSWidth(rect) - 10.0, 12.0);
+    // Clear of the window's edge, and not over the text.
+    XCTAssertGreaterThanOrEqual(NSMinX(rect) + 5.0, 3.0);
+    XCTAssertLessThanOrEqual(NSMaxX(rect) - 5.0, 15.0);
 }
 
 - (void)testTheInnermostSectionIsTheOneAsked
