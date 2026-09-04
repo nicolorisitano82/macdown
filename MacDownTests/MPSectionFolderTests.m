@@ -455,6 +455,68 @@
         (int)brightest);
 }
 
+/** A subsection inside a folded parent gets no mark of its own.
+ *
+ * Its heading is not on the page — the parent hid it — and its glyphs are
+ * suppressed, so asking where they are answers with the line above. Two
+ * marks then land on one line, and clicking toggles whichever was drawn
+ * second: a section that vanishes and cannot be opened again, which is
+ * what was reported.
+ */
+- (void)testAHiddenHeadingGetsNoMark
+{
+    NSString *text =
+        @"# Uno\n\nA.\n\n## Due\n\nB.\n\n### Tre\n\nC.\n";
+    MPEditorView *view = [[MPEditorView alloc] initWithFrame:
+        NSMakeRect(0.0, 0.0, 500.0, 400.0)];
+    view.string = text;
+    view.textContainerInset = NSMakeSize(24.0, 8.0);
+
+    [self.folder updateWithText:text];
+    view.sectionFolder = self.folder;
+
+    NSBitmapImageRep *canvas =
+        [view bitmapImageRepForCachingDisplayInRect:view.bounds];
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+    // Three headings, each with something under it.
+    XCTAssertEqual(view.foldMarks.count, 3u);
+
+    // Fold the middle one: its subsection's heading goes with it, and so
+    // does that subsection's mark.
+    XCTAssertTrue([self.folder fold:[self sectionNamed:@"Due"]]);
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+
+    // Two chevrons — "Tre" has lost its own, since its heading is inside
+    // what "Due" hid — plus the count beside the folded heading.
+    NSUInteger chevrons = 0;
+    for (NSDictionary *mark in view.foldMarks)
+    {
+        if ([mark[@"toggles"] boolValue])
+            chevrons++;
+    }
+    XCTAssertEqual(chevrons, 2u, @"la sottosezione nascosta ha ancora un segno");
+    XCTAssertEqual(view.foldMarks.count, 3u);
+
+    // And nothing lands on top of anything else, which is what made a
+    // click toggle the wrong section.
+    for (NSUInteger i = 0; i < view.foldMarks.count; i++)
+    {
+        for (NSUInteger j = i + 1; j < view.foldMarks.count; j++)
+        {
+            NSRect a = [view.foldMarks[i][@"rect"] rectValue];
+            NSRect b = [view.foldMarks[j][@"rect"] rectValue];
+            XCTAssertFalse(NSIntersectsRect(a, b),
+                @"segni sovrapposti: %@ e %@",
+                NSStringFromRect(a), NSStringFromRect(b));
+        }
+    }
+
+    // Opening the parent brings the subsection's mark back.
+    XCTAssertTrue([self.folder unfold:[self sectionNamed:@"Due"]]);
+    [view cacheDisplayInRect:view.bounds toBitmapImageRep:canvas];
+    XCTAssertEqual(view.foldMarks.count, 3u);
+}
+
 - (void)testTheInnermostSectionIsTheOneAsked
 {
     NSString *text = @"# Uno\n\nA.\n\n## Due\n\nB.\n";

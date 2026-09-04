@@ -289,10 +289,6 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     // on a dark margin — which is what the first two attempts were. The
     // quotation bars two functions above had this right all along.
     NSColor *ink = self.textColor ?: [NSColor textColor];
-    // Against the text's edge, and never off the left of the view when the
-    // inset is narrow.
-    CGFloat size = 9.0;
-    CGFloat x = MAX(1.0, inset.width - size - 4.0);
 
     for (MPSection *section in self.sectionFolder.sections)
     {
@@ -302,39 +298,72 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         if (!heading.length || NSMaxRange(heading) > self.textStorage.length)
             continue;
 
+        // A subsection inside a folded parent is not on the page: its
+        // heading has no glyphs, and asking where they are answers with
+        // the line above. Two triangles then land on one line and a click
+        // toggles whichever was drawn second — which is a section that
+        // disappears and cannot be opened again.
+        if ([self.sectionFolder isHiddenIndex:heading.location])
+            continue;
+
         NSRange glyphs = [manager glyphRangeForCharacterRange:heading
                                         actualCharacterRange:NULL];
         if (!glyphs.length)
             continue;
-        NSRect fragment = [manager lineFragmentRectForGlyphAtIndex:glyphs.location
-                                                    effectiveRange:NULL];
-        if (NSIsEmptyRect(fragment))
+        // The heading's own glyphs rather than the line fragment: this
+        // editor gives a heading room above it, so the fragment's middle
+        // is above the words and a mark centred on it reads as dropped
+        // there rather than set beside them.
+        NSRect words = [manager boundingRectForGlyphRange:glyphs
+                                         inTextContainer:container];
+        if (NSIsEmptyRect(words))
             continue;
 
+        // And sized from the heading it belongs to, so an H1 gets a bigger
+        // one than an H4 instead of the same nine points beside both.
+        NSFont *font = [self.textStorage attribute:NSFontAttributeName
+                                           atIndex:heading.location
+                                    effectiveRange:NULL];
+        CGFloat size = MIN(15.0, MAX(8.0, font.pointSize * 0.62));
+        CGFloat x = MAX(1.0, inset.width - size - 4.0);
+
         BOOL folded = [self.sectionFolder isFolded:section];
-        CGFloat y = inset.height + NSMidY(fragment) - size / 2.0;
+        CGFloat y = inset.height + NSMidY(words) - size / 2.0;
 
-        // Half-strength while the section is open — a column of triangles
-        // should not compete with the writing — and nearly full when it is
-        // folded, where it is the only sign that anything is missing.
-        [[ink colorWithAlphaComponent:folded ? 0.75 : 0.45] setFill];
+        // A chevron, stroked, rather than a filled wedge: two strokes read
+        // as part of the interface, and a solid triangle beside a heading
+        // reads as a bullet somebody left there. Rounded joins, and a
+        // weight that follows the size.
+        NSColor *stroke =
+            [ink colorWithAlphaComponent:folded ? 0.8 : 0.5];
+        [stroke setStroke];
 
-        NSBezierPath *triangle = [NSBezierPath bezierPath];
+        NSBezierPath *chevron = [NSBezierPath bezierPath];
+        chevron.lineWidth = MAX(1.25, size * 0.16);
+        chevron.lineCapStyle = NSLineCapStyleRound;
+        chevron.lineJoinStyle = NSLineJoinStyleRound;
+
+        // Inset so the stroke stays inside the rectangle that is clicked.
+        CGFloat pad = chevron.lineWidth;
+        CGFloat left = x + pad;
+        CGFloat right = x + size - pad;
+        CGFloat bottom = y + pad;
+        CGFloat top = y + size - pad;
         if (folded)
         {
-            [triangle moveToPoint:NSMakePoint(x + 1.0, y)];
-            [triangle lineToPoint:NSMakePoint(x + 1.0, y + size)];
-            [triangle lineToPoint:NSMakePoint(x + size, y + size / 2.0)];
+            // Pointing right: the section is shut.
+            [chevron moveToPoint:NSMakePoint(left + 1.0, top)];
+            [chevron lineToPoint:NSMakePoint(right, (top + bottom) / 2.0)];
+            [chevron lineToPoint:NSMakePoint(left + 1.0, bottom)];
         }
         else
         {
-            [triangle moveToPoint:NSMakePoint(x, y + 1.5)];
-            [triangle lineToPoint:NSMakePoint(x + size, y + 1.5)];
-            [triangle lineToPoint:NSMakePoint(x + size / 2.0,
-                                              y + size - 0.5)];
+            // Pointing down: what is under it is on the page.
+            [chevron moveToPoint:NSMakePoint(left, top - 1.0)];
+            [chevron lineToPoint:NSMakePoint((left + right) / 2.0, bottom)];
+            [chevron lineToPoint:NSMakePoint(right, top - 1.0)];
         }
-        [triangle closePath];
-        [triangle fill];
+        [chevron stroke];
 
         // A triangle is seven points across; what is clicked is bigger.
         [self.foldMarks addObject:@{
