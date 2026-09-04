@@ -723,6 +723,25 @@ DQ
                                     <action selector="showContributing:" target="eq0-c4-vgQ" id="kry-sc-poi"/>
                                 </connections>
                             </menuItem>
+                            <menuItem isSeparatorItem="YES" id="rec-00-sep"/>
+                            <menuItem title="Record What I Do" id="rec-01-tgl">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="toggleActionRecording:" target="eq0-c4-vgQ" id="rec-01-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Show the Recording in the Finder" id="rec-02-shw">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="showActionRecording:" target="eq0-c4-vgQ" id="rec-02-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Clear the Recording" id="rec-03-clr">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="clearActionRecording:" target="eq0-c4-vgQ" id="rec-03-act"/>
+                                </connections>
+                            </menuItem>
                         </items>
                     </menu>
                 </menuItem>

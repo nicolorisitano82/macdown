@@ -46,6 +46,7 @@
 #import "MPProseIssuesViewController.h"
 #import "MPBacklinksViewController.h"
 #import "MPBacklinks.h"
+#import "MPActionLog.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -4957,10 +4958,14 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
         return;
 
     NSURL *folder = self.fileURL.URLByDeletingLastPathComponent;
+    MPNote(@"cerco chi collega %@ in %@", self.fileURL.lastPathComponent,
+           folder.path);
     __weak MPDocument *document = self;
     [MPBacklinkFinder findLinksTo:self.fileURL inFolder:folder
                        completion:^(NSArray<MPBacklink *> *found,
                                     NSUInteger read) {
+        MPNote(@"  %lu collegamenti in %lu documenti letti",
+               (unsigned long)found.count, (unsigned long)read);
         [document showBacklinkList:found counted:read];
     }];
 }
