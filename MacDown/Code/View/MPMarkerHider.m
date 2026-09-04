@@ -554,6 +554,15 @@
 }
 
 
+/// Whether this character is not to be drawn, for either of the reasons.
+- (BOOL)isUndrawnIndex:(NSUInteger)index withMarkers:(BOOL)hidesMarkers
+{
+    if ([self.foldedIndexes containsIndex:index])
+        return YES;
+    return hidesMarkers && [self.markers containsIndex:index]
+        && ![self.revealed containsIndex:index];
+}
+
 - (BOOL)isHiddenMarkerAtIndex:(NSUInteger)index
 {
     return self.enabled && [self.markers containsIndex:index]
@@ -605,16 +614,16 @@
                        font:(NSFont *)font
             forGlyphRange:(NSRange)glyphRange
 {
-    if (!self.enabled || !self.markers.count)
+    BOOL hidesMarkers = (self.enabled && self.markers.count > 0);
+    if (!hidesMarkers && !self.foldedIndexes.count)
         return 0;
 
-    // Only worth rewriting the run if it actually contains a hidden marker.
+    // Only worth rewriting the run if something in it is not to be drawn.
     BOOL any = NO;
     for (NSUInteger i = 0; i < glyphRange.length; i++)
     {
         NSUInteger index = characterIndexes[i];
-        if ([self.markers containsIndex:index]
-                && ![self.revealed containsIndex:index])
+        if ([self isUndrawnIndex:index withMarkers:hidesMarkers])
         {
             any = YES;
             break;
@@ -631,8 +640,7 @@
     for (NSUInteger i = 0; i < glyphRange.length; i++)
     {
         NSUInteger index = characterIndexes[i];
-        BOOL hide = [self.markers containsIndex:index]
-            && ![self.revealed containsIndex:index];
+        BOOL hide = [self isUndrawnIndex:index withMarkers:hidesMarkers];
         // Null rather than ControlCharacter: the character keeps its place
         // in the text and its position in the layout, and simply draws
         // nothing. Deleting it still deletes one character, which is what

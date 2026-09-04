@@ -31,6 +31,15 @@
 /// When off, every marker is visible and this costs nothing.
 @property (assign, nonatomic) BOOL enabled;
 
+/** Characters somebody else wants left undrawn — the folded sections.
+ *
+ * A layout manager has one delegate, and this is it. Folding hides whole
+ * lines rather than delimiters, and for a different reason, so it decides
+ * elsewhere and hands the answer over here. Independent of `enabled`:
+ * folding works whether or not the markers are being hidden.
+ */
+@property (copy, nonatomic) NSIndexSet *foldedIndexes;
+
 /** Whether to replace a horizontal rule's dashes with a drawn line.
  *
  * Unlike the rest, hiding these leaves nothing behind — the whole construct

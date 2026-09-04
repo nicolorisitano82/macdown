@@ -41,6 +41,14 @@ NSArray<NSURL *> *MPPlugInBundleURLsInFolders(NSArray<NSURL *> *folders);
  */
 NSUInteger MPLineNumberForLocation(NSString *text, NSUInteger location);
 
+/** The ranges of `text` that are code: fenced blocks and inline spans.
+ *
+ * What is inside them is not markup, whoever is asking. A fence that
+ * explains how to write a link holds no link, and a `# comment` in a shell
+ * block is not a heading.
+ */
+NSArray<NSValue *> *MPMarkdownCodeRanges(NSString *text);
+
 NSArray *MPListEntriesForDirectory(
     NSString *dirName, NSString *(^processor)(NSString *absolutePath)
 );

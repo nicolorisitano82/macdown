@@ -455,6 +455,31 @@
                                     <action selector="showBacklinks:" target="-1" id="bkl-01-act"/>
                                 </connections>
                             </menuItem>
+                            <menuItem isSeparatorItem="YES" id="fld-00-sep"/>
+                            <menuItem title="Fold Section" keyEquivalent="&#x2190;" id="fld-01-fld">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="foldSection:" target="-1" id="fld-01-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Unfold Section" keyEquivalent="&#x2192;" id="fld-02-unf">
+                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="unfoldSection:" target="-1" id="fld-02-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Fold All Sections" keyEquivalent="&#x2190;" id="fld-03-all">
+                                <modifierMask key="keyEquivalentModifierMask" shift="YES" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="foldAllSections:" target="-1" id="fld-03-act"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Unfold All Sections" keyEquivalent="&#x2192;" id="fld-04-all">
+                                <modifierMask key="keyEquivalentModifierMask" shift="YES" option="YES" command="YES"/>
+                                <connections>
+                                    <action selector="unfoldAllSections:" target="-1" id="fld-04-act"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="prs-01-sep"/>
                             <menuItem title="Enter Full Screen" keyEquivalent="f" id="1gz-YB-DZE">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>

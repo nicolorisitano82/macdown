@@ -83,7 +83,7 @@ giorno, e un osservatore su un albero di documenti è una cosa da sbagliare.
 Contano sia i `[[wikilink]]` che i link relativi, `%20` e `..` compresi;
 quello che sta dentro il codice non conta.
 
-### 2. Piegare le sezioni
+### 2. Piegare le sezioni — **fatto**
 
 **In Bear:** «Folding — collapse note sections».
 
@@ -91,8 +91,16 @@ quello che sta dentro il codice non conta.
 marcatori: il file non cambia di un carattere. Un verbale di collaudo di
 quaranta pagine si legge per sezioni o non si legge.
 
-*Costo: medio.* La macchina per nascondere glifi c'è già
-(`MPMarkerHider`); serve il modello delle sezioni e i triangolini.
+*Costo: medio.* **Fatto**, ⌥⌘← e ⌥⌘→ (con shift, tutte). La macchina per
+nascondere glifi c'era già: la piegatura le passa gli indici e il gestore di
+layout decide una volta sola cosa non disegnare. La piega è ricordata **per
+titolo**, non per posizione, così sopravvive a quello che scrivi sopra; e
+una selezione che entra in una sezione piegata la apre, invece di lasciare
+il cursore nel buio.
+
+Misurato invece che dedotto: 168 punti di altezza prima, **84 dopo** aver
+piegato cinque righe. Sospendere i glifi non basta a far collassare le
+righe, in TextKit — o non bastava, e questo è il test che lo dice.
 
 ### 3. Modalità sola lettura
 

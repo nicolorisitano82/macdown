@@ -11,6 +11,7 @@
 #import "MPMarkerHider.h"
 #import "MPMarkdownFromRichText.h"
 #import "MPTableSource.h"
+#import "MPSectionFolder.h"
 #import "MPCodeLanguages.h"
 #import "MPCodeIndenter.h"
 
@@ -26,6 +27,8 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
 @interface MPEditorView ()
 @property (assign, nonatomic) NSUInteger tableActionIndex;
 @property (assign, nonatomic) NSUInteger codeActionIndex;
+/// Where the "N righe" marks were drawn, so a click on one can be caught.
+@property (strong, nonatomic) NSMutableArray *foldMarks;
 @property (assign, nonatomic) NSRange lastDrawnActiveRange;
 
 @property NSRect contentRect;
@@ -248,11 +251,163 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
  * In the inset to the left of the text rather than beside it, so turning it
  * on does not reflow a line.
  */
+/** What a folded heading says about itself.
+ *
+ * Text that is not drawn is text nobody can tell is there, so a folded
+ * section puts a count at the end of its heading. Also the place to click
+ * to get it back — the rectangles are kept as they are drawn, since that is
+ * the only pass that knows where the heading ended.
+ */
+- (void)drawFoldMarks
+{
+    self.foldMarks = [NSMutableArray array];
+    NSArray<MPSection *> *folded = self.sectionFolder.foldedSections;
+    if (!folded.count)
+        return;
+
+    NSLayoutManager *manager = self.layoutManager;
+    NSTextContainer *container = self.textContainer;
+    if (!manager || !container)
+        return;
+
+    NSSize inset = self.textContainerInset;
+    NSFont *font = [NSFont systemFontOfSize:
+        [NSFont smallSystemFontSize]];
+
+    for (MPSection *section in folded)
+    {
+        NSRange heading = section.headingRange;
+        if (!heading.length || NSMaxRange(heading) > self.textStorage.length)
+            continue;
+
+        NSRange glyphs = [manager glyphRangeForCharacterRange:heading
+                                        actualCharacterRange:NULL];
+        if (!glyphs.length)
+            continue;
+        NSRect used = [manager boundingRectForGlyphRange:glyphs
+                                         inTextContainer:container];
+        if (NSIsEmptyRect(used))
+            continue;
+
+        NSString *label = [NSString stringWithFormat:
+            NSLocalizedString(@"▸ %lu righe", @"A folded section's line count"),
+            (unsigned long)section.bodyLines];
+        if (section.bodyLines == 1)
+        {
+            label = NSLocalizedString(@"▸ 1 riga",
+                                      @"A folded section of one line");
+        }
+
+        NSDictionary *style = @{
+            NSFontAttributeName: font,
+            NSForegroundColorAttributeName: [NSColor secondaryLabelColor],
+        };
+        NSSize size = [label sizeWithAttributes:style];
+        NSRect pill = NSMakeRect(inset.width + NSMaxX(used) + 8.0,
+                                 inset.height + NSMinY(used)
+                                     + (NSHeight(used) - size.height) / 2.0,
+                                 size.width + 12.0, size.height + 2.0);
+
+        [[NSColor quaternaryLabelColor] setFill];
+        [[NSBezierPath bezierPathWithRoundedRect:pill xRadius:4.0 yRadius:4.0]
+            fill];
+        [label drawAtPoint:NSMakePoint(NSMinX(pill) + 6.0, NSMinY(pill))
+            withAttributes:style];
+
+        [self.foldMarks addObject:@{
+            @"rect": [NSValue valueWithRect:pill],
+            @"index": @(heading.location),
+        }];
+    }
+}
+
+/// A click on a fold's mark opens it; everything else is a click in text.
+- (void)mouseDown:(NSEvent *)event
+{
+    NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+    for (NSDictionary *mark in self.foldMarks)
+    {
+        if (!NSPointInRect(point, [mark[@"rect"] rectValue]))
+            continue;
+        [self unfoldSectionAtIndex:[mark[@"index"] unsignedIntegerValue]];
+        return;
+    }
+    [super mouseDown:event];
+}
+
+
+#pragma mark - Folding
+
+/// Puts the layout right after the set of hidden characters has changed.
+- (void)foldingChanged
+{
+    self.markerHider.foldedIndexes = self.sectionFolder.hiddenIndexes;
+
+    NSRange whole = NSMakeRange(0, self.textStorage.length);
+    [self.layoutManager invalidateGlyphsForCharacterRange:whole
+                                           changeInLength:0
+                                     actualCharacterRange:NULL];
+    [self.layoutManager invalidateLayoutForCharacterRange:whole
+                                     actualCharacterRange:NULL];
+    [self setNeedsDisplay:YES];
+}
+
+- (BOOL)foldSectionAtIndex:(NSUInteger)index
+{
+    MPSection *section = [self.sectionFolder sectionCoveringIndex:index];
+    if (![self.sectionFolder fold:section])
+        return NO;
+
+    // The caret cannot stay in what has just gone dark: it goes to the
+    // heading, which is where somebody who folded a section is looking.
+    if (NSLocationInRange(self.selectedRange.location, section.bodyRange))
+        self.selectedRange = NSMakeRange(section.headingRange.location, 0);
+    [self foldingChanged];
+    return YES;
+}
+
+- (BOOL)unfoldSectionAtIndex:(NSUInteger)index
+{
+    MPSection *section = [self.sectionFolder sectionCoveringIndex:index];
+    if (![self.sectionFolder unfold:section])
+        return NO;
+    [self foldingChanged];
+    return YES;
+}
+
+- (BOOL)foldEverySection
+{
+    if (![self.sectionFolder foldAll])
+        return NO;
+    if ([self.sectionFolder isHiddenIndex:self.selectedRange.location])
+        self.selectedRange = NSMakeRange(0, 0);
+    [self foldingChanged];
+    return YES;
+}
+
+- (BOOL)unfoldEverySection
+{
+    if (![self.sectionFolder unfoldAll])
+        return NO;
+    [self foldingChanged];
+    return YES;
+}
+
+- (BOOL)revealFoldedSelection
+{
+    if (![self.sectionFolder revealRange:self.selectedRange])
+        return NO;
+    [self foldingChanged];
+    return YES;
+}
+
+
 - (void)drawViewBackgroundInRect:(NSRect)rect
 {
     [super drawViewBackgroundInRect:rect];
     [self drawQuoteBars];
     [self drawRules];
+    [self drawFoldMarks];
 
     NSRange range = self.activeSourceRange;
     if (range.location == NSNotFound || range.length == 0)
@@ -635,6 +790,7 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
         return menu;
 
     [self addCodeBlockItemsToMenu:menu forIndex:index];
+    [self addFoldingItemsToMenu:menu forIndex:index];
 
     if (!self.tableMenuEnabled)
         return menu;
@@ -719,6 +875,39 @@ NS_INLINE BOOL MPAreRectsEqual(NSRect r1, NSRect r2)
     for (NSUInteger i = 0; i < items.count; i++)
         [menu insertItem:items[i] atIndex:(NSInteger)i];
     return menu;
+}
+
+/// Folding, on the section that was clicked rather than the one with the caret.
+- (void)addFoldingItemsToMenu:(NSMenu *)menu forIndex:(NSUInteger)index
+{
+    MPSection *section = [self.sectionFolder sectionCoveringIndex:index];
+    if (!section || !section.bodyRange.length)
+        return;
+
+    BOOL folded = [self.sectionFolder isFolded:section];
+    NSString *title = [NSString stringWithFormat:folded
+        ? NSLocalizedString(@"Apri «%@»", @"Unfold the clicked section")
+        : NSLocalizedString(@"Piega «%@»", @"Fold the clicked section"),
+        section.title];
+
+    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title
+        action:folded ? @selector(unfoldClickedSection:)
+                      : @selector(foldClickedSection:)
+        keyEquivalent:@""];
+    item.target = self;
+    item.tag = (NSInteger)section.headingRange.location;
+    [menu insertItem:item atIndex:0];
+    [menu insertItem:[NSMenuItem separatorItem] atIndex:1];
+}
+
+- (void)foldClickedSection:(NSMenuItem *)sender
+{
+    [self foldSectionAtIndex:(NSUInteger)sender.tag];
+}
+
+- (void)unfoldClickedSection:(NSMenuItem *)sender
+{
+    [self unfoldSectionAtIndex:(NSUInteger)sender.tag];
 }
 
 /** The one command a code block has of its own: lay it out.

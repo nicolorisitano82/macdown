@@ -450,6 +450,9 @@ static const CGFloat kMPNoteWidth = 400.0;
             @"Indent lists and quotations in the editor", @"Preference")
                             key:@"editorBlockLayout"],
         [self checkboxWithTitle:NSLocalizedString(
+            @"Fold a section away by its heading", @"Preference")
+                            key:@"editorSectionFolding"],
+        [self checkboxWithTitle:NSLocalizedString(
             @"Paste formatted text as Markdown", @"Preference")
                             key:@"editorPasteAsMarkdown"],
         [self checkboxWithTitle:NSLocalizedString(

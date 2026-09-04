@@ -358,6 +358,18 @@
 /* Class = "NSMenuItem"; title = "Links to This Document…"; ObjectID = "bkl-01-lst"; */
 "bkl-01-lst.title" = "Chi collega questo documento…";
 
+/* Class = "NSMenuItem"; title = "Fold Section"; ObjectID = "fld-01-fld"; */
+"fld-01-fld.title" = "Piega la sezione";
+
+/* Class = "NSMenuItem"; title = "Unfold Section"; ObjectID = "fld-02-unf"; */
+"fld-02-unf.title" = "Apri la sezione";
+
+/* Class = "NSMenuItem"; title = "Fold All Sections"; ObjectID = "fld-03-all"; */
+"fld-03-all.title" = "Piega tutte le sezioni";
+
+/* Class = "NSMenuItem"; title = "Unfold All Sections"; ObjectID = "fld-04-all"; */
+"fld-04-all.title" = "Apri tutte le sezioni";
+
 /* Class = "NSMenuItem"; title = "Show Sidebar"; ObjectID = "sbr-01-itm"; */
 "sbr-01-itm.title" = "Mostra barra laterale";
 

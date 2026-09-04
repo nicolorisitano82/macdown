@@ -63,6 +63,12 @@ character.
 * **Blocks are laid out**: lists get a hanging indent, quotations get a
   rule down the margin, headings get room above them, and three dashes are
   drawn as a line across the page.
+* **A section folds away by its heading**, ⌥⌘← and ⌥⌘→, all of them with
+  shift. The folded heading says how many lines went with it and gives them
+  back when clicked, and a selection that reaches into a folded section
+  opens it rather than leaving the caret in the dark. The fold is remembered
+  by the heading rather than by where it sits, so it survives the document
+  being written in above it.
 * **Tables are edited by command**, not by hand: right-click one for rows
   and columns, a column's alignment, or a repair of its dashes row. The
   editor shows the source; the columns are drawn in the preview, which has

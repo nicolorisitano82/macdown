@@ -9,6 +9,7 @@
 #import <Cocoa/Cocoa.h>
 
 @class MPMarkerHider;
+@class MPSectionFolder;
 
 @interface MPEditorView : NSTextView
 
@@ -29,6 +30,21 @@
  * Weak: the hider is owned by the document, and holds this view.
  */
 @property (weak, nonatomic) MPMarkerHider *markerHider;
+
+/** Folds the document by its headings.
+ *
+ * Set by the document, like the hider above. The view draws what a folded
+ * heading says about itself, and opens one that is clicked.
+ */
+@property (weak, nonatomic) MPSectionFolder *sectionFolder;
+
+/// Takes the fold on and off, and puts the layout right afterwards.
+- (BOOL)foldSectionAtIndex:(NSUInteger)index;
+- (BOOL)unfoldSectionAtIndex:(NSUInteger)index;
+- (BOOL)foldEverySection;
+- (BOOL)unfoldEverySection;
+/// Opens whatever hides the selection, so the caret is never in the dark.
+- (BOOL)revealFoldedSelection;
 
 /// The blockquotes, drawn as a bar in the margin. Presentation only.
 @property (copy, nonatomic) NSArray<NSValue *> *quoteRanges;

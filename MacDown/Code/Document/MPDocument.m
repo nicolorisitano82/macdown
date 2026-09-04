@@ -46,6 +46,7 @@
 #import "MPProseIssuesViewController.h"
 #import "MPBacklinksViewController.h"
 #import "MPBacklinks.h"
+#import "MPSectionFolder.h"
 #import <JavaScriptCore/JavaScriptCore.h>
 
 static NSString * const kMPDefaultAutosaveName = @"Untitled";
@@ -239,6 +240,7 @@ typedef NS_ENUM(NSUInteger, MPWordCountType) {
 @property (strong) HGMarkdownHighlighter *highlighter;
 @property (strong) MPSemanticStyler *semanticStyler;
 @property (strong) MPMarkerHider *markerHider;
+@property (strong) MPSectionFolder *sectionFolder;
 @property (strong) MPBlockStyler *blockStyler;
 @property (strong) MPRenderer *renderer;
 @property CGFloat previousSplitRatio;
@@ -1389,12 +1391,22 @@ static NSString * const kMPSelectionSource =
         [[MPSemanticStyler alloc] initWithTextView:self.editor];
     self.markerHider = [[MPMarkerHider alloc] initWithTextView:self.editor];
     self.editor.markerHider = self.markerHider;
+
+    self.sectionFolder = [[MPSectionFolder alloc] init];
+    self.sectionFolder.enabled = self.preferences.editorSectionFolding;
+    self.editor.sectionFolder = self.sectionFolder;
+    [self.sectionFolder updateWithText:self.editor.string ?: @""];
     self.blockStyler = [[MPBlockStyler alloc] initWithTextView:self.editor];
     self.semanticStyler.themeStyles = self.highlighter.styles;
     __weak MPDocument *weakSelf = self;
     self.highlighter.elementsDidChange = ^(pmh_element **elements) {
         [weakSelf.semanticStyler applyToElements:elements];
         [weakSelf.markerHider updateWithElements:elements];
+        // The headings may have moved, been renamed or gone: the folds are
+        // remembered by heading, so they follow.
+        [weakSelf.sectionFolder updateWithText:weakSelf.editor.string ?: @""];
+        weakSelf.markerHider.foldedIndexes =
+            weakSelf.sectionFolder.hiddenIndexes;
         [weakSelf.blockStyler applyToElements:elements];
     };
     self.renderer = [[MPRenderer alloc] init];
@@ -1717,6 +1729,21 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
     if (action == @selector(showBacklinks:))
         return self.fileURL != nil;
 
+    if (action == @selector(foldSection:)
+            || action == @selector(unfoldSection:)
+            || action == @selector(foldAllSections:)
+            || action == @selector(unfoldAllSections:))
+    {
+        if (!self.preferences.editorSectionFolding)
+            return NO;
+        // Nothing to fold in a document with no headings, and nothing to
+        // open in one where nothing is folded.
+        if (action == @selector(unfoldAllSections:)
+                || action == @selector(unfoldSection:))
+            return self.sectionFolder.hiddenIndexes.count > 0;
+        return self.sectionFolder.sections.count > 0;
+    }
+
     if (action == @selector(stopWritingHelp:))
     {
         return self.preferences.editorWritingHelp
@@ -1791,6 +1818,9 @@ NS_INLINE BOOL MPIsWritingCommandAction(SEL action)
 - (void)textViewDidChangeSelection:(NSNotification *)notification
 {
     [self.markerHider selectionDidChange];
+    // A selection that reaches into a folded section opens it, rather than
+    // leaving somebody typing into text they cannot see.
+    [self.editor revealFoldedSelection];
     if (notification.object != self.editor)
         return;
     [self markPreviewAtSelection];
@@ -4939,6 +4969,29 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
                  preferredEdge:NSRectEdgeMaxY];
 }
 
+#pragma mark - Folding
+
+- (IBAction)foldSection:(id)sender
+{
+    [self.editor foldSectionAtIndex:self.editor.selectedRange.location];
+}
+
+- (IBAction)unfoldSection:(id)sender
+{
+    [self.editor unfoldSectionAtIndex:self.editor.selectedRange.location];
+}
+
+- (IBAction)foldAllSections:(id)sender
+{
+    [self.editor foldEverySection];
+}
+
+- (IBAction)unfoldAllSections:(id)sender
+{
+    [self.editor unfoldEverySection];
+}
+
+
 /** Which documents in this folder cite this one.
  *
  * A link says where it goes and nothing says what points here, so this was
@@ -5211,6 +5264,10 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
 
         self.markerHider.hidesRules = rules;
         self.markerHider.enabled = self.preferences.editorHideMarkers;
+        self.sectionFolder.enabled = self.preferences.editorSectionFolding;
+        if (!self.sectionFolder.enabled)
+            [self.editor unfoldEverySection];
+        self.markerHider.foldedIndexes = self.sectionFolder.hiddenIndexes;
 
         self.blockStyler.baseFont = self.preferences.editorBaseFont;
         self.blockStyler.enabled = self.preferences.editorBlockLayout;
