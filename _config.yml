@@ -1,0 +1,45 @@
+title: MacDown Next
+description: >-
+  A Markdown editor for macOS 26: an editor that draws what the markup means,
+  diagrams that render, exports that survive the trip, and a Finder preview.
+theme: jekyll-theme-primer
+lang: en
+
+# This repository is an application, not a website. Left to itself Jekyll
+# walks the whole tree and tries to render the dependencies — Prism's test
+# fixtures and llama.cpp's model cards among them — which is both slow and
+# how the build came to fail. Only the pages meant to be read are built.
+include:
+  - index.md
+  - README.md
+  - docs
+
+exclude:
+  - Dependency/
+  - Pods/
+  - MacDown/
+  - MacDownTests/
+  - QuickLook/
+  - Tools/
+  - plugins/
+  - macdown-cmd/
+  - dist/
+  - examples/
+  - Resources/
+  - LICENSE/
+  - MacDown.xcodeproj/
+  - MacDown.xcworkspace/
+  - Gemfile
+  - Gemfile.lock
+  - Podfile
+  - Podfile.lock
+  - CONTRIBUTING.md
+  - vendor/
+  - .github/
+
+# The journals under docs/ are in Italian; the guide is not.
+defaults:
+  - scope:
+      path: docs
+    values:
+      lang: it

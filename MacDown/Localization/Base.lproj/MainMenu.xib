@@ -444,8 +444,8 @@
                                     <action selector="showMathEditor:" target="-1" id="mth-01-act"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Highlight Prose Issues" keyEquivalent="p" id="prs-01-tgl">
-                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
+                            <menuItem title="Highlight Prose Issues" keyEquivalent="h" id="prs-01-tgl">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" option="YES" command="YES"/>
                                 <connections>
                                     <action selector="toggleProseHighlights:" target="-1" id="prs-01-act"/>
                                 </connections>

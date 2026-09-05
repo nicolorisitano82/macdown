@@ -301,3 +301,7 @@
 
 /* Code block context menu */
 "Indent as %@" = "Rientra come %@";
+
+/* Preference pane titles */
+"Quick Look" = "Anteprima Finder";
+"Updates" = "Aggiornamenti";

@@ -320,7 +320,7 @@ NS_INLINE NSColor *MPStateColour(MPQuickLookExtensionState state)
 
 - (NSString *)toolbarItemLabel
 {
-    return NSLocalizedString(@"Anteprima Finder", @"Preference pane title.");
+    return NSLocalizedString(@"Quick Look", @"Preference pane title.");
 }
 
 @end

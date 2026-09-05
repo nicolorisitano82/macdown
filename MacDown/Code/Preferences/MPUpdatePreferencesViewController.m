@@ -162,7 +162,7 @@ static const CGFloat kMPPanelPadding = 20.0;
 
 - (NSString *)toolbarItemLabel
 {
-    return NSLocalizedString(@"Aggiornamenti", @"Preference pane title.");
+    return NSLocalizedString(@"Updates", @"Preference pane title.");
 }
 
 @end
