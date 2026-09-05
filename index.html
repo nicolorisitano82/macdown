@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MacDown Next — a Markdown editor for macOS 26</title>
+<meta name="description" content="A fork of MacDown for macOS 26: an editor that draws what the markup means, diagrams that render, exports that survive the trip, a Finder preview, and an updater that asks before it does anything.">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-sunk: #f6f7f9;
+    --bg-card: #ffffff;
+    --fg: #16191d;
+    --fg-muted: #5b636e;
+    --fg-faint: #868e99;
+    --line: #e2e5ea;
+    --accent: #2d7ff9;
+    --accent-fg: #ffffff;
+    --added: #1a7f37;
+    --removed: #b3261e;
+    --code-bg: #f2f4f7;
+    --shadow: 0 1px 2px rgba(16,19,23,.06), 0 8px 24px rgba(16,19,23,.08);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --bg-sunk: #11161d;
+      --bg-card: #161b22;
+      --fg: #e6edf3;
+      --fg-muted: #9aa5b1;
+      --fg-faint: #78828d;
+      --line: #262d36;
+      --accent: #58a6ff;
+      --accent-fg: #06121f;
+      --added: #57c76b;
+      --removed: #f2776a;
+      --code-bg: #1b222b;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter,
+          Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  code, pre, kbd {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                 monospace;
+  }
+  code { background: var(--code-bg); border-radius: 5px; padding: 1px 5px;
+         font-size: .88em; }
+  pre { background: var(--code-bg); border: 1px solid var(--line);
+        border-radius: 10px; padding: 14px 16px; overflow-x: auto;
+        font-size: 14px; }
+  pre code { background: none; padding: 0; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px;
+      text-underline-offset: 2px; }
+
+  .wrap { width: min(1080px, calc(100% - 48px)); margin-inline: auto; }
+
+  /* ---------------------------------------------------------------- hero */
+
+  header {
+    padding: 72px 0 0;
+    background:
+      radial-gradient(1100px 460px at 50% -140px,
+        color-mix(in srgb, var(--accent) 15%, transparent), transparent 70%);
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; letter-spacing: .02em;
+    color: var(--fg-muted);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 14px;
+  }
+  .eyebrow b { color: var(--fg); font-weight: 600; }
+
+  h1 {
+    font-size: clamp(38px, 6.2vw, 62px);
+    line-height: 1.05;
+    letter-spacing: -.025em;
+    margin: 22px 0 0;
+    font-weight: 700;
+  }
+
+  .lede {
+    font-size: clamp(18px, 2.1vw, 21px);
+    color: var(--fg-muted);
+    max-width: 62ch;
+    margin: 18px 0 0;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 30px 0 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-size: 15px; font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--line);
+    color: var(--fg);
+    background: var(--bg-card);
+    transition: transform .12s ease, border-color .12s ease;
+  }
+  .btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .btn-primary {
+    background: var(--accent); color: var(--accent-fg);
+    border-color: transparent;
+  }
+
+  .note {
+    margin: 18px 0 0; font-size: 14px; color: var(--fg-faint);
+    max-width: 62ch;
+  }
+
+  .shot {
+    margin: 46px 0 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    background: var(--bg-card);
+  }
+  .shot img { display: block; width: 100%; height: auto; }
+
+  /* ------------------------------------------------------------ sections */
+
+  section { padding: 76px 0; }
+  .sunk { background: var(--bg-sunk); border-block: 1px solid var(--line); }
+
+  h2 {
+    font-size: clamp(26px, 3.4vw, 34px);
+    letter-spacing: -.02em;
+    margin: 0;
+    font-weight: 700;
+  }
+  h3 { font-size: 18px; margin: 0 0 8px; letter-spacing: -.01em; }
+
+  .section-lede {
+    color: var(--fg-muted); max-width: 68ch; margin: 14px 0 0;
+  }
+
+  .grid {
+    margin: 40px 0 0;
+    display: grid; gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+  }
+  .card p { margin: 0; color: var(--fg-muted); font-size: 15.5px; }
+  .card p + p { margin-top: 10px; }
+  .tag {
+    display: inline-block; font-size: 12px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase;
+    color: var(--fg-faint); margin: 0 0 10px;
+  }
+
+  /* Before and after: what the original did, and what it does here. */
+  .ba { margin: 42px 0 0; display: grid; gap: 14px; }
+  .ba-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; background: var(--bg-card);
+  }
+  .ba-cell { padding: 20px 22px; }
+  .ba-before { border-right: 1px solid var(--line); }
+  .ba-label {
+    font-size: 12px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; margin: 0 0 8px;
+  }
+  .ba-before .ba-label { color: var(--removed); }
+  .ba-after .ba-label { color: var(--added); }
+  .ba-cell p { margin: 0; font-size: 15.5px; color: var(--fg-muted); }
+  @media (max-width: 720px) {
+    .ba-row { grid-template-columns: 1fr; }
+    .ba-before { border-right: none; border-bottom: 1px solid var(--line); }
+  }
+
+  ul.plain { margin: 26px 0 0; padding: 0; list-style: none;
+             display: grid; gap: 12px; }
+  ul.plain li { color: var(--fg-muted); font-size: 15.5px;
+                padding-left: 26px; position: relative; }
+  ul.plain li::before {
+    content: "—"; position: absolute; left: 0; color: var(--fg-faint);
+  }
+  ul.plain b { color: var(--fg); font-weight: 600; }
+
+  table.leaves { margin: 34px 0 0; width: 100%; border-collapse: collapse;
+                 font-size: 15px; }
+  table.leaves th, table.leaves td {
+    text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.leaves th { font-size: 12px; letter-spacing: .05em;
+                    text-transform: uppercase; color: var(--fg-faint); }
+  table.leaves td:first-child { color: var(--fg); font-weight: 600;
+                                white-space: nowrap; }
+  table.leaves td { color: var(--fg-muted); }
+
+  footer {
+    padding: 56px 0 72px; border-top: 1px solid var(--line);
+    color: var(--fg-faint); font-size: 14.5px;
+  }
+  footer a { color: var(--fg-muted); }
+  .footer-cols {
+    display: grid; gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="eyebrow">A fork of <b>MacDown</b> · macOS&nbsp;26 · MIT</span>
+    <h1>Markdown, with the parts<br>that were missing.</h1>
+    <p class="lede">
+      An editor that draws what the markup means instead of showing you the
+      punctuation. Diagrams that render. Exports someone else can open. A
+      Finder preview. And nothing that phones home behind your back.
+    </p>
+    <div class="actions">
+      <a class="btn btn-primary"
+         href="https://github.com/nicolorisitano82/macdown-next/releases/latest">Download the latest release</a>
+      <a class="btn" href="guide">Read the guide</a>
+      <a class="btn" href="https://github.com/nicolorisitano82/macdown-next">Source on GitHub</a>
+    </div>
+    <p class="note">
+      Builds are not signed or notarised — no Developer ID certificate stands
+      behind them — so right-click the app and choose <b>Open</b> the first
+      time, or run
+      <code>xattr -d com.apple.quarantine "/Applications/MacDown Next.app"</code>.
+      Whether to run an unsigned binary is your call; the guide says how to
+      build it yourself.
+    </p>
+    <div class="shot">
+      <img src="assets/screenshot.png"
+           alt="The editor and the preview side by side">
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>What it does</h2>
+    <p class="section-lede">
+      The short version. The <a href="guide">guide</a> has all of it, feature
+      by feature, including what each one deliberately refuses to do.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <p class="tag">The editor</p>
+        <h3>It draws the Markdown</h3>
+        <p>
+          Markers disappear until the caret reaches them. Lists get a hanging
+          indent, quotations a rule down the margin, headings room above.
+          Tables are edited by command, and their columns are drawn in the
+          preview, which has the room for them.
+        </p>
+        <p>
+          None of it touches the file: what you save is the string you typed,
+          to the character.
+        </p>
+      </div>
+
+      <div class="card">
+        <p class="tag">Diagrams</p>
+        <h3>Mermaid 11, Graphviz, draw.io</h3>
+        <p>
+          Mermaid 11.17 up from 8.4.3, Graphviz with six layout engines, and
+          zoom and pan on any diagram — the zoom survives a refresh, so you
+          keep your place while typing.
+        </p>
+        <p>
+          The draw.io importer turns every page of a <code>.drawio</code> file
+          into a PNG beside the document, with 97 shape libraries inside the
+          plug-in: it draws with no connection at all.
+        </p>
+      </div>
+
+      <div class="card">
+        <p class="tag">Exporting</p>
+        <h3>Files that survive the trip</h3>
+        <p>
+          HTML, PDF, EPUB 3.3, and Word that arrives with its tables as
+          tables, its lists indented and its code monospaced on Windows too —
+          AppKit's own writer loses all three.
+        </p>
+        <p>
+          Diagrams are drawn into every export, rather than shipping the
+          source and hoping the reader runs JavaScript.
+        </p>
+      </div>
+
+      <div class="card">
+        <p class="tag">In the Finder</p>
+        <h3>Press space, read the document</h3>
+        <p>
+          A Quick Look extension renders <code>.md</code> files with the same
+          style sheet the app opens with. Pictures beside the document travel
+          with the preview; the page itself cannot reach the network.
+        </p>
+        <p>
+          A panel in the preferences says whether macOS has it, which copy is
+          providing it and which version — and installs, updates or removes
+          it, because that registration goes wrong quietly.
+        </p>
+      </div>
+
+      <div class="card">
+        <p class="tag">Writing</p>
+        <h3>A prose checker, and help that runs here</h3>
+        <p>
+          Qualifiers, weasel words, hedging, wordiness, passive tells and
+          repeated words, in English and Italian, with a panel that lists them
+          and takes you to each one.
+        </p>
+        <p>
+          Improve, correct, make formal, plain, shorter, longer — over a
+          selection or a paragraph, from a model running on your Mac through
+          llama.cpp. Nothing is sent anywhere.
+        </p>
+      </div>
+
+      <div class="card">
+        <p class="tag">Collecting</p>
+        <h3>A folder you can navigate</h3>
+        <p>
+          <code>[[Wiki links]]</code> between neighbouring documents, and a
+          list of which documents point at this one, with the line and the
+          sentence around it.
+        </p>
+        <p>
+          Save a web page as Markdown beside your notes, with the address and
+          the date at the top: a clipping without its source is a quotation
+          without a source.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sunk">
+  <div class="wrap">
+    <h2>What changed, concretely</h2>
+    <p class="section-lede">
+      This fork exists because of specific things that did not work. These are
+      four of them.
+    </p>
+
+    <div class="ba">
+      <div class="ba-row">
+        <div class="ba-cell ba-before">
+          <p class="ba-label">Before</p>
+          <p>Graphviz replaced the whole page body with the first graph it
+             drew, taking the rest of the document with it, and stopped
+             redrawing after the first keystroke.</p>
+        </div>
+        <div class="ba-cell ba-after">
+          <p class="ba-label">Now</p>
+          <p>Six layout engines, each its own fence language, redrawn as you
+             type, zoomable, and following the system appearance.</p>
+        </div>
+      </div>
+
+      <div class="ba-row">
+        <div class="ba-cell ba-before">
+          <p class="ba-label">Before</p>
+          <p>A Word export dropped the pictures, flattened tables into
+             tab-separated paragraphs, lost list indentation, and named a
+             Mac-only font with nothing to substitute it.</p>
+        </div>
+        <div class="ba-cell ba-after">
+          <p class="ba-label">Now</p>
+          <p>Each of those is repaired in the file afterwards, and remote
+             pictures are fetched into the package first, so the document
+             opens whole on somebody else's computer.</p>
+        </div>
+      </div>
+
+      <div class="ba-row">
+        <div class="ba-cell ba-before">
+          <p class="ba-label">Before</p>
+          <p>Finder showed the source of a Markdown file — hashes, asterisks
+             and all — and there was no way to know whether a preview
+             extension was even registered.</p>
+        </div>
+        <div class="ba-cell ba-after">
+          <p class="ba-label">Now</p>
+          <p>Space renders the document, and a preferences pane says where the
+             extension stands and fixes it in one click.</p>
+        </div>
+      </div>
+
+      <div class="ba-row">
+        <div class="ba-cell ba-before">
+          <p class="ba-label">Before</p>
+          <p>A new version existed only if you went looking for it, and the
+             editor coloured <code>##Titolo</code> as a heading while the
+             preview drew it as a paragraph.</p>
+        </div>
+        <div class="ba-cell ba-after">
+          <p class="ba-label">Now</p>
+          <p>The app looks once a day and asks three times before doing
+             anything, and both parsers agree about what a heading is — with
+             a one-click fix when the space is missing.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>What leaves your Mac</h2>
+    <p class="section-lede">
+      Everything works offline. These are the only things that reach the
+      network, and each is either asked for or switchable.
+    </p>
+
+    <table class="leaves">
+      <tr><th>What</th><th>When</th><th>Switch</th></tr>
+      <tr>
+        <td>The list of releases</td>
+        <td>Once a day, and when you ask</td>
+        <td>Preferences › Updates</td>
+      </tr>
+      <tr>
+        <td>An update's disk image</td>
+        <td>Only after you say yes</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>A page you are clipping</td>
+        <td>Only when you give it an address</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>Pictures kept on the web</td>
+        <td>While exporting to Word or EPUB</td>
+        <td>Preferences › Rendering</td>
+      </tr>
+      <tr>
+        <td>A language model</td>
+        <td>While the Models panel downloads the one you chose</td>
+        <td>—</td>
+      </tr>
+    </table>
+
+    <ul class="plain">
+      <li><b>Not on that list, on purpose:</b> the writing help (the model
+        runs here), the diagrams (their libraries are inside the app), the
+        maths (MathJax is bundled), the draw.io plug-in (viewer and shapes
+        travel with it), the link cards in the preview (an address is taken
+        apart, not visited), the Finder preview (it cannot reach the network
+        at all), and the action log.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footer-cols">
+    <div>
+      <p><b>MacDown Next</b><br>
+      MIT, like the MacDown it grew out of.<br>
+      Requires macOS 26.</p>
+    </div>
+    <div>
+      <p><a href="guide">The guide</a><br>
+      <a href="https://github.com/nicolorisitano82/macdown-next/releases">Releases</a><br>
+      <a href="https://github.com/nicolorisitano82/macdown-next/issues">Report something</a></p>
+    </div>
+    <div>
+      <p>Journals of the work, in Italian:<br>
+      <a href="docs/wysiwyg-testo">the editor's text rendering</a><br>
+      <a href="docs/anteprime">the two previews</a><br>
+      <a href="docs/aggiornamenti">the updater</a></p>
+    </div>
+    <div>
+      <p>Built on <a href="https://github.com/hoedown/hoedown">Hoedown</a>,
+      <a href="https://prismjs.com">Prism</a>,
+      <a href="https://mermaid.js.org">mermaid</a>,
+      <a href="https://graphviz.org">Graphviz</a>,
+      <a href="https://www.mathjax.org">MathJax</a> and
+      <a href="https://github.com/ggml-org/llama.cpp">llama.cpp</a>.</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

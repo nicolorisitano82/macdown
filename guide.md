@@ -1,9 +1,11 @@
 ---
-title: MacDown Next
-description: The complete guide — every feature, what it does, and what it does not do.
+title: The guide
+description: Every feature of MacDown Next, what it does, and what it deliberately does not do.
 ---
 
-# MacDown Next
+[← MacDown Next](./)
+
+# The guide
 
 A Markdown editor for macOS 26, released under the MIT licence. It is a fork
 of [MacDown](https://github.com/MacDownApp/macdown) by Tzu-ping Chung, which
@@ -19,8 +21,8 @@ can open**.
 
 ![The editor and the preview side by side](assets/screenshot.png)
 
-This page is the complete guide: every feature, where it lives, and — where
-it matters — what it deliberately does not do.
+Every feature, where it lives, and — where it matters — what it
+deliberately does not do.
 
 ---
 

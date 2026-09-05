@@ -10,9 +10,11 @@ lang: en
 # fixtures and llama.cpp's model cards among them — which is both slow and
 # how the build came to fail. Only the pages meant to be read are built.
 include:
-  - index.md
+  - index.html
+  - guide.md
   - README.md
   - docs
+  - assets
 
 exclude:
   - Dependency/
