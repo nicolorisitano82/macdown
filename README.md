@@ -294,7 +294,9 @@ The following editor themes and CSS files are extracted from [Mou](http://mouapp
 Journals of the work, in Italian: [the editor's text rendering](docs/wysiwyg-testo.md),
 [the local writing help](docs/ai-locale.md) and
 [the two previews](docs/anteprime.md) — the card under the pointer and the
-one Finder draws — and [the updater](docs/aggiornamenti.md). They are written for whoever picks a piece of this up
+one Finder draws — and [the updater](docs/aggiornamenti.md). There is also a
+study, not a plan: [what a Claude and GPT integration could
+be](docs/studio-claude-gpt.md), and which parts of it are worth having. They are written for whoever picks a piece of this up
 next — what was measured, and the several times the measuring contradicted
 me.
 
