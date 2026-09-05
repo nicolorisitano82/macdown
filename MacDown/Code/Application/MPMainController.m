@@ -8,6 +8,8 @@
 
 #import "MPMainController.h"
 #import "MPPlugInsWindowController.h"
+#import "MPPlugInController.h"
+#import "MPPlugIn.h"
 #import "MPActionLog.h"
 #import <MASPreferences/MASPreferencesWindowController.h>
 #import "MPGlobals.h"
@@ -129,6 +131,7 @@ NS_INLINE void treat()
           forEventClass:kInternetEventClass andEventID:kAEGetURL];
 
     [self takeChargeOfTheTemplateMenu];
+    [self takeChargeOfTheExportMenu];
     [self addTheUpdateMenuItem];
     [[MPUpdateController sharedInstance] checkQuietlyIfDue];
 }
@@ -173,11 +176,73 @@ NS_INLINE void treat()
  */
 /// The tag the nib puts on Format › Insert Template.
 const NSInteger kMPTemplateMenuTag = 9001;
+/// And the one on File › Export, which plug-ins add formats to.
+const NSInteger kMPExportMenuTag = 9002;
+/// What the items this adds are marked with, so that they can be taken away
+/// again without touching the formats the application itself writes.
+static const NSInteger kMPPlugInExportItemTag = 9003;
 
 - (void)takeChargeOfTheTemplateMenu
 {
     NSMenu *submenu = [self templateSubmenu];
     submenu.delegate = self;
+}
+
+/** Makes this the keeper of the export submenu as well.
+ *
+ * Which formats are there depends on which plug-ins are installed and
+ * switched on, and that is known when the menu opens rather than when the
+ * nib was drawn — switching an exporter off in the plug-ins window should
+ * take its format out of the menu without a relaunch.
+ */
+- (void)takeChargeOfTheExportMenu
+{
+    NSMenu *submenu = [self submenuWithTag:kMPExportMenuTag];
+    submenu.delegate = self;
+}
+
+- (NSMenu *)submenuWithTag:(NSInteger)tag
+{
+    for (NSMenuItem *top in [NSApp mainMenu].itemArray)
+    {
+        for (NSMenuItem *item in top.submenu.itemArray)
+        {
+            if (item.tag == tag && item.hasSubmenu)
+                return item.submenu;
+        }
+    }
+    return nil;
+}
+
+/// The formats plug-ins add, under the ones the application writes itself.
+- (void)rebuildExportMenu:(NSMenu *)menu
+{
+    for (NSMenuItem *item in [menu.itemArray reverseObjectEnumerator])
+    {
+        if (item.tag == kMPPlugInExportItemTag)
+            [menu removeItem:item];
+    }
+
+    NSArray<MPPlugIn *> *exporters = [MPPlugInController enabledExporters];
+    if (!exporters.count)
+        return;
+
+    NSMenuItem *separator = [NSMenuItem separatorItem];
+    separator.tag = kMPPlugInExportItemTag;
+    [menu addItem:separator];
+
+    for (MPPlugIn *exporter in exporters)
+    {
+        NSString *title = [NSString stringWithFormat:@"%@…",
+                           exporter.exportFormatName];
+        NSMenuItem *item = [menu addItemWithTitle:title
+                                           action:@selector(exportWithPlugIn:)
+                                    keyEquivalent:@""];
+        // No target: it goes to whichever document is in front, like every
+        // other export.
+        item.representedObject = exporter;
+        item.tag = kMPPlugInExportItemTag;
+    }
 }
 
 /** Finds the template submenu by its tag.
@@ -207,6 +272,12 @@ const NSInteger kMPTemplateMenuTag = 9001;
 
 - (void)menuNeedsUpdate:(NSMenu *)menu
 {
+    if (menu == [self submenuWithTag:kMPExportMenuTag])
+    {
+        [self rebuildExportMenu:menu];
+        return;
+    }
+
     if (menu != [self templateSubmenu])
         return;
 

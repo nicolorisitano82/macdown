@@ -49,6 +49,8 @@
 #import "MPLinkPreview.h"
 #import "MPLinkPreviewViewController.h"
 #import "MPWebClipper.h"
+#import "MPRichExport.h"
+#import "MPPlugIn.h"
 #import "MPActionLog.h"
 #import "MPTaskList.h"
 #import <JavaScriptCore/JavaScriptCore.h>
@@ -3839,6 +3841,212 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
     if (problems.count)
         [self reportImageProblems:problems];
 }
+
+/** OpenDocument and RTF, which share everything but their last step.
+ *
+ * Both of AppKit's writers keep the tables and the character styling — which
+ * its Word writer does not — so those go through untouched; both drop every
+ * picture, which is what MPRichExport puts back.
+ */
+- (IBAction)exportOdt:(id)sender
+{
+    [self exportRichTextOfKind:MPRichExportOpenDocument];
+}
+
+- (IBAction)exportRtf:(id)sender
+{
+    [self exportRichTextOfKind:MPRichExportRTF];
+}
+
+- (void)exportRichTextOfKind:(MPRichExportKind)kind
+{
+    NSString *extension = (kind == MPRichExportOpenDocument) ? @"odt" : @"rtf";
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.allowedFileTypes = @[extension];
+    if (self.presumedFileName)
+    {
+        panel.nameFieldStringValue = [self.presumedFileName
+            .stringByDeletingPathExtension
+            stringByAppendingPathExtension:extension];
+    }
+
+    [panel beginSheetModalForWindow:self.windowForSheet
+                  completionHandler:^(NSInteger result) {
+        if (result != NSFileHandlingPanelOKButton)
+            return;
+        [self writeRichText:kind toURL:panel.URL];
+    }];
+}
+
+- (void)writeRichText:(MPRichExportKind)kind toURL:(NSURL *)url
+{
+    NSString *html = [self htmlForWordExport];
+    // Rasterised for the same reason as in the Word export: AppKit's HTML
+    // reader has no SVG at all, and would drop the diagrams without a word.
+    html = [self htmlByInliningDiagramsIn:html asImages:YES];
+    html = [self htmlByInliningFormulasIn:html asImages:YES];
+
+    __weak MPDocument *weakSelf = self;
+    [self html:html withRemoteImagesFetched:^(NSString *ready,
+                                              NSArray<NSString *> *unreachable) {
+        [weakSelf writeRichTextMarkup:ready kind:kind toURL:url
+                          unreachable:unreachable];
+    }];
+}
+
+- (void)writeRichTextMarkup:(NSString *)html
+                       kind:(MPRichExportKind)kind
+                      toURL:(NSURL *)url
+                unreachable:(NSArray<NSString *> *)unreachable
+{
+    NSMutableArray<MPDocxImage *> *images = [NSMutableArray array];
+    NSMutableArray<NSString *> *problems = [NSMutableArray array];
+    // The tables are left where they are: unlike the Word writer, these two
+    // carry them over by themselves.
+    html = [self html:html withImagesReplacedByPlaceholders:images
+             problems:problems];
+
+    NSError *error = nil;
+    NSAttributedString *rich = [[NSAttributedString alloc]
+        initWithData:[html dataUsingEncoding:NSUTF8StringEncoding]
+             options:@{
+        NSDocumentTypeDocumentAttribute: NSHTMLTextDocumentType,
+        NSCharacterEncodingDocumentAttribute: @(NSUTF8StringEncoding),
+    } documentAttributes:NULL error:&error];
+    if (!rich)
+    {
+        [self presentError:error];
+        return;
+    }
+
+    NSString *type = (kind == MPRichExportOpenDocument)
+        ? NSOpenDocumentTextDocumentType : NSRTFTextDocumentType;
+    NSData *data = [rich dataFromRange:NSMakeRange(0, rich.length)
+                    documentAttributes:@{NSDocumentTypeDocumentAttribute: type}
+                                 error:&error];
+    if (!data)
+    {
+        [self presentError:error];
+        return;
+    }
+
+    NSMutableArray<NSString *> *unplaced = [NSMutableArray array];
+    NSData *withPictures = (kind == MPRichExportOpenDocument)
+        ? MPOdtDataByEmbeddingImages(data, images, unplaced)
+        : MPRtfDataByEmbeddingImages(data, images, unplaced);
+    if (withPictures)
+        data = withPictures;
+
+    for (NSString *source in unplaced)
+    {
+        [problems addObject:MPExportImageProblem(source, NSLocalizedString(
+            @"read, but there was nowhere in the document to put it",
+            @"Export image problem"))];
+    }
+    for (NSString *source in unreachable)
+    {
+        [problems addObject:MPExportImageProblem(source, NSLocalizedString(
+            @"could not be fetched", @"Export image problem"))];
+    }
+
+    if (![data writeToURL:url options:NSDataWritingAtomic error:&error])
+    {
+        [self presentError:error];
+        return;
+    }
+    if (problems.count)
+        [self reportImageProblems:problems];
+}
+
+
+/** A format a plug-in adds, run the way the built-in ones are.
+ *
+ * The plug-in is handed the document already rendered and made
+ * self-contained — diagrams and formulas drawn, remote pictures fetched if
+ * the preferences allow it — so that every exporter starts from the same
+ * thing, and none of them has to know how any of that is done.
+ */
+- (IBAction)exportWithPlugIn:(id)sender
+{
+    MPPlugIn *exporter = [sender representedObject];
+    if (![exporter isKindOfClass:[MPPlugIn class]] || !exporter.isExporter)
+        return;
+
+    NSString *extension = exporter.exportFileExtension;
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    panel.allowedFileTypes = extension.length ? @[extension] : nil;
+    panel.message = exporter.exportFormatDescription;
+    if (self.presumedFileName && extension.length)
+    {
+        panel.nameFieldStringValue = [self.presumedFileName
+            .stringByDeletingPathExtension
+            stringByAppendingPathExtension:extension];
+    }
+
+    [panel beginSheetModalForWindow:self.windowForSheet
+                  completionHandler:^(NSInteger result) {
+        if (result != NSFileHandlingPanelOKButton)
+            return;
+        [self exportWith:exporter toURL:panel.URL];
+    }];
+}
+
+- (void)exportWith:(MPPlugIn *)exporter toURL:(NSURL *)url
+{
+    NSString *html = [self htmlForWordExport];
+    html = [self htmlByInliningDiagramsIn:html asImages:YES];
+    html = [self htmlByInliningFormulasIn:html asImages:YES];
+
+    __weak MPDocument *weakSelf = self;
+    [self html:html withRemoteImagesFetched:^(NSString *ready,
+                                              NSArray<NSString *> *unreachable) {
+        MPDocument *strong = weakSelf;
+        if (!strong)
+            return;
+
+        MPNote(@"esporto con %@ in %@", exporter.name, url.lastPathComponent);
+        NSError *error = nil;
+        NSData *data = [exporter exportDataFromHTML:ready
+                                           markdown:strong.markdown
+                                            fileURL:strong.fileURL
+                                              error:&error];
+        if (!data)
+        {
+            // A plug-in that fails without saying why still owes the reader
+            // a sentence, and this is the only one available.
+            if (!error)
+            {
+                error = [NSError errorWithDomain:@"MPExporterPlugIn" code:1
+                    userInfo:@{NSLocalizedDescriptionKey: [NSString
+                        stringWithFormat:NSLocalizedString(
+                            @"%@ non ha detto perché l'esportazione non è "
+                            @"riuscita.", @"An exporter plug-in failed"),
+                        exporter.name]}];
+            }
+            [strong presentError:error];
+            return;
+        }
+
+        if (![data writeToURL:url options:NSDataWritingAtomic error:&error])
+        {
+            [strong presentError:error];
+            return;
+        }
+
+        if (unreachable.count)
+        {
+            NSMutableArray *problems = [NSMutableArray array];
+            for (NSString *source in unreachable)
+            {
+                [problems addObject:MPExportImageProblem(source,
+                    NSLocalizedString(@"could not be fetched",
+                                      @"Export image problem"))];
+            }
+            [strong reportImageProblems:problems];
+        }
+    }];
+}
+
 
 - (IBAction)exportPdf:(id)sender
 {

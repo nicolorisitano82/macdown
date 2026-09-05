@@ -381,3 +381,9 @@
 
 /* Class = "NSMenuItem"; title = "Save a Web Page as Markdown…"; ObjectID = "clp-01-web"; */
 "clp-01-web.title" = "Salva una pagina web come Markdown…";
+
+/* Class = "NSMenuItem"; title = "OpenDocument…"; ObjectID = "odt-Ex-Itm"; */
+"odt-Ex-Itm.title" = "OpenDocument…";
+
+/* Class = "NSMenuItem"; title = "Rich Text…"; ObjectID = "rtf-Ex-Itm"; */
+"rtf-Ex-Itm.title" = "Testo formattato (RTF)…";

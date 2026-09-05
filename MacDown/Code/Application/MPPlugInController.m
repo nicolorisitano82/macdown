@@ -59,6 +59,11 @@
     {
         if ([disabled containsObject:plugin.identifier])
             continue;
+        // An exporter is a format rather than a command: it belongs in
+        // File ▸ Export, and here it would be an item that opens a save
+        // panel out of a menu of things that act on the document now.
+        if (plugin.isExporter)
+            continue;
         NSMenuItem *item = [menu addItemWithTitle:plugin.name
                                            action:@selector(invokePlugIn:)
                                     keyEquivalent:@""];
@@ -77,6 +82,26 @@
                                            action:NULL keyEquivalent:@""];
         none.enabled = NO;
     }
+}
+
++ (NSArray<MPPlugIn *> *)enabledExporters
+{
+    NSArray *disabled = [MPPreferences sharedInstance].disabledPlugIns;
+    NSMutableArray<MPPlugIn *> *exporters = [NSMutableArray array];
+    for (NSURL *url in MPPlugInBundleURLs())
+    {
+        MPPlugIn *plugin = [[MPPlugIn alloc]
+            initWithBundle:[NSBundle bundleWithURL:url]];
+        if (!plugin || !plugin.isExporter
+            || [disabled containsObject:plugin.identifier])
+            continue;
+        // A format with no extension has nowhere to write to; better absent
+        // than in the menu doing nothing.
+        if (!plugin.exportFileExtension.length)
+            continue;
+        [exporters addObject:plugin];
+    }
+    return [exporters copy];
 }
 
 - (void)showPlugInManager:(id)sender

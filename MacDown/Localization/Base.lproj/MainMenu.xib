@@ -118,7 +118,7 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="oOV-6A-wGe"/>
-                            <menuItem title="Export" id="5mp-ev-1el">
+                            <menuItem title="Export" tag="9002" id="5mp-ev-1el">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <menu key="submenu" title="Export" id="SJM-Pp-ywb">
                                     <items>
@@ -132,6 +132,18 @@
                                             <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
                                             <connections>
                                                 <action selector="exportPdf:" target="-1" id="Rhh-ni-CdX"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="OpenDocument…" id="odt-Ex-Itm">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="exportOdt:" target="-1" id="odt-Ex-Act"/>
+                                            </connections>
+                                        </menuItem>
+                                        <menuItem title="Rich Text…" id="rtf-Ex-Itm">
+                                            <modifierMask key="keyEquivalentModifierMask"/>
+                                            <connections>
+                                                <action selector="exportRtf:" target="-1" id="rtf-Ex-Act"/>
                                             </connections>
                                         </menuItem>
                                         <menuItem title="EPUB…" id="epb-Ex-Itm">

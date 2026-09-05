@@ -82,6 +82,64 @@
     return self;
 }
 
+- (instancetype)initWithContent:(id)content name:(NSString *)name
+                     identifier:(NSString *)identifier
+{
+    self = [super init];
+    if (!self)
+        return nil;
+    self.content = content;
+    self.name = name;
+    self.identifier = identifier;
+    return self;
+}
+
+
+#pragma mark - Exporting
+
+- (BOOL)isExporter
+{
+    return [self.content conformsToProtocol:@protocol(MPExporterPlugIn)];
+}
+
+- (NSString *)exportFormatName
+{
+    if (![self isExporter])
+        return nil;
+    NSString *name = [self.content exportFormatName];
+    // A format with no name of its own is still a format; the plug-in's
+    // name is a better label than an empty menu item.
+    return name.length ? name : self.name;
+}
+
+- (NSString *)exportFileExtension
+{
+    if (![self isExporter])
+        return nil;
+    NSString *extension = [self.content exportFileExtension];
+    return extension.length ? extension : nil;
+}
+
+- (NSString *)exportFormatDescription
+{
+    if (![self isExporter]
+        || ![self.content respondsToSelector:@selector(exportFormatDescription)])
+        return nil;
+    return [self.content exportFormatDescription];
+}
+
+- (NSData *)exportDataFromHTML:(NSString *)html
+                      markdown:(NSString *)markdown
+                       fileURL:(NSURL *)fileURL
+                         error:(NSError **)error
+{
+    if (![self isExporter])
+        return nil;
+    return [self.content exportDataFromHTML:html markdown:markdown
+                                    fileURL:fileURL error:error];
+}
+
+
 - (void)plugInDidInitialize
 {
     if ([self.content respondsToSelector:@selector(plugInDidInitialize)])

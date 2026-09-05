@@ -305,6 +305,8 @@ clipboard, if there is one — and writes the page as a Markdown file.
 | **HTML** (⌥⌘E) | Styles and highlighting optional, chosen in the panel |
 | **PDF** (⌥⌘P) | Through the print system; page setup is ⇧⌘P and printing ⌘P |
 | **Word (.docx)** | Repaired after AppKit writes it — see below |
+| **OpenDocument (.odt)** | Tables and styling survive AppKit's writer; the pictures it drops are put back |
+| **Rich Text (.rtf)** | One file, pictures included — Cocoa only writes them into RTFD, so they are planted as `\pict` |
 | **EPUB 3.3** | Images copied into the package, table of contents from the headings |
 | **Copy HTML** (⌥⌘C) | The rendered page on the clipboard |
 
@@ -318,9 +320,17 @@ clipboard, if there is one — and writes the page as a Markdown file.
   fetch the remote ones first, with a sheet while they wait and a count of
   whatever could not be had. Switch it off in the preferences if an export
   must make no network requests.
-- **Diagrams are drawn into every export** — HTML, Word and EPUB alike —
-  rather than shipping the source and a library and hoping the reader runs
-  JavaScript.
+- **Diagrams are drawn into every export** — HTML, Word, OpenDocument, RTF
+  and EPUB alike — rather than shipping the source and a library and hoping
+  the reader runs JavaScript.
+- **A plug-in can add a format of its own.** Adopt `MPExporterPlugIn` — a
+  name, an extension, and one method that turns the rendered document into
+  bytes — and it appears in File ▸ Export beside the built-in ones. What
+  arrives is the document already made self-contained: diagrams and formulas
+  drawn as pictures, remote pictures fetched if the preferences allow it.
+  Exporters stay **out of the plug-ins menu**, which lists commands; they are
+  still listed in the plug-ins window, and switching one off takes its format
+  out of the Export menu.
 
 ---
 

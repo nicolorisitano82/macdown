@@ -8,8 +8,18 @@
 
 #import <Foundation/Foundation.h>
 
+@class MPPlugIn;
+
+
 @interface MPPlugInController : NSObject<NSMenuDelegate>
 
 @property (weak) IBOutlet NSDocumentController *documentController;
+
+/** The exporters that are installed and switched on.
+ *
+ * They are deliberately absent from the plug-ins menu — an exporter is a
+ * format, not a command — so this is how File ▸ Export finds them.
+ */
++ (NSArray<MPPlugIn *> *)enabledExporters;
 
 @end

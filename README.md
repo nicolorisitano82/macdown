@@ -36,6 +36,14 @@ getting a document out of the app in a shape someone else can open.
 
 * **EPUB 3.3.** Images are copied into the package and the table of contents
   is built from the headings.
+* **OpenDocument and RTF**, with the pictures AppKit's own writers drop put
+  back: a `draw:frame` and a `Pictures/` entry for .odt, a `\pict` group for
+  .rtf. Tables and character styling those two writers keep by themselves.
+* **A plug-in can add a format.** `MPExporterPlugIn` is a name, an extension
+  and one method; the format then sits in File ▸ Export with the others.
+  Exporters do not appear in the plug-ins menu — that menu is for commands —
+  but they are in the plug-ins window, and switching one off removes its
+  format.
 * **Pictures kept on the web travel too.** A .docx and an EPUB are packages,
   so a picture they do not carry is a picture nobody sees. Both exports fetch
   the remote ones first, with a sheet while they wait and a count of whatever
