@@ -269,4 +269,85 @@ static NSString * const kMPPage =
     XCTAssertNil(self.listener.lastReport);
 }
 
+#pragma mark - Where the card is hung
+
+- (void)testAFlippedViewCountsTheSameWayThePageDoes
+{
+    // WKWebView is flipped: the page's own top is the view's top, and only
+    // the zoom has to be allowed for.
+    NSDictionary *report = @{@"left": @40.0, @"top": @30.0,
+                             @"width": @120.0, @"height": @18.0};
+    NSRect where = MPLinkRectInView(report, 1.0, YES, 400.0);
+
+    XCTAssertEqualWithAccuracy(NSMinX(where), 40.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSMinY(where), 30.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSWidth(where), 120.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSHeight(where), 18.0, 0.001);
+}
+
+- (void)testAnUnflippedViewCountsFromTheBottom
+{
+    NSDictionary *report = @{@"left": @40.0, @"top": @30.0,
+                             @"width": @120.0, @"height": @18.0};
+    NSRect where = MPLinkRectInView(report, 1.0, NO, 400.0);
+    XCTAssertEqualWithAccuracy(NSMinY(where), 400.0 - 30.0 - 18.0, 0.001);
+}
+
+- (void)testTheZoomIsAllowedFor
+{
+    NSDictionary *report = @{@"left": @40.0, @"top": @30.0,
+                             @"width": @120.0, @"height": @18.0};
+    NSRect where = MPLinkRectInView(report, 2.0, YES, 400.0);
+    XCTAssertEqualWithAccuracy(NSMinX(where), 80.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSMinY(where), 60.0, 0.001);
+    XCTAssertEqualWithAccuracy(NSWidth(where), 240.0, 0.001);
+    // A zoom of nothing is a zoom of one, not a rectangle at the origin.
+    XCTAssertEqualWithAccuracy(NSMinX(MPLinkRectInView(report, 0.0, YES, 400.0)),
+                               40.0, 0.001);
+}
+
+/** The whole round trip, in a real web view.
+ *
+ * The rectangle is turned into view coordinates and then handed back to the
+ * page as a point: whatever is at that point has to be the link itself. This
+ * is the assertion the first version of the card would have failed — it hung
+ * the card where the link was not.
+ */
+- (void)testThePointTheCardIsHungFromIsOnTheLink
+{
+    XCTestExpectation *asked = [self expectationWithDescription:@"rettangolo"];
+    __block NSDictionary *report = nil;
+    [self.webView evaluateJavaScript:
+        @"(function(){var r=document.getElementById('due')"
+        @".getBoundingClientRect();"
+        @"return {left:r.left,top:r.top,width:r.width,height:r.height};})();"
+                   completionHandler:^(id result, NSError *error) {
+        report = result;
+        [asked fulfill];
+    }];
+    [self waitForExpectations:@[asked] timeout:5.0];
+    XCTAssertNotNil(report);
+
+    NSRect where = MPLinkRectInView(report, self.webView.pageZoom,
+                                    self.webView.isFlipped,
+                                    NSHeight(self.webView.bounds));
+
+    // Back to the page: in a flipped view the two agree, so the middle of
+    // that rectangle is the middle of the link.
+    XCTestExpectation *hit = [self expectationWithDescription:@"elemento"];
+    __block NSString *found = nil;
+    NSString *ask = [NSString stringWithFormat:
+        @"(document.elementFromPoint(%f, %f)||{}).id || '';",
+        NSMidX(where), NSMidY(where)];
+    [self.webView evaluateJavaScript:ask
+                   completionHandler:^(id result, NSError *error) {
+        found = result;
+        [hit fulfill];
+    }];
+    [self waitForExpectations:@[hit] timeout:5.0];
+
+    XCTAssertEqualObjects(found, @"due",
+                          @"la cartolina finirebbe dove il link non è");
+}
+
 @end

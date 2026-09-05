@@ -462,6 +462,9 @@ static const CGFloat kMPNoteWidth = 400.0;
             @"Fetch images from the network when exporting", @"Preference")
                             key:@"exportFetchesRemoteImages"],
         [self checkboxWithTitle:NSLocalizedString(
+            @"Ask a web page what it is when the pointer rests on its link",
+            @"Preference") key:@"previewFetchesLinkPages"],
+        [self checkboxWithTitle:NSLocalizedString(
             @"Offer the writing commands, using a local model",
             @"Preference") key:@"editorWritingHelp"],
         [self noteWithText:NSLocalizedString(

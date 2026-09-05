@@ -6,11 +6,150 @@
 #import "MPLinkPreview.h"
 #import "MPUtilities.h"
 #import "MPBacklinks.h"
+#import "MPWebClipper.h"
 
 /// Enough to tell one document from another, and no more.
 static const NSUInteger kMPPreviewLines = 4;
 /// A document worth previewing is not a megabyte of it.
 static const unsigned long long kMPPreviewSizeLimit = 4 * 1024 * 1024;
+/// And a page's title and summary are in the first half megabyte of it.
+static const NSUInteger kMPPageHeadAtMost = 512 * 1024;
+
+
+/// The content of the first matching meta tag, or nil.
+static NSString *MPMetaContent(NSString *html, NSString *pattern)
+{
+    NSRegularExpression *meta = [NSRegularExpression
+        regularExpressionWithPattern:pattern
+                             options:NSRegularExpressionCaseInsensitive
+                               error:NULL];
+    NSTextCheckingResult *match = [meta firstMatchInString:html options:0
+        range:NSMakeRange(0, html.length)];
+    if (!match || match.numberOfRanges < 3)
+        return nil;
+    NSString *content = [html substringWithRange:[match rangeAtIndex:2]];
+    content = MPStringByUnescapingHTMLEntities(content);
+    return [content stringByTrimmingCharactersInSet:
+        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+}
+
+
+void MPPageSummaryFromHTML(NSString *html, NSString **title,
+                           NSString **summary)
+{
+    if (title)
+        *title = nil;
+    if (summary)
+        *summary = nil;
+    if (!html.length)
+        return;
+
+    if (title)
+    {
+        NSString *found = MPTitleOfHTML(html);
+        if (!found.length)
+        {
+            found = MPMetaContent(html,
+                @"<meta[^>]+property\\s*=\\s*[\"']og:title[\"'][^>]*"
+                @"content\\s*=\\s*([\"'])(.*?)\\1");
+        }
+        *title = found.length ? found : nil;
+    }
+
+    if (summary)
+    {
+        // The line a page writes for exactly this purpose comes first.
+        NSString *found = MPMetaContent(html,
+            @"<meta[^>]+property\\s*=\\s*[\"']og:description[\"'][^>]*"
+            @"content\\s*=\\s*([\"'])(.*?)\\1");
+        if (!found.length)
+        {
+            found = MPMetaContent(html,
+                @"<meta[^>]+name\\s*=\\s*[\"']description[\"'][^>]*"
+                @"content\\s*=\\s*([\"'])(.*?)\\1");
+        }
+        if (!found.length)
+        {
+            // Some pages put the attributes the other way round.
+            found = MPMetaContent(html,
+                @"<meta[^>]+content\\s*=\\s*([\"'])(.*?)\\1[^>]*"
+                @"name\\s*=\\s*[\"']description[\"']");
+        }
+        *summary = found.length ? found : nil;
+    }
+}
+
+
+void MPFetchPageSummary(NSURL *url,
+                        void (^completion)(NSString *, NSString *))
+{
+    void (^answer)(NSString *, NSString *) = ^(NSString *title,
+                                               NSString *summary) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion)
+                completion(title, summary);
+        });
+    };
+    if (!url)
+    {
+        answer(nil, nil);
+        return;
+    }
+
+    NSMutableURLRequest *request =
+        [NSMutableURLRequest requestWithURL:url
+                                cachePolicy:NSURLRequestUseProtocolCachePolicy
+                            timeoutInterval:4.0];
+    // Said plainly rather than pretending to be a browser, as the clipper
+    // does: a page that would rather not be read this way can refuse.
+    [request setValue:@"MacDown Next (link preview)"
+        forHTTPHeaderField:@"User-Agent"];
+    [request setValue:@"text/html" forHTTPHeaderField:@"Accept"];
+
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession]
+        dataTaskWithRequest:request
+          completionHandler:^(NSData *data, NSURLResponse *response,
+                              NSError *error) {
+        NSInteger status = [(NSHTTPURLResponse *)response statusCode];
+        if (error || status != 200 || !data.length)
+        {
+            answer(nil, nil);
+            return;
+        }
+        // A card is a glance: the head of the page is where all of this is.
+        if (data.length > kMPPageHeadAtMost)
+            data = [data subdataWithRange:NSMakeRange(0, kMPPageHeadAtMost)];
+
+        NSString *html = [[NSString alloc] initWithData:data
+                                               encoding:NSUTF8StringEncoding];
+        if (!html)
+        {
+            html = [[NSString alloc] initWithData:data
+                                         encoding:NSISOLatin1StringEncoding];
+        }
+        NSString *title = nil;
+        NSString *summary = nil;
+        MPPageSummaryFromHTML(html, &title, &summary);
+        answer(title, summary);
+    }];
+    [task resume];
+}
+
+
+NSRect MPLinkRectInView(NSDictionary *report, CGFloat zoom,
+                        BOOL viewIsFlipped, CGFloat viewHeight)
+{
+    if (zoom <= 0.0)
+        zoom = 1.0;
+    CGFloat left = [report[@"left"] doubleValue] * zoom;
+    CGFloat top = [report[@"top"] doubleValue] * zoom;
+    CGFloat width = MAX(1.0, [report[@"width"] doubleValue] * zoom);
+    CGFloat height = MAX(1.0, [report[@"height"] doubleValue] * zoom);
+
+    if (viewIsFlipped)
+        return NSMakeRect(left, top, width, height);
+    return NSMakeRect(left, viewHeight - top - height, width, height);
+}
 
 
 NSString * const MPHoverMessageName = @"macdownHover";

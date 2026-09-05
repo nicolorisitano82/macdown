@@ -212,6 +212,9 @@ NS_INLINE NSString *MPRectStringForAutosaveName(NSString *name)
 @property (strong, nonatomic) NSPopover *backlinkPopover;
 /// The card for the link the pointer is resting on, while it is up.
 @property (strong, nonatomic) NSPopover *linkPopover;
+/// Moves every time a card is asked for or put away, so a page
+/// answering late cannot open a card nobody is waiting for.
+@property (nonatomic) NSUInteger hoverToken;
 /// How many the last tally found, so the menu item knows whether to offer.
 @property (assign, nonatomic) NSUInteger proseIssueCount;
 
@@ -5302,6 +5305,55 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
 
     [self hideLinkPreview];
 
+    /* A web link, when the reader has asked for pages to be looked up.
+     *
+     * The address alone says where a link goes and nothing about what is
+     * there, which is what somebody hovering a link in an article wants to
+     * know. So the page is asked — once, and only with the preference on —
+     * and the card is shown when the answer arrives. Four seconds at the
+     * outside, and the pointer moving on cancels it: `hideLinkPreview`
+     * moves the token this checks.
+     */
+    if (preview.kind == MPLinkPreviewKindAddress
+        && self.preferences.previewFetchesLinkPages)
+    {
+        self.hoverToken++;
+        NSUInteger token = self.hoverToken;
+        __weak MPDocument *weakSelf = self;
+        MPFetchPageSummary(preview.fileURL ?: [NSURL URLWithString:
+                               body[@"href"]],
+                           ^(NSString *title, NSString *summary) {
+            MPDocument *strong = weakSelf;
+            if (!strong || strong.hoverToken != token)
+                return;     // the pointer has moved on
+            if (title.length)
+                [preview setValue:title forKey:@"title"];
+            if (summary.length)
+                [preview setValue:summary forKey:@"body"];
+            [strong showCard:preview at:body];
+        });
+        return;
+    }
+
+    [self showCard:preview at:body];
+}
+
+- (void)showCard:(MPLinkPreview *)preview at:(NSDictionary *)body
+{
+    // With the lookup off, the card can only take the address apart, and a
+    // reader who expected to see what is on the other side deserves to know
+    // where the switch is rather than to wonder what the card is for.
+    if (preview.kind == MPLinkPreviewKindAddress
+        && !self.preferences.previewFetchesLinkPages)
+    {
+        [preview setValue:NSLocalizedString(
+            @"Per sapere di cosa parla: Impostazioni ▸ Resa grafica ▸ "
+            @"«Chiedi alla pagina web che cos'è»",
+            @"Hint on the card for a web link when the lookup is off")
+                   forKey:@"footnote"];
+    }
+
+
     MPLinkPreviewViewController *card = [[MPLinkPreviewViewController alloc]
         initWithPreview:preview];
     NSPopover *popover = [[NSPopover alloc] init];
@@ -5314,21 +5366,12 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
     popover.contentSize = card.view.fittingSize;
     self.linkPopover = popover;
 
-    /* Where the link is, in the view's own coordinates.
-     *
-     * The page reports a rectangle from getBoundingClientRect, which is
-     * measured from the top left of the viewport and in CSS pixels; the web
-     * view is not flipped and its unit is the point. So the top has to be
-     * turned into a bottom, and both have to be scaled by whatever zoom the
-     * preview is at.
-     */
-    CGFloat zoom = self.preview.pageZoom > 0.0 ? self.preview.pageZoom : 1.0;
-    CGFloat height = [body[@"height"] doubleValue] * zoom;
-    CGFloat top = [body[@"top"] doubleValue] * zoom;
-    NSRect where = NSMakeRect([body[@"left"] doubleValue] * zoom,
-                              NSHeight(self.preview.bounds) - top - height,
-                              MAX(1.0, [body[@"width"] doubleValue] * zoom),
-                              MAX(1.0, height));
+    // Where the link is, in the view's own coordinates. WKWebView is
+    // flipped, so the rectangle the page reports needs the zoom allowed for
+    // and nothing else; see MPLinkRectInView.
+    NSRect where = MPLinkRectInView(body, self.preview.pageZoom,
+                                    self.preview.isFlipped,
+                                    NSHeight(self.preview.bounds));
 
     if (!NSIntersectsRect(where, self.preview.bounds))
         return;   // scrolled away between the report and now
@@ -5338,6 +5381,7 @@ NS_INLINE NSString *MPMIMETypeForImageURL(NSURL *url)
 
 - (void)hideLinkPreview
 {
+    self.hoverToken++;
     [self.linkPopover close];
     self.linkPopover = nil;
 }

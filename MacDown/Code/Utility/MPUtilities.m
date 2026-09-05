@@ -346,17 +346,99 @@ NSURL *MPNewMarkdownFileURLForName(NSString *name, NSURL *documentURL)
     return [directory URLByAppendingPathComponent:clean];
 }
 
+/// The named entities worth carrying a table for: the ones that turn up in
+/// the titles and descriptions of ordinary pages. Everything else arrives
+/// numbered, which is handled below without a table.
+static NSDictionary<NSString *, NSString *> *MPNamedHTMLEntities(void)
+{
+    static NSDictionary *named = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        named = @{
+            @"nbsp": @"\u00a0", @"ndash": @"–", @"mdash": @"—",
+            @"hellip": @"…", @"laquo": @"«", @"raquo": @"»",
+            @"lsquo": @"‘", @"rsquo": @"’", @"ldquo": @"“", @"rdquo": @"”",
+            @"sbquo": @"‚", @"bdquo": @"„", @"middot": @"·", @"bull": @"•",
+            @"deg": @"°", @"times": @"×", @"divide": @"÷", @"plusmn": @"±",
+            @"euro": @"€", @"pound": @"£", @"yen": @"¥", @"cent": @"¢",
+            @"copy": @"©", @"reg": @"®", @"trade": @"™", @"sect": @"§",
+            @"para": @"¶", @"dagger": @"†", @"permil": @"‰",
+            @"agrave": @"à", @"aacute": @"á", @"acirc": @"â", @"auml": @"ä",
+            @"aring": @"å", @"atilde": @"ã", @"aelig": @"æ",
+            @"egrave": @"è", @"eacute": @"é", @"ecirc": @"ê", @"euml": @"ë",
+            @"igrave": @"ì", @"iacute": @"í", @"icirc": @"î", @"iuml": @"ï",
+            @"ograve": @"ò", @"oacute": @"ó", @"ocirc": @"ô", @"ouml": @"ö",
+            @"otilde": @"õ", @"oslash": @"ø",
+            @"ugrave": @"ù", @"uacute": @"ú", @"ucirc": @"û", @"uuml": @"ü",
+            @"ccedil": @"ç", @"ntilde": @"ñ", @"szlig": @"ß", @"yuml": @"ÿ",
+            @"Agrave": @"À", @"Eacute": @"É", @"Egrave": @"È",
+            @"Igrave": @"Ì", @"Ograve": @"Ò", @"Ugrave": @"Ù",
+            @"Ccedil": @"Ç", @"Ntilde": @"Ñ", @"Auml": @"Ä", @"Ouml": @"Ö",
+            @"Uuml": @"Ü",
+        };
+    });
+    return named;
+}
+
+
 NSString *MPStringByUnescapingHTMLEntities(NSString *value)
 {
     if (!value.length || [value rangeOfString:@"&"].location == NSNotFound)
         return value;
 
     NSMutableString *out = [value mutableCopy];
+
+    // Numbered first, and by hand rather than by table: a page may use any
+    // character there is, and `&#233;` and `&#xE9;` are the same é.
+    static NSRegularExpression *numbered = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        numbered = [NSRegularExpression regularExpressionWithPattern:
+            @"&#(x?)([0-9a-fA-F]+);" options:0 error:NULL];
+    });
+    NSArray *matches = [numbered matchesInString:out options:0
+                                           range:NSMakeRange(0, out.length)];
+    for (NSTextCheckingResult *match in matches.reverseObjectEnumerator)
+    {
+        BOOL hex = [out substringWithRange:[match rangeAtIndex:1]].length > 0;
+        NSString *digits = [out substringWithRange:[match rangeAtIndex:2]];
+        unsigned long long code = hex
+            ? strtoull(digits.UTF8String, NULL, 16)
+            : strtoull(digits.UTF8String, NULL, 10);
+        if (!code || code > 0x10FFFF)
+            continue;
+
+        NSString *character = nil;
+        if (code > 0xFFFF)
+        {
+            code -= 0x10000;
+            unichar pair[2] = {
+                (unichar)(0xD800 + (code >> 10)),
+                (unichar)(0xDC00 + (code & 0x3FF)),
+            };
+            character = [NSString stringWithCharacters:pair length:2];
+        }
+        else
+        {
+            unichar one = (unichar)code;
+            character = [NSString stringWithCharacters:&one length:1];
+        }
+        [out replaceCharactersInRange:match.range withString:character];
+    }
+
+    NSDictionary *named = MPNamedHTMLEntities();
+    for (NSString *name in named)
+    {
+        [out replaceOccurrencesOfString:
+            [NSString stringWithFormat:@"&%@;", name]
+                             withString:named[name] options:0
+                                  range:NSMakeRange(0, out.length)];
+    }
+
     // The ampersand last: doing it first would turn `&amp;lt;` into `<`.
     NSArray<NSArray<NSString *> *> *pairs = @[
         @[@"&lt;", @"<"], @[@"&gt;", @">"], @[@"&quot;", @"\""],
-        @[@"&#39;", @"'"], @[@"&#x27;", @"'"], @[@"&apos;", @"'"],
-        @[@"&amp;", @"&"],
+        @[@"&apos;", @"'"], @[@"&amp;", @"&"],
     ];
     for (NSArray<NSString *> *pair in pairs)
     {

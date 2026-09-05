@@ -197,11 +197,16 @@ for them. Click a cell in the preview and the caret goes to that cell.
   in the preferences.
 - **Resting the pointer on a link for five seconds** opens a small card
   saying what is on the other side: the title and first lines of a
-  neighbouring document, the picture itself if the link is an image, the
-  parts of an address if it points at the web, or a note that the file is not
-  there yet. Five seconds is long on purpose — a card that appears while the
-  pointer is merely crossing the page is a card in the way. **Nothing is
-  fetched to draw it**: an address is taken apart, not visited.
+  neighbouring document, the picture itself if the link is an image, or a
+  note that the file is not there yet. Five seconds is long on purpose — a
+  card that appears while the pointer is merely crossing the page is a card
+  in the way.
+- For a **web address** the card takes the address apart — host, path,
+  scheme — and fetches nothing. Switch on **Preferences › Rendering ›
+  Writing › "Ask a web page what it is when the pointer rests on its link"**
+  and it asks the page instead, showing its title and the summary the page
+  writes for exactly this purpose. One request, four seconds at the outside,
+  half a megabyte at the most, and only for the link under the pointer.
 - **⌘R re-renders**, and the panes can be hidden with ⇧⌘H (preview) and ⇧⌘E
   (editor); ⌘0 puts them back to one to one.
 

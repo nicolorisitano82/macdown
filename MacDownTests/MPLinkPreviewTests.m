@@ -160,4 +160,70 @@
     XCTAssertTrue([preview.body containsString:@"Il testo vero."]);
 }
 
+#pragma mark - What a page says about itself
+
+- (void)testAPageThatWritesItsOwnSummary
+{
+    NSString *html = @"<html><head><title>Rete interna — Esempio</title>"
+        @"<meta property=\"og:description\" content=\"Come è fatta la rete "
+        @"dell'ufficio, in breve.\">"
+        @"<meta name=\"description\" content=\"Meno buona di quella sopra.\">"
+        @"</head><body><p>Testo.</p></body></html>";
+
+    NSString *title = nil;
+    NSString *summary = nil;
+    MPPageSummaryFromHTML(html, &title, &summary);
+
+    XCTAssertEqualObjects(title, @"Rete interna — Esempio");
+    // og:description first: it is the line written for exactly this.
+    XCTAssertEqualObjects(summary, @"Come è fatta la rete dell'ufficio, in breve.");
+}
+
+- (void)testTheOrdinaryDescriptionWhenThereIsNoOther
+{
+    NSString *html = @"<html><head><title>Verbale</title>"
+        @"<meta name=\"description\" content=\"Il verbale della riunione.\">"
+        @"</head><body></body></html>";
+    NSString *title = nil;
+    NSString *summary = nil;
+    MPPageSummaryFromHTML(html, &title, &summary);
+    XCTAssertEqualObjects(title, @"Verbale");
+    XCTAssertEqualObjects(summary, @"Il verbale della riunione.");
+}
+
+- (void)testAttributesWrittenTheOtherWayRound
+{
+    NSString *html = @"<head><title>X</title>"
+        @"<meta content=\"Prima il contenuto.\" name=\"description\"></head>";
+    NSString *summary = nil;
+    MPPageSummaryFromHTML(html, NULL, &summary);
+    XCTAssertEqualObjects(summary, @"Prima il contenuto.");
+}
+
+- (void)testEntitiesAreReadAsCharacters
+{
+    NSString *html = @"<head><title>A &amp; B</title>"
+        @"<meta name=\"description\" content=\"Perch&eacute; no&nbsp;?\">"
+        @"</head>";
+    NSString *title = nil;
+    NSString *summary = nil;
+    MPPageSummaryFromHTML(html, &title, &summary);
+    XCTAssertEqualObjects(title, @"A & B");
+    XCTAssertTrue([summary hasPrefix:@"Perché no"], @"%@", summary);
+}
+
+- (void)testAPageThatSaysNothingAboutItself
+{
+    NSString *title = nil;
+    NSString *summary = nil;
+    MPPageSummaryFromHTML(@"<html><body><p>Solo testo.</p></body></html>",
+                          &title, &summary);
+    XCTAssertNil(title);
+    XCTAssertNil(summary);
+
+    MPPageSummaryFromHTML(nil, &title, &summary);
+    XCTAssertNil(title);
+    XCTAssertNil(summary);
+}
+
 @end

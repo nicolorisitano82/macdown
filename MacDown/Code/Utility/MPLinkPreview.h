@@ -64,3 +64,39 @@ extern const NSTimeInterval MPHoverDelay;
  * test can watch the same script with a wait it can afford.
  */
 extern NSString *MPHoverWatchScript(NSTimeInterval seconds);
+
+/** Where a link the page reported sits, in a view's own coordinates.
+ *
+ * The page measures with `getBoundingClientRect`: CSS pixels, from the top
+ * left of the viewport. A view that is flipped counts the same way and only
+ * the zoom has to be allowed for; one that is not counts from the bottom, so
+ * the top has to be turned into a bottom against its height.
+ *
+ * WKWebView **is** flipped, which is the whole reason this is a function
+ * with a test rather than four lines in the middle of a method: it was
+ * written the other way, and a card that should sit under a link at the top
+ * of the page appeared at the bottom of the window instead.
+ */
+extern NSRect MPLinkRectInView(NSDictionary *report, CGFloat zoom,
+                               BOOL viewIsFlipped, CGFloat viewHeight);
+
+/** What a page says about itself, for the card on a web link.
+ *
+ * Read out of markup that has already been fetched: the title, and the
+ * summary the page offers — `og:description` first, since that is the line
+ * a page writes for exactly this purpose, then the plain description, then
+ * nothing rather than a guess.
+ */
+extern void MPPageSummaryFromHTML(NSString *html, NSString **title,
+                                  NSString **summary);
+
+/** Asks a page what it is, for the card.
+ *
+ * This is **the only thing in the preview that fetches anything**, it only
+ * happens when the reader has switched it on, and it stops at half a
+ * megabyte and four seconds. The completion runs on the main queue, with
+ * nil for whatever could not be had.
+ */
+extern void MPFetchPageSummary(NSURL *url,
+                               void (^completion)(NSString *title,
+                                                  NSString *summary));
