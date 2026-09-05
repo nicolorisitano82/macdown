@@ -50,6 +50,9 @@
 #import "MPLinkPreviewViewController.h"
 #import "MPWebClipper.h"
 #import "MPRichExport.h"
+#import "MPSendTo.h"
+#import "MPInstructionFiles.h"
+#import "MPInstructionsViewController.h"
 #import "MPPlugIn.h"
 #import "MPActionLog.h"
 #import "MPTaskList.h"
@@ -210,6 +213,7 @@ NS_INLINE NSString *MPRectStringForAutosaveName(NSString *name)
     NSTitlebarAccessoryViewController *readOnlyBadge;
 /// The list of documents that cite this one, while it is open.
 @property (strong, nonatomic) NSPopover *backlinkPopover;
+@property (strong, nonatomic) NSPopover *instructionsPopover;
 /// The card for the link the pointer is resting on, while it is up.
 @property (strong, nonatomic) NSPopover *linkPopover;
 /// Moves every time a card is asked for or put away, so a page
@@ -4048,6 +4052,129 @@ static NSString * const kMPDocxHeadingToken = @"MPHDGPLACEHOLDER";
             [strong reportImageProblems:problems];
         }
     }];
+}
+
+
+/** Hands the document, or the selection, to Claude or to ChatGPT.
+ *
+ * The text goes on the clipboard and the chat opens with the prompt field
+ * filled in where that is possible — filled in, not sent: what to ask is the
+ * reader's to write, and a menu item that started a conversation by itself
+ * would be a menu item nobody trusts.
+ *
+ * Nothing is sent by the application: the link opens somebody else's
+ * program, and what happens next happens there.
+ */
+/** What an agent would read, for this document.
+ *
+ * CLAUDE.md and AGENTS.md are files like any other until you ask which ones
+ * apply and in what order, what they pull in with `@`, and which of those
+ * paths lead nowhere. Then they are a small system, and a small system
+ * deserves to be shown rather than reconstructed by opening files one by
+ * one.
+ */
+- (IBAction)showInstructionFiles:(id)sender
+{
+    if (self.instructionsPopover.isShown)
+    {
+        [self.instructionsPopover close];
+        self.instructionsPopover = nil;
+        return;
+    }
+    if (!self.fileURL)
+        return;
+
+    NSURL *home = [NSURL fileURLWithPath:NSHomeDirectory() isDirectory:YES];
+    NSURL *managed = [NSURL fileURLWithPath:
+        @"/Library/Application Support/ClaudeCode" isDirectory:YES];
+    NSArray<MPInstructionFile *> *hierarchy =
+        MPInstructionHierarchyForDocument(self.fileURL, home, managed);
+
+    // The tree is grown from the nearest project file, which is the one a
+    // reader is looking at when they ask.
+    NSURL *nearest = nil;
+    for (MPInstructionFile *file in hierarchy)
+    {
+        if (file.exists && file.scope != MPInstructionScopeAgents)
+            nearest = file.fileURL;
+    }
+    if (MPIsInstructionFile(self.fileURL))
+        nearest = self.fileURL;
+
+    MPInstructionNode *tree = nearest
+        ? MPResolveInstructionImports(nearest) : nil;
+    NSArray<MPInstructionIssue *> *issues =
+        MPInstructionIssues(tree, hierarchy);
+    MPNote(@"istruzioni: %lu file, %lu avvisi",
+           (unsigned long)hierarchy.count, (unsigned long)issues.count);
+
+    MPInstructionsViewController *list = [[MPInstructionsViewController alloc]
+        initWithHierarchy:hierarchy tree:tree issues:issues
+                   chosen:^(NSURL *fileURL) {
+        NSDocumentController *controller =
+            [NSDocumentController sharedDocumentController];
+        if (![[NSFileManager defaultManager] fileExistsAtPath:fileURL.path])
+        {
+            // Not there yet: this is where it would go, so make it and open
+            // it rather than saying no.
+            [@"" writeToURL:fileURL atomically:YES
+                   encoding:NSUTF8StringEncoding error:NULL];
+        }
+        [controller openDocumentWithContentsOfURL:fileURL display:YES
+                                completionHandler:^(NSDocument *opened,
+                                                    BOOL was,
+                                                    NSError *error) {}];
+    }];
+
+    NSPopover *popover = [[NSPopover alloc] init];
+    popover.contentViewController = list;
+    popover.behavior = NSPopoverBehaviorTransient;
+    popover.contentSize = list.view.frame.size;
+    self.instructionsPopover = popover;
+
+    NSView *anchor = self.editor;
+    NSRect top = anchor.visibleRect;
+    top.size.height = 1.0;
+    [popover showRelativeToRect:top ofView:anchor
+                  preferredEdge:NSRectEdgeMaxY];
+}
+
+
+- (IBAction)sendToClaude:(id)sender
+{
+    [self sendTo:MPSendToClaude];
+}
+
+- (IBAction)sendToChatGPT:(id)sender
+{
+    [self sendTo:MPSendToChatGPT];
+}
+
+- (void)sendTo:(MPSendToTarget)target
+{
+    NSRange selected = self.editor.selectedRange;
+    NSString *text = selected.length
+        ? [self.editor.string substringWithRange:selected]
+        : self.editor.string;
+    if (![text stringByTrimmingCharactersInSet:
+          [NSCharacterSet whitespaceAndNewlineCharacterSet]].length)
+        return;
+
+    // On the clipboard whatever happens: a link that carries the document is
+    // a convenience, and pasting is what works when it cannot.
+    NSPasteboard *board = [NSPasteboard generalPasteboard];
+    [board clearContents];
+    [board setString:text forType:NSPasteboardTypeString];
+
+    BOOL installed = MPSendToDesktopAppIsInstalled(target);
+    NSURL *url = MPSendToURL(target, text, installed);
+    MPNote(@"mando %lu caratteri a %@ (%@, testo nel link: %@)",
+           (unsigned long)text.length,
+           target == MPSendToClaude ? @"Claude" : @"ChatGPT",
+           installed ? @"applicazione" : @"web",
+           MPSendToLinkCarriesText(target, text, installed) ? @"sì" : @"no");
+    if (url)
+        [[NSWorkspace sharedWorkspace] openURL:url];
 }
 
 

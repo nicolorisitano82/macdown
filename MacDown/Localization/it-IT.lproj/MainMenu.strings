@@ -387,3 +387,12 @@
 
 /* Class = "NSMenuItem"; title = "Rich Text…"; ObjectID = "rtf-Ex-Itm"; */
 "rtf-Ex-Itm.title" = "Testo formattato (RTF)…";
+
+/* Class = "NSMenuItem"; title = "Send to Claude"; ObjectID = "snd-cl-Itm"; */
+"snd-cl-Itm.title" = "Manda a Claude";
+
+/* Class = "NSMenuItem"; title = "Send to ChatGPT"; ObjectID = "snd-gp-Itm"; */
+"snd-gp-Itm.title" = "Manda a ChatGPT";
+
+/* Class = "NSMenuItem"; title = "Instruction Files…"; ObjectID = "ins-fl-Itm"; */
+"ins-fl-Itm.title" = "File di istruzioni…";

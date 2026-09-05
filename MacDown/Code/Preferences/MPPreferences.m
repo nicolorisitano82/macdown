@@ -59,6 +59,11 @@ static NSString * const kMPDefaultHtmlStyleName = @"GitHub2";
         // Looking is a request to GitHub once a day, and nothing else
         // leaves the machine; downloading and installing are still asked.
         @"updatesCheckAutomatically": @YES,
+        // On, because a card that says only what the address already said is
+        // a card that answers the wrong question. One request, for the link
+        // under the pointer, and the switch is in the same panel as the
+        // rest of what reaches the network.
+        @"previewFetchesLinkPages": @YES,
     }];
 
     [self cleanupObsoleteAutosaveValues];

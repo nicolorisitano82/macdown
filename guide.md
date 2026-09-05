@@ -230,6 +230,31 @@ for them. Click a cell in the preview and the caret goes to that cell.
 
 ---
 
+## Working with Claude and other agents
+
+- **Send to Claude / Send to ChatGPT** (File menu): the document — or the
+  selection, if there is one — goes on the clipboard and a new chat opens
+  with the prompt field **filled in, not sent**. What to ask is yours to
+  write. With Claude's desktop application installed it opens there; without
+  it, the web opens and the clipboard carries the text.
+- **Instruction Files…** (⌃⌥⌘I): what an agent would actually read for the
+  document in front of you.
+  - The **hierarchy**, in load order: the machine's
+    (`/Library/Application Support/ClaudeCode/CLAUDE.md`), yours
+    (`~/.claude/CLAUDE.md`), then every `CLAUDE.md` and `.claude/CLAUDE.md`
+    from the top of the tree down to the document's own folder, each
+    followed by its `CLAUDE.local.md`. Files that are not there are listed
+    too — where one *would* be read from is half the question — and clicking
+    one makes it and opens it.
+  - The **imports**: every `@path` resolved, as a tree, relative to the file
+    that wrote it. Paths inside backticks are left alone, exactly as the
+    loader leaves them.
+  - What is **wrong**: an import that leads nowhere, one that closes a
+    circle, one past the fourth hop where the loader stops reading, a file
+    over two hundred lines or over the four mebibytes at which it is skipped
+    altogether, and an `AGENTS.md` that nothing imports — Claude Code reads
+    `CLAUDE.md`, so a lone `AGENTS.md` is a file nobody reads.
+
 ## Moving around a folder
 
 - **WikiLinks**: `[[Another note]]` links to a neighbouring document, and

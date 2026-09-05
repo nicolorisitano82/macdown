@@ -181,6 +181,18 @@ Writing**.
   leaves the machine; the disk image is only fetched from GitHub, checked
   when the list is read and again before the download starts.
 
+### Working with agents
+
+* **Send to Claude** and **Send to ChatGPT**: the document, or the selection,
+  on the clipboard and a new chat with the prompt field filled in — filled
+  in, not sent.
+* **Instruction Files…** (⌃⌥⌘I) reads `CLAUDE.md` and `AGENTS.md` as the
+  small system they are: which files apply and in what order, every `@path`
+  import resolved into a tree, and what is wrong with the set — an import
+  that leads nowhere, one that closes a circle, one past the fourth hop
+  where the loader stops, a file too long to be read well, an `AGENTS.md`
+  that nothing imports.
+
 ### In the Finder
 
 * **Markdown files preview as they read.** Press space on a `.md` file and

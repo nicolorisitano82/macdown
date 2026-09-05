@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D2C000000000000000000052 /* MPInstructionsViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D2C000000000000000000051 /* MPInstructionsViewController.m */; };
+		D2C000000000000000000042 /* MPInstructionFiles.m in Sources */ = {isa = PBXBuildFile; fileRef = D2C000000000000000000041 /* MPInstructionFiles.m */; };
+		D2C000000000000000000044 /* MPInstructionFilesTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2C000000000000000000043 /* MPInstructionFilesTests.m */; };
+		D2C000000000000000000032 /* MPSendTo.m in Sources */ = {isa = PBXBuildFile; fileRef = D2C000000000000000000031 /* MPSendTo.m */; };
+		D2C000000000000000000034 /* MPSendToTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2C000000000000000000033 /* MPSendToTests.m */; };
 		D2C000000000000000000022 /* MPExporterPlugInTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2C000000000000000000021 /* MPExporterPlugInTests.m */; };
 		D2C000000000000000000012 /* MPRichExport.m in Sources */ = {isa = PBXBuildFile; fileRef = D2C000000000000000000011 /* MPRichExport.m */; };
 		D2C000000000000000000014 /* MPRichExportTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D2C000000000000000000013 /* MPRichExportTests.m */; };
@@ -269,6 +274,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D2C000000000000000000050 /* MPInstructionsViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPInstructionsViewController.h; sourceTree = "<group>"; };
+		D2C000000000000000000051 /* MPInstructionsViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPInstructionsViewController.m; sourceTree = "<group>"; };
+		D2C000000000000000000040 /* MPInstructionFiles.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPInstructionFiles.h; sourceTree = "<group>"; };
+		D2C000000000000000000041 /* MPInstructionFiles.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPInstructionFiles.m; sourceTree = "<group>"; };
+		D2C000000000000000000043 /* MPInstructionFilesTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPInstructionFilesTests.m; sourceTree = "<group>"; };
+		D2C000000000000000000030 /* MPSendTo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPSendTo.h; sourceTree = "<group>"; };
+		D2C000000000000000000031 /* MPSendTo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPSendTo.m; sourceTree = "<group>"; };
+		D2C000000000000000000033 /* MPSendToTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPSendToTests.m; sourceTree = "<group>"; };
 		D2C000000000000000000020 /* MPExporterPlugIn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPExporterPlugIn.h; sourceTree = "<group>"; };
 		D2C000000000000000000021 /* MPExporterPlugInTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MPExporterPlugInTests.m; sourceTree = "<group>"; };
 		D2C000000000000000000010 /* MPRichExport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPRichExport.h; sourceTree = "<group>"; };
@@ -940,6 +953,10 @@
 				7DA2311453239F0973310016 /* MPWritingAssistant.m */,
 				7DA2311453239F0973310042 /* MPCodeLanguages.h */,
 				7DA2311453239F0973310043 /* MPCodeLanguages.m */,
+				D2C000000000000000000040 /* MPInstructionFiles.h */,
+				D2C000000000000000000041 /* MPInstructionFiles.m */,
+				D2C000000000000000000030 /* MPSendTo.h */,
+				D2C000000000000000000031 /* MPSendTo.m */,
 				D2C000000000000000000020 /* MPExporterPlugIn.h */,
 				D2C000000000000000000010 /* MPRichExport.h */,
 				D2C000000000000000000011 /* MPRichExport.m */,
@@ -1034,6 +1051,8 @@
 				7DA2311453239F0973310049 /* MPProseIssuesViewController.h */,
 				7DA2311453239F0973310050 /* MPProseIssuesViewController.m */,
 				7DA2311453239F0973310054 /* MPBacklinksViewController.h */,
+				D2C000000000000000000050 /* MPInstructionsViewController.h */,
+				D2C000000000000000000051 /* MPInstructionsViewController.m */,
 				7DA2311453239F0973310055 /* MPBacklinksViewController.m */,
 				7DA2311453239F0973310074 /* MPLinkPreviewViewController.h */,
 				7DA2311453239F0973310075 /* MPLinkPreviewViewController.m */,
@@ -1236,6 +1255,8 @@
 		1FCDCA2F1944F96E00B1F966 /* MacDownTests */ = {
 			isa = PBXGroup;
 			children = (
+				D2C000000000000000000043 /* MPInstructionFilesTests.m */,
+				D2C000000000000000000033 /* MPSendToTests.m */,
 				D2C000000000000000000021 /* MPExporterPlugInTests.m */,
 				D2C000000000000000000013 /* MPRichExportTests.m */,
 				D2C000000000000000000003 /* MPHeadingFixTests.m */,
@@ -1769,6 +1790,9 @@
 				F55A342A5A01CEBCC9F60042 /* MPCodeLanguages.m in Sources */,
 				F55A342A5A01CEBCC9F60049 /* MPBacklinks.m in Sources */,
 				F55A342A5A01CEBCC9F60063 /* MPLinkPreview.m in Sources */,
+				D2C000000000000000000052 /* MPInstructionsViewController.m in Sources */,
+				D2C000000000000000000042 /* MPInstructionFiles.m in Sources */,
+				D2C000000000000000000032 /* MPSendTo.m in Sources */,
 				D2C000000000000000000012 /* MPRichExport.m in Sources */,
 				D2B0000000000000000000F8 /* MPUpdate.m in Sources */,
 				D2B0000000000000000000F9 /* MPUpdateController.m in Sources */,
@@ -1816,6 +1840,8 @@
 			files = (
 				1FFEB31919729F7C00B2254F /* MPAssetTests.m in Sources */,
 				1F51C9A5194565050015A96F /* MPPreferencesTests.m in Sources */,
+				D2C000000000000000000044 /* MPInstructionFilesTests.m in Sources */,
+				D2C000000000000000000034 /* MPSendToTests.m in Sources */,
 				D2C000000000000000000022 /* MPExporterPlugInTests.m in Sources */,
 				D2C000000000000000000014 /* MPRichExportTests.m in Sources */,
 				D2C000000000000000000004 /* MPHeadingFixTests.m in Sources */,

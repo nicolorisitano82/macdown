@@ -128,3 +128,10 @@ static void (^MPDocumentOpenCompletionEmpty)(
         NSDocument *doc, BOOL wasOpen, NSError *error) {
 
 };
+
+/** The ranges of fenced blocks and inline spans in Markdown: code, not prose.
+ *
+ * Whoever reads a document for something — citations, findings, imports —
+ * has to leave code alone, and every one of them was writing this again.
+ */
+NSArray<NSValue *> *MPMarkdownCodeRanges(NSString *text);
